@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Realistic 3D Earth with Timezones</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div id="canvas-container"></div>
+        <div id="loading">🌍 Loading Earth...</div>
+
+    <!-- left info panel removed -->
+
+    <!-- timezone UI removed -->
+
+        <div class="controls" id="controls">
+            <button id="controls-toggle" class="controls-toggle" onclick="toggleControlPanel()" title="Toggle controls">⮜</button>
+            <div class="controls-body">
+                <button onclick="toggleClouds()">☁️ Toggle Clouds</button>
+                <button onclick="toggleRotation()">🔄 Toggle Rotation</button>
+                <!-- timezone toggle removed -->
+                <button onclick="resetView()">🏠 Reset View</button>
+                <button id="btn-follow-iss" onclick="toggleFollowISS()">📡 Follow ISS</button>
+                <div class="controls-content" style="margin-top:10px; text-align:left;">
+                    <label><input type="checkbox" id="chk-iss" /> ISS</label><br />
+                    <!-- ISS control removed -->
+                    <label><input type="checkbox" id="chk-satellites" checked /> Satellites</label><br />
+                    <label><input type="checkbox" id="chk-currents" /> Ocean Currents</label><br />
+                    <label><input type="checkbox" id="chk-moon" /> Moon</label><br />
+                    <label><input type="checkbox" id="chk-magnetic" /> Magnetic Field</label>
+                    <hr />
+                    <label style="display:block; margin-top:6px;"><input type="checkbox" id="chk-pbr" /> Use PBR</label>
+                    <label style="display:block; margin-top:6px;">Atmosphere Intensity:<br />
+                        <input type="range" id="range-atmo" min="0" max="1.2" step="0.005" value="0.45" style="width:140px;" />
+                    </label>
+                    <label style="display:block; margin-top:6px;"><input type="checkbox" id="chk-atmosphere" checked /> Atmosphere</label>
+                    <label style="display:block; margin-top:6px;">Night glow intensity:<br />
+                        <input type="range" id="range-night" min="0" max="2" step="0.01" value="0.25" style="width:140px;" />
+                    </label>
+                    <label style="display:block; margin-top:6px;">Fade height:<br />
+                        <input type="range" id="range-fade" min="1" max="8" step="0.1" value="4" style="width:140px;" />
+                    </label>
+                    <div style="font-size:12px; margin-top:6px;">
+                        <label><input type="checkbox" id="chk-realtime" checked /> Real-time</label><br />
+                        <label style="display:block; margin-top:6px;">Date / Time (local):<br />
+                            <input type="datetime-local" id="inp-datetime" style="width:160px;" />
+                        </label>
+                    </div>
+                    <!-- Lightweight on-screen debug for UI/uniform state -->
+                    <div id="ui-debug" style="font-size:12px; margin-top:8px; color:#cfe; background:rgba(0,0,0,0.25); padding:6px; border-radius:6px;">UI debug: waiting...</div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/satellite.js@4.0.0/dist/satellite.min.js"></script>
+        <script src="script.js"></script>
+    </body>
+</html>

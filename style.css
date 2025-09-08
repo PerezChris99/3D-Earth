@@ -1,0 +1,122 @@
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0c1445 0%, #1a1a2e 50%, #16213e 100%);
+            font-family: 'Arial', sans-serif;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+
+    /* left info panel removed */
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .controls {
+            position: absolute;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 14px;
+            border-radius: 15px 0 0 15px;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            width: 180px;
+            max-height: 90vh;
+            overflow: auto;
+        }
+
+        .controls.collapsed {
+            width: 40px;
+            padding: 8px 6px;
+            border-radius: 8px 0 0 8px;
+        }
+
+        .controls .controls-toggle {
+            position: absolute;
+            left: -28px;
+            top: 12px;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px 0 0 6px;
+            border: none;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: transform 0.18s ease;
+        }
+
+        .controls.collapsed .controls-body { display: none; }
+
+        .controls .controls-body { transition: max-height 0.18s ease; }
+
+        .controls button {
+            margin: 0;
+            padding: 8px 10px;
+            background: linear-gradient(45deg, #4fc3f7, #29b6f6);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.18s ease;
+            box-shadow: 0 4px 12px rgba(79, 195, 247, 0.25);
+            width: 100%;
+            text-align: left;
+        }
+
+        .controls button:hover {
+            background: linear-gradient(45deg, #29b6f6, #039be5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 195, 247, 0.4);
+        }
+
+        /* stack checkbox list vertically and align left */
+        .controls > div { /* the inner div that holds labels */
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-top: 6px;
+            text-align: left;
+        }
+        .controls label { display: block; font-size: 13px; }
+
+        /* responsive: on small screens, move controls back to bottom-right */
+        @media (max-width: 640px) {
+            .controls {
+                top: auto;
+                bottom: 12px;
+                right: 12px;
+                transform: none;
+                width: auto;
+                border-radius: 12px;
+            }
+            .controls button { text-align: center; }
+        }
+
+        /* timezone UI styles removed */
