@@ -1,122 +1,92 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0c1445 0%, #1a1a2e 50%, #16213e 100%);
+    font-family: 'Arial', sans-serif;
+}
 
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background: linear-gradient(135deg, #0c1445 0%, #1a1a2e 50%, #16213e 100%);
-            font-family: 'Arial', sans-serif;
-        }
+#canvas-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
 
-        #canvas-container {
-            width: 100vw;
-            height: 100vh;
-        }
+#loading {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    color: #efe;
+    background: rgba(0,0,0,0.35);
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 1100;
+}
 
-    /* left info panel removed */
+/* Keep UI debug styling similar to old panel */
+#ui-debug { font-size: 12px; margin-top: 8px; color: #cfe; background: rgba(0,0,0,0.25); padding: 6px; border-radius: 6px; }
 
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 24px;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 30px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center;
-        }
+/* Compact always-visible controls panel (small neat card) */
+.controls {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    width: 210px;
+    max-width: 45vw;
+    background: rgba(0,0,0,0.36);
+    color: #dff;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    z-index: 1200;
+    overflow: hidden;
+    font-size: 14px;
+}
+.controls .controls-header { background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.03); }
+.controls .controls-body { padding: 8px; max-height: calc(100vh - 36px); overflow-y: auto; }
+.controls input[type=range] { accent-color: #8ec5ff; }
+.controls button.btn-sm { padding: 6px 8px; font-size: 13px; }
+.controls label { color: #e6f7ff; }
 
-        .controls {
-            position: absolute;
-            top: 50%;
-            right: 0;
-            transform: translateY(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 12px 14px;
-            border-radius: 15px 0 0 15px;
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 8px;
-            width: 180px;
-            max-height: 90vh;
-            overflow: auto;
-        }
+@media (max-width: 480px) {
+    .controls { width: 84vw; left: 8vw; right: 8vw; top: 8px; }
+    .controls .controls-body { max-height: calc(100vh - 24px); }
+}
 
-        .controls.collapsed {
-            width: 40px;
-            padding: 8px 6px;
-            border-radius: 8px 0 0 8px;
-        }
+/* small visual tweaks */
+.controls.collapsed .controls-body { display: none; }
+.controls .controls-body { transition: max-height 0.18s ease; }
+.controls button { margin: 0 0 6px 0; padding: 8px 10px; background: linear-gradient(45deg, #4fc3f7, #29b6f6); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.18s ease; box-shadow: 0 4px 12px rgba(79, 195, 247, 0.25); width: 100%; text-align: left; }
+.controls button:hover { background: linear-gradient(45deg, #29b6f6, #039be5); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79, 195, 247, 0.4); }
+.controls > div { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; text-align: left; }
+.controls label { display: block; font-size: 13px; }
 
-        .controls .controls-toggle {
-            position: absolute;
-            left: -28px;
-            top: 12px;
-            width: 28px;
-            height: 28px;
-            border-radius: 6px 0 0 6px;
-            border: none;
-            background: rgba(0,0,0,0.6);
-            color: #fff;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: transform 0.18s ease;
-        }
+@media (max-width: 640px) {
+    .controls { top: auto; bottom: 12px; right: 12px; transform: none; width: auto; border-radius: 12px; }
+    .controls button { text-align: center; }
+}
 
-        .controls.collapsed .controls-body { display: none; }
+/* Hamburger toggle for mobile */
+.controls-hamburger {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1250;
+    background: rgba(0,0,0,0.5);
+    color: #eafaff;
+    border: none;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 18px;
+    display: none; /* shown on small screens */
+}
 
-        .controls .controls-body { transition: max-height 0.18s ease; }
-
-        .controls button {
-            margin: 0;
-            padding: 8px 10px;
-            background: linear-gradient(45deg, #4fc3f7, #29b6f6);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.18s ease;
-            box-shadow: 0 4px 12px rgba(79, 195, 247, 0.25);
-            width: 100%;
-            text-align: left;
-        }
-
-        .controls button:hover {
-            background: linear-gradient(45deg, #29b6f6, #039be5);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(79, 195, 247, 0.4);
-        }
-
-        /* stack checkbox list vertically and align left */
-        .controls > div { /* the inner div that holds labels */
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            padding-top: 6px;
-            text-align: left;
-        }
-        .controls label { display: block; font-size: 13px; }
-
-        /* responsive: on small screens, move controls back to bottom-right */
-        @media (max-width: 640px) {
-            .controls {
-                top: auto;
-                bottom: 12px;
-                right: 12px;
-                transform: none;
-                width: auto;
-                border-radius: 12px;
-            }
-            .controls button { text-align: center; }
-        }
-
-        /* timezone UI styles removed */
+@media (max-width: 640px) {
+    .controls-hamburger { display: block; }
+    /* hide full controls by default on small screens; toggled via JS */
+    .controls { display: none; }
+    .controls.show-mobile { display: block; width: 84vw; left: 8vw; right: 8vw; top: 8px; }
+}

@@ -3,8 +3,9 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Realistic 3D Earth with Timezones</title>
-        <link rel="stylesheet" href="style.css" />
+        <title>3D Earth By Perez</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
     </head>
     <body>
         <div id="canvas-container"></div>
@@ -14,49 +15,50 @@
 
     <!-- timezone UI removed -->
 
-        <div class="controls" id="controls">
-            <button id="controls-toggle" class="controls-toggle" onclick="toggleControlPanel()" title="Toggle controls">⮜</button>
-            <div class="controls-body">
-                <button onclick="toggleClouds()">☁️ Toggle Clouds</button>
-                <button onclick="toggleRotation()">🔄 Toggle Rotation</button>
-                <!-- timezone toggle removed -->
-                <button onclick="resetView()">🏠 Reset View</button>
-                <button id="btn-follow-iss" onclick="toggleFollowISS()">📡 Follow ISS</button>
-                <div class="controls-content" style="margin-top:10px; text-align:left;">
-                    <label><input type="checkbox" id="chk-iss" /> ISS</label><br />
-                    <!-- ISS control removed -->
-                    <label><input type="checkbox" id="chk-satellites" checked /> Satellites</label><br />
-                    <label><input type="checkbox" id="chk-currents" /> Ocean Currents</label><br />
-                    <label><input type="checkbox" id="chk-moon" /> Moon</label><br />
-                    <label><input type="checkbox" id="chk-magnetic" /> Magnetic Field</label>
-                    <hr />
-                    <label style="display:block; margin-top:6px;"><input type="checkbox" id="chk-pbr" /> Use PBR</label>
-                    <label style="display:block; margin-top:6px;">Atmosphere Intensity:<br />
-                        <input type="range" id="range-atmo" min="0" max="1.2" step="0.005" value="0.45" style="width:140px;" />
-                    </label>
-                    <label style="display:block; margin-top:6px;"><input type="checkbox" id="chk-atmosphere" checked /> Atmosphere</label>
-                    <label style="display:block; margin-top:6px;">Night glow intensity:<br />
-                        <input type="range" id="range-night" min="0" max="2" step="0.01" value="0.25" style="width:140px;" />
-                    </label>
-                    <label style="display:block; margin-top:6px;">Fade height:<br />
-                        <input type="range" id="range-fade" min="1" max="8" step="0.1" value="4" style="width:140px;" />
-                    </label>
-                    <div style="font-size:12px; margin-top:6px;">
-                        <label><input type="checkbox" id="chk-realtime" checked /> Real-time</label><br />
-                        <label style="display:block; margin-top:6px;">Date / Time (local):<br />
-                            <input type="datetime-local" id="inp-datetime" style="width:160px;" />
-                        </label>
-                    </div>
-                    <!-- Lightweight on-screen debug for UI/uniform state -->
-                    <div id="ui-debug" style="font-size:12px; margin-top:8px; color:#cfe; background:rgba(0,0,0,0.25); padding:6px; border-radius:6px;">UI debug: waiting...</div>
+    <!-- Compact always-visible controls panel -->
+        <div class="controls" id="controls" role="region" aria-label="Controls">
+            <div class="controls-header">
+                <h6 style="margin:0; padding:6px 10px; font-weight:700;">Controls</h6>
+            </div>
+            <div class="controls-body p-2">
+                <div style="display:flex; gap:6px; flex-direction:column; margin-bottom:6px;">
+                    <button class="btn btn-sm btn-outline-light" type="button" onclick="toggleClouds()">☁️ Clouds</button>
+                    <button class="btn btn-sm btn-outline-light" type="button" onclick="toggleRotation()">🔄 Rot</button>
+                    <button class="btn btn-sm btn-outline-light" type="button" onclick="resetView()">🏠 Reset</button>
+                    <button class="btn btn-sm btn-primary" id="btn-follow-iss" type="button" onclick="toggleFollowISS()">📡 ISS</button>
+                </div>
+                <div class="controls-content" style="text-align:left;font-size:13px;">
+                    <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-iss"><label for="chk-iss">ISS</label></div>
+                    <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-satellites" checked><label for="chk-satellites">Satellites</label></div>
+                    <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-currents"><label for="chk-currents">Currents</label></div>
+                    <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-moon"><label for="chk-moon">Moon</label></div>
+                    <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;"><input type="checkbox" id="chk-magnetic"><label for="chk-magnetic">Magnetic</label></div>
+                    <hr style="border-color: rgba(255,255,255,0.06); margin:6px 0;" />
+                    <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-pbr"><label for="chk-pbr">PBR</label></div>
+                    <label style="display:block; margin-top:6px; font-size:12px;">Atmosphere</label>
+                    <input type="range" id="range-atmo" min="0" max="1.2" step="0.005" value="0.45" style="width:100%;">
+                    <div style="display:flex; gap:8px; align-items:center; margin-top:6px;"><input type="checkbox" id="chk-atmosphere" checked><label for="chk-atmosphere">On</label></div>
+                    <label style="display:block; margin-top:6px; font-size:12px;">Night glow</label>
+                    <input type="range" id="range-night" min="0" max="2" step="0.01" value="0.25" style="width:100%;">
+                    <label style="display:block; margin-top:6px; font-size:12px;">Fade height</label>
+                    <input type="range" id="range-fade" min="1" max="8" step="0.1" value="4" style="width:100%;">
+                    <div style="display:flex; gap:8px; align-items:center; margin-top:6px;"><input type="checkbox" id="chk-realtime" checked><label for="chk-realtime">Real-time</label></div>
+                    <input type="datetime-local" id="inp-datetime" style="width:100%; margin-top:6px; font-size:13px;">
+                    <div id="ui-debug" style="font-size:11px; margin-top:8px; color:#cfe; background:rgba(0,0,0,0.18); padding:6px; border-radius:6px;">UI debug: waiting...</div>
                 </div>
             </div>
         </div>
+
+        <!-- Hamburger toggle for small screens -->
+        <button id="controls-hamburger" aria-label="Open controls" title="Open controls" class="controls-hamburger">
+            ☰
+        </button>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://unpkg.com/satellite.js@4.0.0/dist/satellite.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
         <script src="script.js"></script>
     </body>
 </html>

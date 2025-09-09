@@ -858,7 +858,49 @@ function init() {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // ensure the canvas is transparent so the page background (space gradient) shows through
+    try {
+        renderer.setClearColor(0x000000, 0); // fully transparent
+        renderer.domElement.style.background = 'transparent';
+        renderer.domElement.style.display = 'block';
+    } catch (e) {}
     document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    // Fallback: explicitly set a realistic outer-space gradient on the document in case CSS wasn't applied
+    try {
+        const spaceGradient = 'linear-gradient(135deg, #0c1445 0%, #1a1a2e 50%, #16213e 100%)';
+        document.documentElement.style.background = spaceGradient;
+        document.body.style.background = spaceGradient;
+        document.documentElement.style.height = '100%';
+        document.body.style.height = '100%';
+    } catch (e) {}
+
+    // Mobile hamburger toggle: hide full panel on small screens and show via hamburger
+    try {
+        const hamburger = document.getElementById('controls-hamburger');
+        const controlsEl = document.getElementById('controls');
+        const MOBILE_BREAK = 640;
+        function updateControlsForSize() {
+            if (window.innerWidth <= MOBILE_BREAK) {
+                if (controlsEl) controlsEl.classList.remove('show');
+                if (controlsEl) controlsEl.classList.remove('show-mobile');
+                if (hamburger) hamburger.style.display = 'block';
+            } else {
+                if (controlsEl) controlsEl.style.display = ''; // revert to CSS block
+                if (hamburger) hamburger.style.display = 'none';
+                if (controlsEl) controlsEl.classList.remove('show-mobile');
+            }
+        }
+        if (hamburger && controlsEl) {
+            hamburger.addEventListener('click', () => {
+                const isShown = controlsEl.classList.toggle('show-mobile');
+                // scroll to top of panel when opening
+                if (isShown) controlsEl.scrollTop = 0;
+            });
+            window.addEventListener('resize', updateControlsForSize);
+            updateControlsForSize();
+        }
+    } catch (e) {}
 
     // Controls
     controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -890,6 +932,25 @@ function init() {
     try {
         const collapsed = localStorage.getItem('controls.collapsed') === '1';
         if (controlsEl && collapsed) controlsEl.classList.add('collapsed');
+    } catch (e) {}
+
+    // On large screens, ensure the Bootstrap offcanvas controls are visible by default
+    try {
+        const LG_BREAKPOINT = 992; // Bootstrap 'lg' in px
+        if (controlsEl && window.innerWidth >= LG_BREAKPOINT) {
+            // Prefer using Bootstrap's Offcanvas API if available
+            if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
+                try {
+                    const inst = bootstrap.Offcanvas.getOrCreateInstance(controlsEl);
+                    inst.show();
+                } catch (e) {
+                    // fallback to adding show class
+                    controlsEl.classList.add('show');
+                }
+            } else {
+                controlsEl.classList.add('show');
+            }
+        }
     } catch (e) {}
 
     // Prepare optional feature groups
