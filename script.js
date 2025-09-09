@@ -329,26 +329,17 @@ function setEarthMaterial(usePbr) {
     if (!earth) return;
     const old = earth.material;
     try {
-        if (usePbr) {
-            const mat = new THREE.MeshStandardMaterial({
-                map: loadTexture(textureUrls.earth, backupUrls.earth),
-                metalness: 0.0,
-                roughness: 0.9,
-                normalMap: loadTexture(textureUrls.earthBump, backupUrls.earth),
-                roughnessMap: loadTexture(textureUrls.earthSpecular, backupUrls.earth)
-            });
-            earth.material = mat;
-        } else {
-            const mat = new THREE.MeshPhongMaterial({
-                map: loadTexture(textureUrls.earth, backupUrls.earth),
-                bumpMap: loadTexture(textureUrls.earthBump, backupUrls.earth),
-                bumpScale: 0.02,
-                specularMap: loadTexture(textureUrls.earthSpecular, backupUrls.earth),
-                specular: new THREE.Color(0x333333),
-                shininess: 100
-            });
-            earth.material = mat;
-        }
+        // Use a matte MeshStandardMaterial regardless of the toggle.
+        const mat = new THREE.MeshStandardMaterial({
+            map: loadTexture(textureUrls.earth, backupUrls.earth),
+            normalMap: loadTexture(textureUrls.earthBump, backupUrls.earth),
+            metalness: 0.0,
+            roughness: 1.0,
+            envMapIntensity: 0.0
+        });
+        // Reduce normal map strength for subtle surface detail without glossy highlights
+        try { if (mat.normalMap) mat.normalScale = new THREE.Vector2(0.35, 0.35); } catch (e) {}
+        earth.material = mat;
     } catch (e) {
         console.warn('Failed to swap earth material', e);
         earth.material = old;
@@ -1115,14 +1106,16 @@ function createEarth() {
     // Earth geometry
     const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
 
-    // Earth material with textures
-    const earthMaterial = new THREE.MeshPhongMaterial({
+    // Earth material with textures - use a matte PBR-style material to reduce shininess
+    const earthMaterial = new THREE.MeshStandardMaterial({
         map: loadTexture(textureUrls.earth, backupUrls.earth),
-        bumpMap: loadTexture(textureUrls.earthBump, backupUrls.earth),
-        bumpScale: 0.02,
-        specularMap: loadTexture(textureUrls.earthSpecular, backupUrls.earth),
-        specular: new THREE.Color(0x333333),
-        shininess: 100
+        // subtle normal map for surface detail
+        normalMap: loadTexture(textureUrls.earthBump, backupUrls.earth),
+        // minimize specular highlights
+        metalness: 0.0,
+        roughness: 1.0,
+        // ensure no strong shininess from specular map
+        envMapIntensity: 0.0
     });
 
     earth = new THREE.Mesh(earthGeometry, earthMaterial);
