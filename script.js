@@ -1135,22 +1135,22 @@ function createEarth() {
     clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
     earthGroup.add(clouds);
 
-    // Atmosphere: Rayleigh + Mie single-scattering approximation
+    // Atmosphere: smoother gradient blending into space for a seamless look
     const atmosphereGeometry = new THREE.SphereGeometry(1.1, 64, 64);
     const atmosphereMaterial = new THREE.ShaderMaterial({
         uniforms: {
             u_sunDir: { value: new THREE.Vector3(0.0, 1.0, 0.0) },
             u_cameraPos: { value: new THREE.Vector3() },
             u_exposure: { value: atmoPendingValue },
-            // softer scattering coefficients for a natural look
-            u_betaR: { value: new THREE.Vector3(3.5e-6, 8.2e-6, 20.0e-6) },
-            u_betaM: { value: new THREE.Vector3(9e-6, 9e-6, 9e-6) },
-            u_g: { value: 0.75 },
+            u_betaR: { value: new THREE.Vector3(3.0e-6, 7.0e-6, 18.0e-6) },
+            u_betaM: { value: new THREE.Vector3(6e-6, 6e-6, 6e-6) },
+            u_g: { value: 0.72 },
             u_camHeight: { value: 0.0 },
-            u_sunElev: { value: 1.0 },
             u_fadeHeight: { value: 4.0 },
-            u_skyColor: { value: new THREE.Vector3(0.53, 0.81, 0.92) },
-            u_nightGlow: { value: 0.25 }
+            u_skyColor: { value: new THREE.Vector3(0.53, 0.78, 0.92) },
+            u_spaceColor: { value: new THREE.Vector3(0.015, 0.03, 0.08) },
+            u_horizonTint: { value: new THREE.Vector3(0.98, 0.6, 0.25) },
+            u_nightGlow: { value: 0.18 }
         },
         vertexShader: `
             varying vec3 vWorldPos;
@@ -1173,9 +1173,10 @@ function createEarth() {
             uniform vec3 u_betaM;
             uniform float u_g;
             uniform float u_camHeight;
-            uniform float u_sunElev;
             uniform float u_fadeHeight;
             uniform vec3 u_skyColor;
+            uniform vec3 u_spaceColor;
+            uniform vec3 u_horizonTint;
             uniform float u_nightGlow;
 
             const float PI = 3.141592653589793;
@@ -1195,41 +1196,54 @@ function createEarth() {
                 float cosViewSun = dot(viewDir, normalize(u_sunDir));
                 float cosSunNorm = dot(normalize(u_sunDir), normal);
                 float height = length(vWorldPos) - 1.0;
+
+                // scattering falloff with height (softened)
                 float hr = 8.0;
                 float hm = 1.2;
                 float rayleighAmount = exp(-height / hr);
                 float mieAmount = exp(-height / hm);
+
                 float pr = phaseRayleigh(cosViewSun);
                 float pm = phaseHG(cosViewSun, u_g);
                 vec3 rayleigh = u_betaR * pr * rayleighAmount;
                 vec3 mie = u_betaM * pm * mieAmount;
-                // sun elevation scaling (brighter near horizon)
-                float sunScale = clamp(1.0 + (1.0 - clamp(u_sunElev, 0.0, 1.0)) * 0.8, 0.5, 1.8);
-                // camera altitude fade (camera height measured in earth radii above 1.0)
-                // use u_fadeHeight to control how quickly the atmosphere fades with altitude
+
+                // base scattering color (tempered intensity)
+                vec3 scatter = (rayleigh + mie) * max(0.0, cosSunNorm) * u_exposure * 0.65;
+
+                // horizon accent (warmer near sunset)
+                float viewUp = clamp(dot(normal, vec3(0.0,1.0,0.0)), -1.0, 1.0);
+                float horizonFactor = pow(1.0 - smoothstep(0.0, 0.9, viewUp), 1.6);
+                vec3 horizon = mix(u_horizonTint, u_skyColor, 0.5);
+                scatter += horizon * horizonFactor * 0.25 * u_exposure * rayleighAmount;
+
+                // night softening
+                float nightFac = smoothstep(-0.25, 0.05, -dot(normalize(u_sunDir), normal));
+                vec3 night = u_spaceColor * 0.4 * nightFac * (1.0 - rayleighAmount);
+                scatter = scatter + night;
+
+                // choose final tint between skyColor and spaceColor based on camera altitude and view
                 float camFade = clamp(1.0 - (u_camHeight / max(0.0001, u_fadeHeight)), 0.0, 1.0);
-                vec3 color = (rayleigh + mie) * max(0.0, cosSunNorm) * u_exposure * 1.1 * sunScale * camFade;
-                float limb = pow(1.0 - max(0.0, dot(viewDir, normal)), 2.0);
-                // accent limb opposite sun based on azimuthal difference
-                float azDiff = 1.0 - smoothstep(0.0, 1.0, abs(dot(normalize(u_sunDir), normalize(viewDir))));
-                color += vec3(0.05, 0.08, 0.12) * limb * u_exposure * 0.55 * sunScale * camFade * (0.7 + 0.6 * azDiff);
-                // night glow (soft) when sun is below horizon
-                float nightFac = smoothstep(-0.2, 0.05, -dot(normalize(u_sunDir), normal));
-                vec3 night = vec3(0.05, 0.08, 0.18) * u_nightGlow * nightFac * camFade;
-                color += night;
-                color = 1.0 - exp(-color);
-                // tint final scattering by sky color so atmosphere matches sky appearance
-                color *= u_skyColor;
+                float spaceMix = smoothstep(0.0, 1.0, (u_camHeight / (u_fadeHeight * 0.8)));
+                vec3 baseTint = mix(u_skyColor, u_spaceColor, spaceMix);
+
+                vec3 color = baseTint * (1.0 - exp(-scatter));
+                // subtle gamma
                 color = pow(color, vec3(1.0 / 2.2));
-                // final alpha follows camera fade so atmosphere fades out completely at high altitude
-                float alpha = clamp(camFade, 0.0, 1.0);
-                gl_FragColor = vec4(color * camFade, alpha);
+
+                // alpha fades with camera altitude and view (so atmosphere smoothly disappears when high)
+                float alpha = clamp(camFade * (1.0 - spaceMix) + 0.02, 0.0, 0.9);
+                // reduce alpha near grazing angles so limb is soft
+                float limb = pow(1.0 - max(0.0, dot(viewDir, normal)), 2.0);
+                alpha *= mix(0.7, 1.0, limb);
+
+                gl_FragColor = vec4(color, alpha);
             }
         `,
-    side: THREE.BackSide,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.NormalBlending
+        side: THREE.BackSide,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
     });
 
     atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
