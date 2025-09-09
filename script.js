@@ -1,6 +1,8 @@
 // Global variables
 let scene, camera, renderer, earth, clouds, atmosphere;
 let controls;
+// Snapshot of the initial camera state so Reset reliably restores position/target/fov
+let initialCameraState = null;
 let earthGroup, cloudGroup;
 let isRotating = true;
 let showClouds = true;
@@ -165,19 +167,7 @@ function computeMoonEcef(date) {
     return new THREE.Vector3(x, y, z).normalize();
 }
 
-// WGS84 geodetic <-> ECEF
-function latLonAltToEcef(latDeg, lonDeg, altM = 0) {
-    const a = 6378137.0; // equatorial radius in m
-    const f = 1 / 298.257223563;
-    const e2 = f * (2 - f);
-    const lat = deg2rad(latDeg);
-    const lon = deg2rad(lonDeg);
-    const N = a / Math.sqrt(1 - e2 * Math.sin(lat) * Math.sin(lat));
-    const x = (N + altM) * Math.cos(lat) * Math.cos(lon);
-    const y = (N + altM) * Math.cos(lat) * Math.sin(lon);
-    const z = ((1 - e2) * N + altM) * Math.sin(lat);
-    return { x, y, z };
-}
+// WGS84 geodetic <-> ECEF helper removed (location features disabled)
 
 // --- SGP4 Worker integration ---
 let sgp4Worker = null;
@@ -908,6 +898,16 @@ function init() {
     controls.dampingFactor = 0.05;
     controls.minDistance = 1.5;
     controls.maxDistance = 10;
+    // Save the initial camera/controls state so controls.reset() and our resetView() work reliably
+    try {
+        // capture a clone of the important values
+        initialCameraState = {
+            pos: camera.position.clone(),
+            target: controls.target.clone(),
+            fov: camera.fov
+        };
+        if (typeof controls.saveState === 'function') controls.saveState();
+    } catch (e) {}
 
     // Raycaster for mouse interaction
     raycaster = new THREE.Raycaster();
@@ -1298,10 +1298,7 @@ function onMouseClick(event) {
 
     if (intersects.length > 0) {
         const point = intersects[0].point;
-        const longitude = Math.atan2(point.x, point.z) * (180 / Math.PI);
-        const latitude = Math.asin(point.y) * (180 / Math.PI);
-
-    // Timezone interaction removed
+    // location extraction removed — clicking no longer reports lat/lon
     }
 }
 
@@ -1548,6 +1545,20 @@ function toggleRotation() {
 // toggleTimezones removed
 
 function resetView() {
+    // If we captured an initial camera state, restore it (position, target, fov).
+    if (initialCameraState) {
+        try {
+            camera.position.copy(initialCameraState.pos);
+            controls.target.copy(initialCameraState.target);
+            camera.fov = initialCameraState.fov;
+            camera.updateProjectionMatrix();
+            controls.update();
+            return;
+        } catch (e) {
+            // fallback to basic reset below
+        }
+    }
+    // Fallback: set to sensible default
     camera.position.set(0, 0, 3);
     controls.reset();
 }
