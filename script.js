@@ -43,6 +43,8 @@ let moonDistance = 2.5;
 let magneticGroup = null;
 let nightMaterial = null;
 let nightMesh = null;
+let tideMesh = null;
+let tideMaterial = null;
 
 // simulation time and update timers
 let simTime = new Date();
@@ -886,6 +888,56 @@ function createNightLights() {
     if (earthGroup) earthGroup.add(nightMesh);
 }
 
+// Create a subtle tidal overlay that simulates tidal bulges driven by Moon (primary) and Sun (secondary)
+function createTides() {
+    tideMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            u_moonDir: { value: new THREE.Vector3(1,0,0) },
+            u_sunDir: { value: new THREE.Vector3(1,0,0) },
+            u_moonStrength: { value: 1.0 },
+            u_sunStrength: { value: 0.46 },
+            u_amplitude: { value: 0.012 },
+            u_color: { value: new THREE.Vector3(0.05, 0.12, 0.22) }
+        },
+        vertexShader: `
+            varying vec3 vNormal;
+            varying vec3 vPos;
+            uniform vec3 u_moonDir;
+            uniform vec3 u_sunDir;
+            uniform float u_moonStrength;
+            uniform float u_sunStrength;
+            uniform float u_amplitude;
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                vPos = position;
+                vec3 local = normalize(position);
+                float moonBulge = u_moonStrength * abs(dot(local, normalize(u_moonDir)));
+                float sunBulge = u_sunStrength * abs(dot(local, normalize(u_sunDir)));
+                float total = (moonBulge + sunBulge) * u_amplitude;
+                vec4 displaced = vec4(position + normal * total, 1.0);
+                gl_Position = projectionMatrix * modelViewMatrix * displaced;
+            }
+        `,
+        fragmentShader: `
+            uniform vec3 u_color;
+            varying vec3 vNormal;
+            varying vec3 vPos;
+            void main() {
+                float fresnel = pow(1.0 - max(0.0, dot(normalize(vNormal), vec3(0.0,0.0,1.0))), 2.0);
+                vec3 col = u_color * (0.9 + 0.1 * fresnel);
+                gl_FragColor = vec4(col, 0.35 * (1.0 - fresnel));
+            }
+        `,
+        transparent: true,
+        depthWrite: false
+    });
+    const geom = new THREE.SphereGeometry(1.002, 128, 128);
+    tideMesh = new THREE.Mesh(geom, tideMaterial);
+    tideMesh.renderOrder = 50;
+    try { tideMesh.frustumCulled = false; } catch(e) {}
+    if (earthGroup) earthGroup.add(tideMesh);
+}
+
 // Seasonal snow overlay (very simple: add white texture near poles based on month)
 
 // Moon placeholder
@@ -1110,6 +1162,8 @@ function init() {
     createCurrents();
     createMoon();
     createSun();
+    // create tidal overlay showing ocean bulges driven by Moon and Sun
+    createTides();
     createMagneticField();
     createNightLights();
     // comets removed
@@ -1226,6 +1280,21 @@ function updateSunPosition() {
                 // moon should look at Earth's center (0,0,0)
                 moonObject.lookAt(new THREE.Vector3(0, 0, 0));
             } catch (e) {}
+        }
+    } catch (e) {}
+
+    // update tidal overlay uniforms (moon primary, sun secondary)
+    try {
+        if (tideMaterial && tideMaterial.uniforms) {
+            const md = computeMoonEcef(simTime || new Date()).clone().normalize();
+            const sd = computeSunEcef(simTime || new Date()).clone().normalize();
+            tideMaterial.uniforms.u_moonDir.value.copy(md);
+            tideMaterial.uniforms.u_sunDir.value.copy(sd);
+            // approximate lunar tidal forcing amplitude scaled inversely with visual moonDistance
+            const mStrength = THREE.MathUtils.clamp(1.0 / Math.max(0.01, moonDistance), 0.2, 3.0);
+            tideMaterial.uniforms.u_moonStrength.value = mStrength;
+            // amplitude increases slightly when moon is visually closer
+            tideMaterial.uniforms.u_amplitude.value = 0.012 * THREE.MathUtils.clamp(1.0 + (2.5 - moonDistance) * 0.3, 0.6, 2.0);
         }
     } catch (e) {}
 
