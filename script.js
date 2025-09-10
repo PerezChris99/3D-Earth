@@ -45,6 +45,16 @@ let nightMaterial = null;
 let nightMesh = null;
 let tideMesh = null;
 let tideMaterial = null;
+let starUniforms = null;
+// Star control parameters (driven by UI)
+let starTwinkleSpeed = 0.05; // default matches UI control
+let starDensityScale = 1.0; // multiplies star sizes
+
+// Comet system globals
+let cometsGroup = null;
+let nextCometTime = Date.now() + (1000 * 60 * 60 * 24 * 7); // ~1 week from start
+const COMET_MIN_INTERVAL_MS = 1000 * 60 * 60 * 24 * 7; // 1 week
+const COMET_MAX_INTERVAL_MS = 1000 * 60 * 60 * 24 * 90; // ~3 months
 
 // simulation time and update timers
 let simTime = new Date();
@@ -352,6 +362,8 @@ function wireUiToggles() {
         });
         try { moonRange.oninput = () => { const v = parseFloat(moonRange.value || moonDistance); moonDistance = v; if (moonVal) moonVal.textContent = v.toFixed(2); }; } catch (e) {}
     }
+
+    // Stars and comet UI removed; behavior is now automatic
 }
 
 // Swap earth material between simple Phong and MeshStandard PBR
@@ -1320,23 +1332,190 @@ function updateSunPosition() {
 }
 
 function createStarfield() {
-    const starsGeometry = new THREE.BufferGeometry();
-    const starsMaterial = new THREE.PointsMaterial({
-        color: 0xffffff,
-        size: 0.5
-    });
+    // Procedural starfield on a distant celestial sphere
+    const STAR_COUNT = 8000;
+    const radius = 800.0; // far away so parallax is minimal
 
-    const starsVertices = [];
-    for (let i = 0; i < 10000; i++) {
-        const x = (Math.random() - 0.5) * 2000;
-        const y = (Math.random() - 0.5) * 2000;
-        const z = (Math.random() - 0.5) * 2000;
-        starsVertices.push(x, y, z);
+    const positions = new Float32Array(STAR_COUNT * 3);
+    const colors = new Float32Array(STAR_COUNT * 3);
+    const sizes = new Float32Array(STAR_COUNT);
+
+    // helper: color from temperature approximation (Kelvin -> rgb roughly)
+    function tempToRgb(t) {
+        // t: 1000..40000, clamp
+        t = Math.max(1000, Math.min(40000, t)) / 100.0;
+        let r, g, b;
+        if (t <= 66) {
+            r = 255;
+            g = 99.4708025861 * Math.log(t) - 161.1195681661;
+            b = (t <= 19) ? 0 : (138.5177312231 * Math.log(t - 10) - 305.0447927307);
+        } else {
+            r = 329.698727446 * Math.pow(t - 60, -0.1332047592);
+            g = 288.1221695283 * Math.pow(t - 60, -0.0755148492);
+            b = 255;
+        }
+        return [Math.max(0, Math.min(255, r)) / 255, Math.max(0, Math.min(255, g)) / 255, Math.max(0, Math.min(255, b)) / 255];
     }
 
-    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
-    const starfield = new THREE.Points(starsGeometry, starsMaterial);
-    scene.add(starfield);
+    for (let i = 0; i < STAR_COUNT; i++) {
+        // sample uniform direction on sphere
+        const z = 2.0 * Math.random() - 1.0;
+        const phi = Math.random() * Math.PI * 2.0;
+        const r = Math.sqrt(Math.max(0, 1.0 - z * z));
+        const x = r * Math.cos(phi);
+        const y = r * Math.sin(phi);
+
+        positions[i * 3 + 0] = x * radius;
+        positions[i * 3 + 1] = y * radius;
+        positions[i * 3 + 2] = z * radius;
+
+        // magnitude: faint stars more common, a few very bright ones
+        const mag = Math.pow(Math.random(), 1.6) * 6.5 - 1.5; // approx -1.5 .. 5.0
+        // map mag to size (brighter => larger)
+        const size = THREE.MathUtils.clamp(6.5 - (mag + 1.5) * 1.6, 0.6, 6.5);
+        sizes[i] = size;
+
+        // approximate stellar temperature from magnitude/randomness for color
+        const temp = 3000 + Math.pow(Math.random(), 0.7) * 7000; // 3000K..10000K
+        const col = tempToRgb(temp);
+        // brighter stars slightly whiter
+        const brightness = THREE.MathUtils.clamp(1.2 - (mag / 6.0), 0.6, 1.4);
+        colors[i * 3 + 0] = col[0] * brightness;
+        colors[i * 3 + 1] = col[1] * brightness;
+        colors[i * 3 + 2] = col[2] * brightness;
+    }
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geom.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    geom.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+
+    starUniforms = {
+        u_time: { value: 0.0 },
+        u_pixelRatio: { value: window.devicePixelRatio || 1.0 },
+        u_twinkleSpeed: { value: starTwinkleSpeed },
+        u_densityScale: { value: starDensityScale }
+    };
+
+    const vs = `
+        attribute vec3 aColor;
+        attribute float aSize;
+        varying vec3 vColor;
+        uniform float u_time;
+        uniform float u_pixelRatio;
+        void main() {
+            vColor = aColor;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            // twinkle factor (slow per-star phase using position.x)
+            float phase = fract((position.x + 1234.0) * 0.0001 + u_time * 0.05);
+            float tw = 0.8 + 0.4 * sin(phase * 6.28318);
+            float size = aSize * tw * (200.0 / -mvPosition.z) * u_pixelRatio;
+            gl_PointSize = clamp(size, 0.5, 96.0);
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    `;
+
+    const fs = `
+        varying vec3 vColor;
+        void main() {
+            vec2 c = gl_PointCoord - vec2(0.5);
+            float r = length(c);
+            float alpha = smoothstep(0.5, 0.0, r);
+            // give a tighter core and soft halo
+            float core = smoothstep(0.12, 0.0, r);
+            vec3 col = vColor;
+            // soft additive glow
+            gl_FragColor = vec4(col * (0.6 * core + 0.4 * alpha), alpha * 0.9);
+        }
+    `;
+
+    const mat = new THREE.ShaderMaterial({
+        uniforms: starUniforms,
+        vertexShader: vs,
+        fragmentShader: fs,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+
+    const points = new THREE.Points(geom, mat);
+    points.frustumCulled = false;
+    scene.add(points);
+}
+
+// Create comet group container
+function createCometGroup() {
+    if (!cometsGroup) {
+        cometsGroup = new THREE.Group();
+        cometsGroup.frustumCulled = false;
+        scene.add(cometsGroup);
+    }
+}
+
+// Spawn a comet with simple straight-line trajectory for visual effect
+function spawnComet(forceOptions) {
+    try {
+        createCometGroup();
+        const nucleusGeom = new THREE.SphereGeometry(0.02, 8, 8);
+        const nucleusMat = new THREE.MeshBasicMaterial({ color: 0xfff6d0 });
+        const nucleus = new THREE.Mesh(nucleusGeom, nucleusMat);
+
+        // tail: line geometry (will be updated each frame)
+        const tailLen = 80;
+        const tailPositions = new Float32Array(tailLen * 3);
+        const tailGeom = new THREE.BufferGeometry();
+        tailGeom.setAttribute('position', new THREE.BufferAttribute(tailPositions, 3));
+        const tailMat = new THREE.LineBasicMaterial({ color: 0xffe6b3, transparent: true, opacity: 0.9 });
+        const tail = new THREE.Line(tailGeom, tailMat);
+
+        const group = new THREE.Group();
+        group.add(tail);
+        group.add(nucleus);
+
+        // Random incoming vector and start far away
+        const dir = new THREE.Vector3((Math.random() - 0.5) * 2.0, (Math.random() - 0.2) * 0.6, (Math.random() - 0.5) * 2.0).normalize();
+        const startDist = 40 + Math.random() * 120;
+        const startPos = dir.clone().multiplyScalar(startDist);
+        const speed = 0.005 + Math.random() * 0.02; // units per frame
+        group.position.copy(startPos);
+        group.userData = { dir: dir.clone().negate(), speed: speed, tailGeom: tailGeom, tailLen: tailLen, age: 0 };
+        cometsGroup.add(group);
+
+        // schedule next comet
+        nextCometTime = Date.now() + COMET_MIN_INTERVAL_MS + Math.random() * (COMET_MAX_INTERVAL_MS - COMET_MIN_INTERVAL_MS);
+    } catch (e) { console.warn('spawnComet error', e); }
+}
+
+// Update comet motion and tails each frame
+function updateComets(deltaSec) {
+    if (!cometsGroup) return;
+    const toRemove = [];
+    cometsGroup.children.forEach((group) => {
+        const ud = group.userData;
+        const move = ud.dir.clone().multiplyScalar(ud.speed * Math.max(1.0, deltaSec * 60.0));
+        group.position.add(move);
+        ud.age += deltaSec;
+
+        // update tail buffer: shift and insert current position at head
+        try {
+            const posAttr = ud.tailGeom.getAttribute('position');
+            for (let i = ud.tailLen - 1; i > 0; i--) {
+                posAttr.array[i * 3 + 0] = posAttr.array[(i - 1) * 3 + 0];
+                posAttr.array[i * 3 + 1] = posAttr.array[(i - 1) * 3 + 1];
+                posAttr.array[i * 3 + 2] = posAttr.array[(i - 1) * 3 + 2];
+            }
+            posAttr.array[0] = group.position.x;
+            posAttr.array[1] = group.position.y;
+            posAttr.array[2] = group.position.z;
+            posAttr.needsUpdate = true;
+        } catch (e) {}
+
+        // Remove when far away or too old
+        if (group.position.length() > 800 || ud.age > 900.0) toRemove.push(group);
+        // If passes near earth center, let it linger a bit then remove
+        if (group.position.length() < 0.6 && ud.age > 0.6) toRemove.push(group);
+    });
+    toRemove.forEach((g) => { try { cometsGroup.remove(g); } catch (e) {} });
 }
 
 function createEarth() {
@@ -1558,6 +1737,11 @@ function onWindowResize() {
 
 function animate() {
     requestAnimationFrame(animate);
+    // compute delta time
+    const nowPerf = performance.now() / 1000.0;
+    if (typeof animate._lastTime === 'undefined') animate._lastTime = nowPerf;
+    const deltaSec = Math.min(0.5, nowPerf - animate._lastTime);
+    animate._lastTime = nowPerf;
 
     if (isRotating) {
         if (earthGroup) earthGroup.rotation.y += 0.002;
@@ -1715,6 +1899,36 @@ function animate() {
             controls.update();
         }
     }
+    // update procedural starfield time and pixel ratio so twinkle animates correctly
+    try {
+        if (starUniforms) {
+            // use high-resolution time in seconds
+            const tsec = (performance.now() || Date.now()) * 0.001;
+            starUniforms.u_time.value = tsec;
+            starUniforms.u_pixelRatio.value = window.devicePixelRatio || 1.0;
+            // Procedural modulation for twinkle and density (no UI):
+            // slow base oscillation plus tiny pseudo-random variation
+            const baseTwinkle = 0.04 + 0.025 * Math.sin(tsec * 0.07) + 0.01 * Math.sin(tsec * 0.31);
+            const noiseTw = (Math.sin(tsec * 1.17) * 0.5 + 0.5) * 0.005;
+            const twinkleSpeedAuto = baseTwinkle + noiseTw;
+            const baseDensity = 0.9 + 0.15 * Math.cos(tsec * 0.03) + 0.05 * Math.sin(tsec * 0.21);
+            const densityNoise = 0.02 * (Math.sin(tsec * 0.9) * 0.5 + 0.5);
+            const densityAuto = Math.max(0.2, baseDensity + densityNoise);
+            if (starUniforms.u_twinkleSpeed) starUniforms.u_twinkleSpeed.value = twinkleSpeedAuto;
+            if (starUniforms.u_densityScale) starUniforms.u_densityScale.value = densityAuto;
+        }
+    } catch (e) {}
+
+    // handle rare automatic comet spawns
+    try {
+        if (Date.now() >= nextCometTime) {
+            // spawn a comet randomly
+            spawnComet();
+        }
+        // advance comets
+        updateComets(deltaSec);
+    } catch (e) {}
+
     renderer.render(scene, camera);
 }
 
