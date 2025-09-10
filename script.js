@@ -8,6 +8,12 @@ let isRotating = true;
 let showClouds = true;
 let raycaster, mouse;
 
+// Smooth rotation resume state
+let rotationTransitionActive = false;
+let rotationTransitionStart = 0;
+let rotationTransitionDuration = 1.2; // seconds for smooth blend when resuming
+let rotationOffsetStart = 0.0; // initial offset between current rotation and GMST at transition start
+
 // Texture URLs (using reliable sources)
 const textureUrls = {
     earth: 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
@@ -1758,14 +1764,31 @@ function animate() {
     // Align Earth's rotation to sidereal time so the Sun rises in the east and sets in the west.
     // Use GMST computed from simTime. Also apply a slow cloud drift offset for visual motion.
     try {
-        const gmst = getGMSTRad(simTime || new Date());
-    // Apply GMST directly so Earth's orientation matches sidereal time (astronomically correct)
-    if (earthGroup) earthGroup.rotation.y = gmst;
-    // slowly drift clouds relative to the ground (relative offset added to sidereal angle)
-    cloudDrift += deltaSec * 0.0006;
-    if (clouds) clouds.rotation.y = gmst + cloudDrift;
+        // compute current sidereal angle every frame
+        const gmstNow = getGMSTRad(simTime || new Date());
+        if (isRotating) {
+            // increment cloud drift independently (we'll add it into cloud rotation below)
+            cloudDrift += deltaSec * 0.0006;
+
+            if (rotationTransitionActive) {
+                const now = performance.now() / 1000.0;
+                const tRaw = Math.min(1.0, Math.max(0.0, (now - rotationTransitionStart) / rotationTransitionDuration));
+                // ease out cubic for a smooth but snappy blend
+                const t = 1.0 - Math.pow(1.0 - tRaw, 3.0);
+                const offset = rotationOffsetStart * (1.0 - t);
+                if (earthGroup) earthGroup.rotation.y = gmstNow + offset;
+                if (clouds) clouds.rotation.y = gmstNow + cloudDrift + offset;
+                if (tRaw >= 1.0) rotationTransitionActive = false;
+            } else {
+                // normal sidereal-driven rotation
+                if (earthGroup) earthGroup.rotation.y = gmstNow;
+                if (clouds) clouds.rotation.y = gmstNow + cloudDrift;
+            }
+        } else {
+            // rotation is paused: do not change earthGroup.rotation.y or clouds.rotation.y
+        }
     } catch (e) {
-        // fallback to legacy incremental rotation in case GMST isn't available for some reason
+        // fallback: if GMST fails, optionally advance by small increments when rotating
         if (isRotating) {
             if (earthGroup) earthGroup.rotation.y += 0.002;
             if (clouds) clouds.rotation.y += 0.003;
@@ -2023,7 +2046,24 @@ function toggleClouds() {
 }
 
 function toggleRotation() {
+    // Toggle rotation flag. When enabling rotation, smoothly blend from current rotation to sidereal GMST.
+    const was = isRotating;
     isRotating = !isRotating;
+    if (!was && isRotating) {
+        // starting rotation: compute offset between current rotation and GMST so we can blend
+        try {
+            const gmstNow = getGMSTRad(simTime || new Date());
+            const cur = earthGroup ? earthGroup.rotation.y : 0.0;
+            rotationOffsetStart = cur - gmstNow;
+            rotationTransitionActive = true;
+            rotationTransitionStart = performance.now() / 1000.0;
+        } catch (e) {
+            rotationTransitionActive = false;
+        }
+    } else {
+        // turning rotation off: just stop updating (we keep current orientation)
+        rotationTransitionActive = false;
+    }
 }
 
 // toggleTimezones removed
