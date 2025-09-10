@@ -56,6 +56,18 @@ let nextCometTime = Date.now() + (1000 * 60 * 60 * 24 * 7); // ~1 week from star
 const COMET_MIN_INTERVAL_MS = 1000 * 60 * 60 * 24 * 7; // 1 week
 const COMET_MAX_INTERVAL_MS = 1000 * 60 * 60 * 24 * 90; // ~3 months
 
+// small cloud drift offset (radians)
+let cloudDrift = 0.0;
+
+// Helper: compute GMST in radians for a given Date (reused by computeSunEcef earlier)
+function getGMSTRad(date) {
+    const JD = toJulianDate(date);
+    const T = (JD - 2451545.0) / 36525.0;
+    let GMST = 280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * T * T - (T * T * T) / 38710000.0;
+    GMST = ((GMST % 360) + 360) % 360;
+    return deg2rad(GMST);
+}
+
 // simulation time and update timers
 let simTime = new Date();
 let tleUpdateTimer = null;
@@ -1743,9 +1755,21 @@ function animate() {
     const deltaSec = Math.min(0.5, nowPerf - animate._lastTime);
     animate._lastTime = nowPerf;
 
-    if (isRotating) {
-        if (earthGroup) earthGroup.rotation.y += 0.002;
-        if (clouds) clouds.rotation.y += 0.003;
+    // Align Earth's rotation to sidereal time so the Sun rises in the east and sets in the west.
+    // Use GMST computed from simTime. Also apply a slow cloud drift offset for visual motion.
+    try {
+        const gmst = getGMSTRad(simTime || new Date());
+    // Apply GMST directly so Earth's orientation matches sidereal time (astronomically correct)
+    if (earthGroup) earthGroup.rotation.y = gmst;
+    // slowly drift clouds relative to the ground (relative offset added to sidereal angle)
+    cloudDrift += deltaSec * 0.0006;
+    if (clouds) clouds.rotation.y = gmst + cloudDrift;
+    } catch (e) {
+        // fallback to legacy incremental rotation in case GMST isn't available for some reason
+        if (isRotating) {
+            if (earthGroup) earthGroup.rotation.y += 0.002;
+            if (clouds) clouds.rotation.y += 0.003;
+        }
     }
 
     // update satellites motion
