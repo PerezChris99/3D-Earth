@@ -27,8 +27,7 @@ body {
     z-index: 1100;
 }
 
-/* Keep UI debug styling similar to old panel */
-#ui-debug { font-size: 12px; margin-top: 8px; color: #cfe; background: rgba(0,0,0,0.25); padding: 6px; border-radius: 6px; }
+/* ui-debug removed */
 
 /* Compact always-visible controls panel (small neat card) */
 .controls {

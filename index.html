@@ -31,20 +31,19 @@
                     <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-iss"><label for="chk-iss">ISS</label></div>
                     <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-satellites" checked><label for="chk-satellites">Satellites</label></div>
                     <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-currents"><label for="chk-currents">Currents</label></div>
-                    <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-moon"><label for="chk-moon">Moon</label></div>
+                    <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-moon" checked><label for="chk-moon">Moon</label></div>
                     <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;"><input type="checkbox" id="chk-magnetic"><label for="chk-magnetic">Magnetic</label></div>
                     <hr style="border-color: rgba(255,255,255,0.06); margin:6px 0;" />
-                    <div style="display:flex; gap:8px; align-items:center;"><input type="checkbox" id="chk-pbr"><label for="chk-pbr">PBR</label></div>
                     <label style="display:block; margin-top:6px; font-size:12px;">Atmosphere</label>
                     <input type="range" id="range-atmo" min="0" max="1.2" step="0.005" value="0.45" style="width:100%;">
                     <div style="display:flex; gap:8px; align-items:center; margin-top:6px;"><input type="checkbox" id="chk-atmosphere" checked><label for="chk-atmosphere">On</label></div>
-                    <label style="display:block; margin-top:6px; font-size:12px;">Night glow</label>
-                    <input type="range" id="range-night" min="0" max="2" step="0.01" value="0.25" style="width:100%;">
                     <label style="display:block; margin-top:6px; font-size:12px;">Fade height</label>
                     <input type="range" id="range-fade" min="1" max="8" step="0.1" value="4" style="width:100%;">
-                    <div style="display:flex; gap:8px; align-items:center; margin-top:6px;"><input type="checkbox" id="chk-realtime" checked><label for="chk-realtime">Real-time</label></div>
-                    <input type="datetime-local" id="inp-datetime" style="width:100%; margin-top:6px; font-size:13px;">
-                    <div id="ui-debug" style="font-size:11px; margin-top:8px; color:#cfe; background:rgba(0,0,0,0.18); padding:6px; border-radius:6px;">UI debug: waiting...</div>
+                    <hr style="border-color: rgba(255,255,255,0.06); margin:8px 0;" />
+                    <label style="display:block; margin-top:6px; font-size:12px;">Sun distance</label>
+                    <div style="display:flex; gap:8px; align-items:center;"><input type="range" id="range-sun-distance" min="1" max="20" step="0.1" value="6" style="width:100%;"><span id="val-sun-distance" style="min-width:36px; text-align:right; font-size:12px; color:#dff;">6.0</span></div>
+                    <label style="display:block; margin-top:6px; font-size:12px;">Moon distance</label>
+                    <div style="display:flex; gap:8px; align-items:center;"><input type="range" id="range-moon-distance" min="0.5" max="8" step="0.1" value="2.5" style="width:100%;"><span id="val-moon-distance" style="min-width:36px; text-align:right; font-size:12px; color:#dff;">2.5</span></div>
                 </div>
             </div>
         </div>

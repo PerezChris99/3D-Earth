@@ -34,8 +34,12 @@ let sunLight = null;
 let ambientLight = null;
 // Sun orbit for day/night
 let sunAngle = 0;
-let sunDistance = 5;
+// Keep the Sun at a reasonable visual distance so it's visible and detailed but still lights the globe
+// (Earth radius == 1). Set closer so it is clearly visible.
+let sunDistance = 6;
 let sunSpeed = 0.0009; // radians per frame
+// Visual moon distance (scaled). Real Moon is much farther; this keeps visibility while being distant.
+let moonDistance = 2.5;
 let magneticGroup = null;
 let nightMaterial = null;
 let nightMesh = null;
@@ -133,38 +137,60 @@ function computeSunEcef(date) {
 
 // Simple moon position approximation (visual only)
 function computeMoonEcef(date) {
+    // Low-precision lunar position based on mean elements + main periodic terms
+    // Returns unit vector in ECEF (meters normalized) pointing to the Moon.
     const JD = toJulianDate(date);
-    const d = JD - 2451543.5;
-    const N = deg2rad((125.1228 - 0.0529538083 * d) % 360);
-    const i = deg2rad(5.1454);
-    const w = deg2rad((318.0634 + 0.1643573223 * d) % 360);
-    const a = 60.2666; // Earth radii (rough)
-    const e = 0.054900;
-    const M = deg2rad((115.3654 + 13.0649929509 * d) % 360);
-    // Approximate eccentric anomaly E ~ M + e*sin(M)*(1+e*cos(M))
-    const E = M + e * Math.sin(M) * (1 + e * Math.cos(M));
-    const xv = a * (Math.cos(E) - e);
-    const yv = a * Math.sqrt(1 - e * e) * Math.sin(E);
-    const v = Math.atan2(yv, xv);
-    const r = Math.sqrt(xv * xv + yv * yv);
-    // position in ecliptic coordinates
-    const xe = r * (Math.cos(N) * Math.cos(v + w) - Math.sin(N) * Math.sin(v + w) * Math.cos(i));
-    const ye = r * (Math.sin(N) * Math.cos(v + w) + Math.cos(N) * Math.sin(v + w) * Math.cos(i));
-    const ze = r * (Math.sin(v + w) * Math.sin(i));
-    // convert to equatorial by obliquity
-    const eps = deg2rad(23.4397);
-    const xeq = xe;
-    const yeq = ye * Math.cos(eps) - ze * Math.sin(eps);
-    const zeq = ye * Math.sin(eps) + ze * Math.cos(eps);
-    // rotate to ECEF using GMST
-    const T = (JD - 2451545.0) / 36525.0;
+    const D = JD - 2451545.0; // days since J2000
+    const T = D / 36525.0;
+
+    // Mean elements (degrees)
+    const Lp = (218.3164477 + 481267.88123421 * T) % 360; // mean longitude of the Moon
+    const M = (134.9633964 + 477198.8675055 * T) % 360; // Moon mean anomaly
+    const Ms = (357.5291092 + 35999.0502909 * T) % 360; // Sun mean anomaly
+    const Dm = (297.8501921 + 445267.1114034 * T) % 360; // mean elongation
+    const F = (93.2720950 + 483202.0175233 * T) % 360; // argument of latitude
+
+    // convert to radians
+    const Lp_r = deg2rad(Lp);
+    const M_r = deg2rad(M);
+    const Ms_r = deg2rad(Ms);
+    const Dm_r = deg2rad(Dm);
+    const F_r = deg2rad(F);
+
+    // Periodic terms (low-precision; main contributors)
+    const lambda = Lp_r
+        + deg2rad(6.289) * Math.sin(M_r)
+        + deg2rad(1.274) * Math.sin(2 * Dm_r - M_r)
+        + deg2rad(0.658) * Math.sin(2 * Dm_r)
+        + deg2rad(0.214) * Math.sin(2 * M_r)
+        - deg2rad(0.11) * Math.sin(Ms_r);
+
+    const beta = deg2rad(5.128) * Math.sin(F_r)
+        + deg2rad(0.280) * Math.sin(M_r + F_r)
+        + deg2rad(0.277) * Math.sin(M_r - F_r)
+        + deg2rad(0.173) * Math.sin(2 * Dm_r - F_r);
+
+    // Ecliptic rectangular coordinates (unit sphere; distance ignored for direction)
+    const x_ecl = Math.cos(beta) * Math.cos(lambda);
+    const y_ecl = Math.cos(beta) * Math.sin(lambda);
+    const z_ecl = Math.sin(beta);
+
+    // Convert from ecliptic to equatorial coordinates by obliquity
+    const eps = deg2rad(23.439291 - 0.0130042 * T);
+    const x_eq = x_ecl;
+    const y_eq = y_ecl * Math.cos(eps) - z_ecl * Math.sin(eps);
+    const z_eq = y_ecl * Math.sin(eps) + z_ecl * Math.cos(eps);
+
+    // Rotate from ECI (equatorial) to ECEF using GMST
     let GMST = 280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * T * T - (T * T * T) / 38710000.0;
     GMST = ((GMST % 360) + 360) % 360;
     const gmstRad = deg2rad(GMST);
-    const x = xeq * Math.cos(gmstRad) + yeq * Math.sin(gmstRad);
-    const y = -xeq * Math.sin(gmstRad) + yeq * Math.cos(gmstRad);
-    const z = zeq;
-    return new THREE.Vector3(x, y, z).normalize();
+
+    const x = x_eq * Math.cos(gmstRad) + y_eq * Math.sin(gmstRad);
+    const y = -x_eq * Math.sin(gmstRad) + y_eq * Math.cos(gmstRad);
+    const z = z_eq;
+    const v = new THREE.Vector3(x, y, z);
+    return v.normalize();
 }
 
 // WGS84 geodetic <-> ECEF helper removed (location features disabled)
@@ -240,27 +266,6 @@ function wireUiToggles() {
         } else console.warn('wireUiToggles: element not found', id);
     });
 
-    // realtime and datetime controls
-    const realtime = document.getElementById('chk-realtime');
-    const dtInput = document.getElementById('inp-datetime');
-    if (realtime && dtInput) {
-        realtime.addEventListener('change', () => {
-            console.log('ui-change chk-realtime', realtime.checked);
-            if (realtime.checked) {
-                simTime = new Date();
-                dtInput.value = toLocalDatetimeInputValue(simTime);
-            }
-        });
-        try { realtime.onchange = () => { console.log('ui-onchange-fallback chk-realtime', realtime.checked); if (realtime.checked) { simTime = new Date(); dtInput.value = toLocalDatetimeInputValue(simTime); } }; } catch (e) {}
-        dtInput.addEventListener('change', () => {
-            console.log('ui-change inp-datetime', dtInput.value);
-            if (!realtime.checked) {
-                const v = dtInput.value;
-                if (v) simTime = new Date(v);
-            }
-        });
-        try { dtInput.onchange = () => { console.log('ui-onchange-fallback inp-datetime', dtInput.value); if (!realtime.checked) { const v = dtInput.value; if (v) simTime = new Date(v); } }; } catch (e) {}
-    }
     const issChk = document.getElementById('chk-iss');
     if (issChk) {
         issChk.addEventListener('change', () => { console.log('ui-change chk-iss', issChk.checked); updateIssVisibility(issChk.checked); });
@@ -268,11 +273,6 @@ function wireUiToggles() {
     }
 
     // PBR toggle
-    const pbrChk = document.getElementById('chk-pbr');
-    if (pbrChk) {
-    pbrChk.addEventListener('change', () => { console.log('ui-change chk-pbr', pbrChk.checked); setEarthMaterial(pbrChk.checked); });
-    try { pbrChk.onchange = () => { console.log('ui-onchange-fallback chk-pbr', pbrChk.checked); setEarthMaterial(pbrChk.checked); }; } catch (e) {}
-    }
 
     // atmosphere range
     const atRange = document.getElementById('range-atmo');
@@ -297,18 +297,7 @@ function wireUiToggles() {
     try { chkAtm.onchange = () => { console.log('ui-onchange-fallback chk-atmosphere', chkAtm.checked); if (atmosphere) atmosphere.visible = chkAtm.checked; }; } catch (e) {}
     }
 
-    const nightRange = document.getElementById('range-night');
-    if (nightRange) {
-        nightRange.addEventListener('input', () => {
-            const v = parseFloat(nightRange.value || 0.25);
-            console.log('ui-input range-night', v);
-            nightPending = v;
-            if (atmosphere && atmosphere.material && atmosphere.material.uniforms && atmosphere.material.uniforms.u_nightGlow) {
-                atmosphere.material.uniforms.u_nightGlow.value = nightPending;
-            }
-        });
-        try { nightRange.oninput = () => { const v = parseFloat(nightRange.value || 0.25); console.log('ui-oninput-fallback range-night', v); if (atmosphere && atmosphere.material && atmosphere.material.uniforms && atmosphere.material.uniforms.u_nightGlow) atmosphere.material.uniforms.u_nightGlow.value = v; }; } catch (e) {}
-    }
+    // (removed realtime, PBR toggle, and night-glow UI controls per user request)
 
     const fadeRange = document.getElementById('range-fade');
     if (fadeRange) {
@@ -321,6 +310,45 @@ function wireUiToggles() {
             }
         });
         try { fadeRange.oninput = () => { const v = parseFloat(fadeRange.value || 4.0); console.log('ui-oninput-fallback range-fade', v); if (atmosphere && atmosphere.material && atmosphere.material.uniforms && atmosphere.material.uniforms.u_fadeHeight) atmosphere.material.uniforms.u_fadeHeight.value = v; }; } catch (e) {}
+    }
+
+    // Sun and Moon distance sliders (live tuning)
+    const sunRange = document.getElementById('range-sun-distance');
+    const sunVal = document.getElementById('val-sun-distance');
+    if (sunRange) {
+        // set initial display
+        if (sunVal) sunVal.textContent = sunRange.value;
+        sunRange.addEventListener('input', () => {
+            const v = parseFloat(sunRange.value || sunDistance);
+            sunDistance = v;
+            if (sunVal) sunVal.textContent = v.toFixed(2);
+            // rescale sun sprite parts for visual consistency
+            try {
+                if (sunObject && sunObject.userData) {
+                    const core = sunObject.userData.core;
+                    const corona = sunObject.userData.corona;
+                    const halo = sunObject.userData.halo;
+                    if (core) core.scale.set(1.8 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.8 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
+                    if (corona) corona.scale.set(4.2 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 4.2 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
+                    if (halo) halo.scale.set(9.0 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 9.0 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
+                }
+            } catch (e) {}
+        });
+        try { sunRange.oninput = () => { const v = parseFloat(sunRange.value || sunDistance); sunDistance = v; if (sunVal) sunVal.textContent = v.toFixed(2); }; } catch (e) {}
+    }
+
+    const moonRange = document.getElementById('range-moon-distance');
+    const moonVal = document.getElementById('val-moon-distance');
+    if (moonRange) {
+        if (moonVal) moonVal.textContent = moonRange.value;
+        moonRange.addEventListener('input', () => {
+            const v = parseFloat(moonRange.value || moonDistance);
+            moonDistance = v;
+            if (moonVal) moonVal.textContent = v.toFixed(2);
+            // reposition moon immediately
+            try { if (moonObject) moonObject.position.setLength(moonDistance); } catch (e) {}
+        });
+        try { moonRange.oninput = () => { const v = parseFloat(moonRange.value || moonDistance); moonDistance = v; if (moonVal) moonVal.textContent = v.toFixed(2); }; } catch (e) {}
     }
 }
 
@@ -694,15 +722,70 @@ function stopTleUpdateLoop() {
 
 // Simple Sun representation (mesh + directional light)
 function createSun() {
-    const geom = new THREE.SphereGeometry(0.1, 16, 16);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xffee88, emissive: 0xffee88 });
-    sunObject = new THREE.Mesh(geom, mat);
-    sunObject.position.set(5, 2, 5);
-    scene.add(sunObject);
+    // Create an additive sun sprite (bright disk + soft corona layers)
+    const sunGroup = new THREE.Group();
 
-    sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    sunLight.position.copy(sunObject.position);
+    // Primary sun sprite (sharp center)
+    const sunTex = createSunTexture(1024);
+    const spriteMat = new THREE.SpriteMaterial({ map: sunTex, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    const sunCore = new THREE.Sprite(spriteMat);
+    // scale sprites so the Sun appears large and detailed when it's closer
+    sunCore.scale.set(1.8 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.8 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
+    sunGroup.add(sunCore);
+
+    // Corona layer (warmer, larger)
+    const coronaTex = createSunTexture(1024, { innerColor: '#fff9e6', outerColor: '#ffbb55', falloff: 0.9 });
+    const coronaMat = new THREE.SpriteMaterial({ map: coronaTex, color: 0xffeeaa, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    const corona = new THREE.Sprite(coronaMat);
+    corona.scale.set(4.2 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 4.2 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
+    sunGroup.add(corona);
+
+    // Soft halo (very large, faint)
+    const haloTex = createSunTexture(1024, { innerColor: '#ffeecc', outerColor: '#221100', falloff: 0.6 });
+    const haloMat = new THREE.SpriteMaterial({ map: haloTex, color: 0xffeecc, transparent: true, blending: THREE.AdditiveBlending, opacity: 0.5, depthWrite: false });
+    const halo = new THREE.Sprite(haloMat);
+    halo.scale.set(9.0 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 9.0 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
+    sunGroup.add(halo);
+
+    sunObject = sunGroup;
+    // expose sprite parts so UI sliders can rescale them at runtime
+    try { sunObject.userData = { core: sunCore, corona: corona, halo: halo }; } catch (e) {}
+    scene.add(sunObject);
+    // keep sun sprite always rendered (avoid accidental frustum culling)
+    try { sunObject.traverse((o) => { if (o && typeof o.frustumCulled !== 'undefined') o.frustumCulled = false; }); } catch (e) {}
+
+    // Directional light representing the sun's illumination
+    sunLight = new THREE.DirectionalLight(0xfff3d9, 1.25);
+    sunLight.castShadow = false;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
     scene.add(sunLight);
+}
+
+// create a radial gradient texture for the sun/corona
+function createSunTexture(size, opts) {
+    opts = opts || {};
+    const inner = opts.innerColor || '#ffffff';
+    const outer = opts.outerColor || '#ffdd66';
+    const falloff = (opts.falloff !== undefined) ? opts.falloff : 0.85;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size / 2;
+    // central bright disk
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0.0, inner);
+    grad.addColorStop(falloff * 0.35, '#fff6d9');
+    grad.addColorStop(falloff * 0.65, outer);
+    grad.addColorStop(1.0, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
 }
 
 // Comet utilities removed
@@ -807,11 +890,89 @@ function createNightLights() {
 
 // Moon placeholder
 function createMoon() {
-    const geom = new THREE.SphereGeometry(0.27, 32, 32);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 1.0, metalness: 0.0 });
-    moonObject = new THREE.Mesh(geom, mat);
-    moonObject.position.set(2, 0, 0);
-    moonObject.userData = { material: mat };
+    // Moon texture (publicly available low-res for demo). Use fallback canvas if unavailable.
+    const loader = new THREE.TextureLoader();
+    const moonTexUrl = 'https://threejs.org/examples/textures/planets/moon_1024.jpg';
+    const moonNormUrl = 'https://threejs.org/examples/textures/planets/moon_normal.jpg';
+    const moonTex = loader.load(moonTexUrl, undefined, undefined, () => {
+        console.warn('Moon texture failed to load, using fallback');
+    });
+    const moonNormal = loader.load(moonNormUrl, undefined, undefined, () => {});
+
+    // Shader material to compute lunar phases and subtle earthshine on the night side
+    const moonMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            u_map: { value: moonTex },
+            u_normal: { value: moonNormal },
+            u_sunDir: { value: new THREE.Vector3(1, 0, 0) },
+            u_earthColor: { value: new THREE.Color(0x223355) },
+            u_earthshineIntensity: { value: 0.06 },
+            u_lightIntensity: { value: 1.0 }
+        },
+        vertexShader: `
+            varying vec3 vNormal;
+            varying vec3 vWorldPos;
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                vNormal = normalize(normalMatrix * normal);
+                vec4 wp = modelMatrix * vec4(position, 1.0);
+                vWorldPos = wp.xyz;
+                gl_Position = projectionMatrix * viewMatrix * wp;
+            }
+        `,
+        fragmentShader: `
+            uniform sampler2D u_map;
+            uniform vec3 u_sunDir;
+            uniform vec3 u_earthColor;
+            uniform float u_earthshineIntensity;
+            uniform float u_lightIntensity;
+            varying vec3 vNormal;
+            varying vec3 vWorldPos;
+            varying vec2 vUv;
+
+            void main() {
+                vec3 n = normalize(vNormal);
+                // Lambertian illumination from sun direction
+                float sunDot = clamp(dot(n, normalize(u_sunDir)), -1.0, 1.0);
+                // fetch albedo
+                vec3 albedo = texture2D(u_map, vUv).rgb;
+
+                // Day side lit color
+                float diff = max(sunDot, 0.0);
+                vec3 day = albedo * (0.12 + diff * u_lightIntensity);
+
+                // Night side: Earthshine (soft bluish fill on the dark limb)
+                float nightFac = smoothstep(-0.05, -0.5, sunDot);
+                // Earthshine stronger near limb (perpendicular to sunDir)
+                float limb = pow(1.0 - max(0.0, dot(n, vec3(0.0,1.0,0.0))), 1.5);
+                vec3 earthshine = u_earthColor * u_earthshineIntensity * limb * nightFac;
+
+                // subtle ambient fill for deep shadow
+                vec3 ambient = albedo * 0.02;
+
+                vec3 color = day + earthshine + ambient;
+                // darken and desaturate in shadow
+                if (diff <= 0.0) {
+                    color *= 0.55;
+                }
+
+                // apply slight gamma
+                color = pow(color, vec3(1.0/1.8));
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `,
+        side: THREE.FrontSide
+    });
+
+    const geom = new THREE.SphereGeometry(0.27, 128, 128);
+    moonObject = new THREE.Mesh(geom, moonMaterial);
+    moonObject.castShadow = false;
+    moonObject.receiveShadow = false;
+    // place the Moon at visual moonDistance scaled position
+    moonObject.position.set(moonDistance, 0, 0);
+    moonObject.userData = { material: moonMaterial };
+    try { moonObject.frustumCulled = false; } catch (e) {}
     scene.add(moonObject);
 }
 
@@ -1006,23 +1167,7 @@ function init() {
 
 // Debug helper: update the on-screen UI debug panel with current control / uniform values
 function updateUiDebug() {
-    try {
-        const dbg = document.getElementById('ui-debug');
-        if (!dbg) return;
-        const atRange = document.getElementById('range-atmo');
-        const atVal = atRange ? parseFloat(atRange.value) : null;
-        const nightRange = document.getElementById('range-night');
-        const nightVal = nightRange ? parseFloat(nightRange.value) : null;
-        const fadeRange = document.getElementById('range-fade');
-        const fadeVal = fadeRange ? parseFloat(fadeRange.value) : null;
-        let uniAt = 'n/a', uniNight = 'n/a', uniFade = 'n/a';
-        if (atmosphere && atmosphere.material && atmosphere.material.uniforms) {
-            if (atmosphere.material.uniforms.u_exposure) uniAt = atmosphere.material.uniforms.u_exposure.value.toFixed(3);
-            if (atmosphere.material.uniforms.u_nightGlow) uniNight = atmosphere.material.uniforms.u_nightGlow.value.toFixed(3);
-            if (atmosphere.material.uniforms.u_fadeHeight) uniFade = atmosphere.material.uniforms.u_fadeHeight.value.toFixed(3);
-        }
-        dbg.innerText = `Controls -> atmo: ${atVal}  night: ${nightVal}  fade: ${fadeVal}\nUniforms -> exposure: ${uniAt}  nightGlow: ${uniNight}  fadeHeight: ${uniFade}`;
-    } catch (e) {}
+    // ui-debug removed per user request
 }
 
 function setupLighting() {
@@ -1066,16 +1211,41 @@ function updateSunPosition() {
     try {
         if (moonObject) {
             const moonDir = computeMoonEcef(simTime || new Date());
-            // place moon at distance
-            moonObject.position.copy(moonDir.clone().multiplyScalar(2.0));
-            // approximate phase by angle between sunDir and moon direction
-            const phaseCos = dot3(sunDir, moonDir);
-            const illum = Math.max(0.0, phaseCos * 0.5 + 0.5);
-            if (moonObject.userData && moonObject.userData.material) {
-                const m = moonObject.userData.material;
-                m.emissive = new THREE.Color(0x111111).multiplyScalar(illum * 0.8 + 0.1);
-                m.needsUpdate = true;
+            // visual distance (scaled) so moon is visible but not too far
+            moonObject.position.copy(moonDir.clone().multiplyScalar(moonDistance));
+
+            // update shader uniform with sun direction so phases are correct
+            try {
+                if (moonObject.userData && moonObject.userData.material && moonObject.userData.material.uniforms && moonObject.userData.material.uniforms.u_sunDir) {
+                    moonObject.userData.material.uniforms.u_sunDir.value.copy(sunDir);
+                }
+            } catch (e) {}
+
+            // tidal locking: rotate the moon so the same face generally points at Earth center
+            try {
+                // moon should look at Earth's center (0,0,0)
+                moonObject.lookAt(new THREE.Vector3(0, 0, 0));
+            } catch (e) {}
+        }
+    } catch (e) {}
+
+    // update sun sprite and directional light to match computed sunDir
+    try {
+        if (sunObject) {
+            // sunObject may be a Group or Mesh; position it at sunDir * sunDistance
+            const pos = sunDir.clone().multiplyScalar(sunDistance);
+            sunObject.position.copy(pos);
+        }
+        if (sunLight) {
+            sunLight.position.copy(sunDir.clone().multiplyScalar(sunDistance));
+            // ensure the directional light points toward Earth (origin)
+            if (sunLight.target) sunLight.target.position.set(0, 0, 0);
+            else {
+                try { sunLight.target = new THREE.Object3D(); sunLight.target.position.set(0,0,0); scene.add(sunLight.target); } catch (e) {}
             }
+            // adjust intensity modestly based on sun elevation
+            const elev = sunDir.y;
+            sunLight.intensity = Math.max(0.6, 0.9 + elev * 0.8);
         }
     } catch (e) {}
 }
