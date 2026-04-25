@@ -1,63 +1,226 @@
-# 3D-Earth
+# OSINT Intelligence Globe
 
-A lightweight, browser-based 3D Earth visualizer with satellites, atmosphere, day/night lighting, and configurable UI controls.
-
-This README documents both what you see on the page and what runs under the hood so you — or other developers — can understand, run, and extend the project.
+A Palantir-style, browser-based 3D Earth intelligence platform built with Three.js, Node.js/Express, and WebSockets. Features live multi-domain data ingest, threat scoring, analyst workflows, and a dark-ops dashboard UI — all running locally with zero cloud dependencies.
 
 ---
 
 ## Quick start
 
-Open a simple static server in the project folder and navigate to http://localhost:8000
+```bash
+# 1. Install dependencies
+npm install
 
-PowerShell (recommended):
+# 2. Copy and configure environment
+copy .env.example .env   # Windows
+# cp .env.example .env   # macOS/Linux
 
-```powershell
-# From the project folder (Windows PowerShell)
-python -m http.server 8000
-# or with Node (if you prefer):
-npx http-server -p 8000
+# 3. Start the secure gateway
+npm start
+# or for development with auto-reload:
+npm run dev
 ```
 
-Then open http://localhost:8000 in your browser.
-
-Files of primary interest:
-- `index.html` — application shell and UI markup (root, keeping deployment safe)
-- `public/css/style.css` — page and UI styling
-- `public/js/script.js` — main application logic (rendering, scene setup, UI wiring)
-- `public/js/sgp4-worker.js` — optional Web Worker for SGP4 satellite propagation
-- `server.js` — Secure Node.js Gateway & WebSocket streamer
-- `SECURITY_AUDIT.md` — Hack-proofing status and threat model
+Open **http://localhost:3000** in your browser.
 
 ---
 
-## High-level overview — what you're seeing
+## Architecture
 
-When the app runs, you should see a fullscreen WebGL canvas rendering a 3D planet with:
-
-- The Earth sphere textured with diffuse, bump/normal, and specular maps (day textures).
-- A semi-transparent cloud layer that rotates slightly faster than the globe.
-- A volumetric-like atmosphere (Rayleigh + Mie approximation) implemented in a three.js `ShaderMaterial` (BackSide) that provides a soft scattering effect around the globe.
-- Day/night shading with a night-lights overlay shader that uses an Earth-night texture and a `u_sunDir` uniform to determine the dark side.
-- A starfield of points placed at large distances to provide depth and a space-like backdrop.
-- Satellites represented as GPU points; a specific ISS model placeholder is present (and optionally loaded via GLTF), and many synthetic satellites populate orbit bands for visual density.
-- A simple moon placeholder orbiting the scene.
-- A directional sun and adaptive ambient lighting to simulate day/night intensity changes.
-
-Controls are available in a compact panel (top-right by default). Controls include toggles for satellites, currents, moon, magnetic field, PBR material, atmosphere on/off, atmosphere exposure (range), night glow (range), fade height, real-time vs. manual time with a datetime input, and a Reset button that restores the initial camera view.
-
-There is also a small, unobtrusive footer credit link: `by https://perezchris.netlify.app/`.
+```
+┌─────────────────────────────────────────────────────────┐
+│  Browser (WebGL + Three.js r128)                        │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
+│  │ script.js│ │osint-dash│ │aoi-tool  │ │intel-ovrl│  │
+│  │ 3D Globe │ │WS client │ │AOI/Notes │ │Clusters  │  │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
+└───────┼─────────────┼─────────────┼─────────────┼───────┘
+        │  WebSocket  │  REST API   │             │
+        ▼             ▼             ▼             ▼
+┌─────────────────────────────────────────────────────────┐
+│  server.js (Express 5 + ws)                             │
+│  Security: Helmet │ CORS │ RateLimit │ HMAC Auth        │
+│                                                         │
+│  REST Routes                   WebSocket /ws/live       │
+│  /api/health                   → {type:'connected'}     │
+│  /api/auth/token               → {type:'delta_update'}  │
+│  /api/satellites               broadcast every 5s       │
+│  /api/flights                                           │
+│  /api/earthquakes                                       │
+│  /api/thermal                                           │
+│  /api/aoi      (CRUD)                                   │
+│  /api/notes    (CRUD)                                   │
+│                                                         │
+│  Data Ingest: TLE/SGP4 │ OpenSky │ USGS │ FIRMS        │
+│  Intelligence: threat scoring │ clustering │ alerting   │
+└─────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## High-level overview — what you don't see (internals)
+## File structure
 
-This section documents the main architectural pieces, libraries used, and non-obvious runtime behavior.
+```
+index.html              Entry point (must stay at root for deployment)
+server.js               Express 5 + WebSocket secure gateway
+package.json            Dependencies: express, ws, helmet, cors, dotenv, rate-limit
 
-### Libraries & external assets
-- three.js (r128) — 3D renderer, materials, geometries, `OrbitControls`, `GLTFLoader`.
-- satellite.js — SGP4 propagation library (used either inside the main thread or inside the worker).
-- Optional GLTF ISS model loaded via `GLTFLoader` when available.
+public/
+  css/
+    style.css           Base globe + controls panel styles
+    osint.css           OSINT dashboard overlay (topbar, layers, inspector,
+                        alerts, analyst panel, search panel, minimap)
+  js/
+    script.js           Three.js globe renderer, shaders, satellite points
+    osint-dashboard.js  WebSocket client, point clouds, layer toggles, inspector
+    aoi-tool.js         Analyst auth, AOI polygon draw tool, geo-pinned notes
+    intel-overlay.js    Threat markers, cluster bubbles, search, minimap canvas
+    sgp4-worker.js      Optional Web Worker for SGP4 satellite propagation
+
+src/
+  auth.js               HMAC-SHA256 token generation and validation
+  aoi.js                In-memory AOI store (id, name, polygon, timestamps)
+  notes.js              In-memory analyst notes store
+  alertEngine.js        Rule-based alert generation (threat score, seismic mag)
+  cache.js              TTL cache for external API responses
+  intelligence.js       Threat scoring, entity history, cluster detection
+  routes/
+    api.js              GET /api/health, /satellites, /flights, /earthquakes, /thermal
+    aoi.js              GET|POST|DELETE /api/aoi and /api/aoi/:id
+    notes.js            GET|POST|DELETE /api/notes and /api/notes/:id
+  ingest/
+    tle.js              Celestrak TLE fetch + SGP4 position propagation
+    flights.js          OpenSky Network live flight positions
+    earthquakes.js      USGS Earthquake Hazards real-time feed
+    thermal.js          NASA FIRMS active fire/thermal hotspots
+  middleware/
+    sanitize.js         Request body sanitization (HTML escape, length limits)
+    rateLimitWS.js      Per-IP WebSocket connection + message rate limiting
+```
+
+---
+
+## API Endpoints
+
+All endpoints are served at `http://localhost:3000`. Authenticated endpoints require `Authorization: Bearer <token>` header. Tokens are obtained via `POST /api/auth/token`.
+
+| Method | Path                  | Auth     | Description                                 |
+|--------|-----------------------|----------|---------------------------------------------|
+| GET    | `/api/health`         | None     | Server status: `{status, uptime}`           |
+| POST   | `/api/auth/token`     | None     | Issue HMAC token: `{token, role, expires}`  |
+| GET    | `/api/satellites`     | None     | SGP4 propagated satellite positions         |
+| GET    | `/api/flights`        | None     | Live flight positions + threat scores       |
+| GET    | `/api/earthquakes`    | None     | Recent earthquakes (USGS, M1.0+)            |
+| GET    | `/api/thermal`        | None     | Active thermal/fire hotspots (NASA FIRMS)   |
+| GET    | `/api/positions`      | None     | Combined: satellites + flights + EQ + thermal |
+| GET    | `/api/aoi`            | Viewer+  | List all AOIs                               |
+| POST   | `/api/aoi`            | Analyst+ | Create AOI polygon: `{name, polygon[][]}`   |
+| DELETE | `/api/aoi/:id`        | Analyst+ | Delete AOI by id                            |
+| GET    | `/api/notes`          | Viewer+  | List analyst notes                          |
+| POST   | `/api/notes`          | Analyst+ | Create note: `{title, body, lat?, lon?}`    |
+| DELETE | `/api/notes/:id`      | Analyst+ | Delete note by id                           |
+
+### WebSocket
+
+Connect to `ws://localhost:3000/ws/live`. Messages:
+
+```jsonc
+// On connect
+{"type": "connected", "ts": 1700000000000}
+
+// Broadcast every 5 seconds
+{
+  "type": "delta_update",
+  "flights": [...],
+  "earthquakes": [...],
+  "thermal": [...],
+  "intelligence": {
+    "flightClusters": [...],
+    "earthquakeClusters": [...],
+    "highThreatFlights": [...]
+  },
+  "alerts": [...]
+}
+```
+
+---
+
+## Environment variables
+
+Copy `.env.example` to `.env` and configure:
+
+| Variable           | Default   | Description                                      |
+|--------------------|-----------|--------------------------------------------------|
+| `PORT`             | `3000`    | HTTP server port                                 |
+| `NODE_ENV`         | —         | Set to `production` for stricter security        |
+| `JWT_SECRET`       | required  | Secret for HMAC-SHA256 token signing             |
+| `ALLOWED_ORIGINS`  | `*`       | Comma-separated allowed CORS origins (prod only) |
+| `TLE_URL`          | Celestrak | Override TLE data source URL                     |
+
+---
+
+## Security features
+
+Nine active security layers:
+1. **Helmet** — 15 HTTP security headers (CSP, HSTS, X-Frame-Options, etc.)
+2. **CORS** — Origin whitelist, allowed methods (GET/POST/DELETE), Authorization header
+3. **Rate limiting** — 120 req/15 min per IP on all `/api/*` routes
+4. **HMAC-SHA256 auth** — Signed tokens with expiry; roles: viewer/analyst/admin
+5. **Input sanitization** — HTML-escaped body fields, max field lengths enforced
+6. **WebSocket guard** — Max 5 concurrent connections per IP
+7. **WS message rate limit** — Max 30 messages/10s per IP; auto-disconnect violators
+8. **Idle timeout** — WS connections closed after 2 minutes of inactivity
+9. **Content Security Policy** — Strict allowlist for scripts, styles, images, connect
+
+---
+
+## Intelligence features
+
+- **Threat scoring** — Each flight scored 0–100 based on altitude, speed, heading deviation, restricted zones
+- **Entity history** — 60-second sliding window of position deltas for anomaly detection
+- **Cluster detection** — DBSCAN-style geographic clustering of flights and earthquakes
+- **Auto-alerts** — Alert engine fires on: high-threat flights (≥60), large earthquakes (M≥5.5), thermal surges
+- **AOI polygons** — Analyst can draw polygons on the globe; stored server-side, rendered as LineLoops
+- **Analyst notes** — Geo-pinned intelligence notes with title, body, and optional lat/lon
+- **Search** — Real-time filter across all live flights and earthquakes by callsign/location/country
+- **Minimap** — 2D lat/lon overview canvas updated every 5 seconds with all active entities
+
+---
+
+## UI Panels
+
+| Panel | Position | Description |
+|-------|----------|-------------|
+| Topbar | Top full-width | WS status, satellite/flight/seismic counts, live clock |
+| Layer panel | Left | Toggle visibility + count for each data layer |
+| Inspector | Right drawer | Detailed view of any clicked globe object |
+| Alerts | Bottom-left | Auto-scrolling threat/event alert feed |
+| Analyst tools | Right of inspector | Auth, AOI draw, notes, snapshot export |
+| Search | Bottom-left (above alerts) | Live keyword filter across all entities |
+| Minimap | Bottom-right | 2D orthographic overview of all active entities |
+| Controls | Top-right | Globe render settings (atmosphere, sun/moon distance, overlays) |
+
+---
+
+## Development status
+
+All 5 phases complete:
+
+| Phase | Feature | Status |
+|-------|---------|--------|
+| 0 | 3D globe (Three.js, atmosphere, day/night, satellites) | ✅ |
+| 1 | Secure Express gateway, WebSocket live ingest | ✅ |
+| 2 | OSINT dashboard overlay, layer toggles, inspector | ✅ |
+| 3 | Alert engine, threat scoring, security hardening | ✅ |
+| 4 | Analyst tools: auth, AOI draw, geo-notes | ✅ |
+| 5 | Intelligence overlay: clusters, minimap, search | ✅ |
+| — | Refactor: external CSS/JS, no inline styles, Express 5 compat | ✅ |
+
+---
+
+## Credits
+
+Built by [Perez C](https://perezchris.netlify.app/) · [GitHub](https://github.com/PerezChris99/3D-Earth)
+
 - Textures are loaded from threejs example assets or fallback generated canvases when remote textures fail.
 
 ### Satellite propagation (SGP4)
