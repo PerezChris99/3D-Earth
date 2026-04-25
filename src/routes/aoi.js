@@ -36,7 +36,7 @@ router.post('/', requireAuth, requireRole('analyst'), (req, res) => {
         }
     }
     try {
-        const aoi = createAOI(name, req.user.userId, polygon);
+        const aoi = createAOI(name, req.user.sub, polygon);
         res.status(201).json({ aoi });
     } catch (err) {
         res.status(400).json({ error: err.message });

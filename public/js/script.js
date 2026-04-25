@@ -290,7 +290,11 @@ function wireUiToggles() {
     map.forEach(([id, , fn]) => {
         const el = document.getElementById(id);
         if (el) {
-            el.addEventListener('change', () => { console.log('ui-change', id, el.checked); fn(el.checked); });
+            el.addEventListener('change', () => {
+                console.log('ui-change', id, el.checked);
+                fn(el.checked);
+                if (window.sendControlCmd) window.sendControlCmd('set_layer', { layer: id.replace('chk-', ''), enabled: el.checked });
+            });
             // defensive fallback in case addEventListener is not effective in some environments
             try { el.onchange = () => { console.log('ui-onchange-fallback', id, el.checked); fn(el.checked); }; } catch (e) {}
         } else console.warn('wireUiToggles: element not found', id);
@@ -300,6 +304,17 @@ function wireUiToggles() {
     if (issChk) {
         issChk.addEventListener('change', () => { console.log('ui-change chk-iss', issChk.checked); updateIssVisibility(issChk.checked); });
         try { issChk.onchange = () => { console.log('ui-onchange-fallback chk-iss', issChk.checked); updateIssVisibility(issChk.checked); }; } catch (e) {}
+    }
+
+    // Controls panel collapse/expand toggle
+    const collapseBtn = document.getElementById('ctrl-collapse-btn');
+    const controlsPanel = document.getElementById('controls');
+    if (collapseBtn && controlsPanel) {
+        collapseBtn.addEventListener('click', () => {
+            const isCollapsed = controlsPanel.classList.toggle('collapsed');
+            collapseBtn.textContent = isCollapsed ? '+' : '−';
+            collapseBtn.title = isCollapsed ? 'Expand controls panel' : 'Collapse controls panel';
+        });
     }
 
     // PBR toggle
@@ -317,6 +332,7 @@ function wireUiToggles() {
             if (atmosphere && atmosphere.material && atmosphere.material.uniforms && atmosphere.material.uniforms.u_exposure) {
                 atmosphere.material.uniforms.u_exposure.value = atmoPendingValue;
             }
+            if (window.sendControlCmd) window.sendControlCmd('set_setting', { key: 'atmo_exposure', value: proc });
         });
         try { atRange.oninput = () => { const v = parseFloat(atRange.value || 1.0); console.log('ui-oninput-fallback range-atmo', v); atmoPendingRaw = v; const proc = Math.pow(v, 1.2); atmoPendingValue = proc; if (atmosphere && atmosphere.material && atmosphere.material.uniforms && atmosphere.material.uniforms.u_exposure) atmosphere.material.uniforms.u_exposure.value = atmoPendingValue; }; } catch (e) {}
     }
@@ -338,6 +354,7 @@ function wireUiToggles() {
             if (atmosphere && atmosphere.material && atmosphere.material.uniforms && atmosphere.material.uniforms.u_fadeHeight) {
                 atmosphere.material.uniforms.u_fadeHeight.value = fadePending;
             }
+            if (window.sendControlCmd) window.sendControlCmd('set_setting', { key: 'fade_height', value: v });
         });
         try { fadeRange.oninput = () => { const v = parseFloat(fadeRange.value || 4.0); console.log('ui-oninput-fallback range-fade', v); if (atmosphere && atmosphere.material && atmosphere.material.uniforms && atmosphere.material.uniforms.u_fadeHeight) atmosphere.material.uniforms.u_fadeHeight.value = v; }; } catch (e) {}
     }
@@ -363,6 +380,7 @@ function wireUiToggles() {
                     if (halo) halo.scale.set(9.0 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 9.0 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
                 }
             } catch (e) {}
+            if (window.sendControlCmd) window.sendControlCmd('set_setting', { key: 'sun_distance', value: v });
         });
         try { sunRange.oninput = () => { const v = parseFloat(sunRange.value || sunDistance); sunDistance = v; if (sunVal) sunVal.textContent = v.toFixed(2); }; } catch (e) {}
     }
@@ -377,6 +395,7 @@ function wireUiToggles() {
             if (moonVal) moonVal.textContent = v.toFixed(2);
             // reposition moon immediately
             try { if (moonObject) moonObject.position.setLength(moonDistance); } catch (e) {}
+            if (window.sendControlCmd) window.sendControlCmd('set_setting', { key: 'moon_distance', value: v });
         });
         try { moonRange.oninput = () => { const v = parseFloat(moonRange.value || moonDistance); moonDistance = v; if (moonVal) moonVal.textContent = v.toFixed(2); }; } catch (e) {}
     }

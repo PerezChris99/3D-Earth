@@ -32,10 +32,11 @@ body {
 /* Compact always-visible controls panel (small neat card) */
 .controls {
     position: fixed;
-    top: 12px;
+    top: 48px; /* below the 36px OSINT topbar + 12px gap */
     right: 12px;
     width: 210px;
     max-width: 45vw;
+    max-height: calc(100vh - 60px); /* viewport minus top offset and bottom gap */
     background: rgba(0,0,0,0.36);
     color: #dff;
     border-radius: 10px;
@@ -43,16 +44,26 @@ body {
     z-index: 1200;
     overflow: hidden;
     font-size: 14px;
+    display: flex;
+    flex-direction: column;
 }
-.controls .controls-header { background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.03); }
-.controls .controls-body { padding: 8px; max-height: calc(100vh - 36px); overflow-y: auto; }
+.controls .controls-header {
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 4px;
+    flex-shrink: 0;
+}
+.controls .controls-body { padding: 8px; max-height: calc(100vh - 120px); overflow-y: auto; overflow-x: hidden; flex: 1; }
 .controls input[type=range] { accent-color: #8ec5ff; }
 .controls button.btn-sm { padding: 6px 8px; font-size: 13px; }
 .controls label { color: #e6f7ff; }
 
 @media (max-width: 480px) {
-    .controls { width: 84vw; left: 8vw; right: 8vw; top: 8px; }
-    .controls .controls-body { max-height: calc(100vh - 24px); }
+    .controls { width: 84vw; left: 8vw; right: 8vw; top: 48px; max-height: calc(100vh - 60px); }
+    .controls .controls-body { max-height: calc(100vh - 120px); }
 }
 
 /* small visual tweaks */
@@ -64,9 +75,25 @@ body {
 .controls label { display: block; font-size: 13px; }
 
 @media (max-width: 640px) {
-    .controls { top: auto; bottom: 12px; right: 12px; transform: none; width: auto; border-radius: 12px; }
+    .controls { top: auto; bottom: 12px; right: 12px; transform: none; width: auto; border-radius: 12px; max-height: 60vh; }
     .controls button { text-align: center; }
+    .controls .controls-body { max-height: calc(60vh - 48px); }
 }
+
+/* Controls collapse button (desktop header) */
+.ctrl-collapse-btn {
+    background: none;
+    border: none;
+    color: #8ec5ff;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.ctrl-collapse-btn:hover { background: rgba(142, 197, 255, 0.15); }
 
 /* Hamburger toggle for mobile */
 .controls-hamburger {

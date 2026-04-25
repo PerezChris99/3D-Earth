@@ -35,7 +35,7 @@ router.post('/', requireAuth, requireRole('analyst'), (req, res) => {
         return res.status(400).json({ error: 'Invalid latitude' });
     if (lon  != null && (isNaN(Number(lon))  || Number(lon)  < -180 || Number(lon)  > 180))
         return res.status(400).json({ error: 'Invalid longitude' });
-    const note = createNote({ title, body, lat, lon, domain, userId: req.user.userId });
+    const note = createNote({ title, body, lat, lon, domain, userId: req.user.sub });
     res.status(201).json({ note });
 });
 

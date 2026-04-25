@@ -148,6 +148,8 @@
                 state.layers[key] = !state.layers[key];
                 tog.classList.toggle('on', state.layers[key]);
                 applyLayerVisibility(key, state.layers[key]);
+                // Notify backend of layer preference change
+                sendControlCmd('set_layer', { layer: key, enabled: state.layers[key] });
             });
         });
     }
@@ -272,12 +274,50 @@
     // ==========================================
     let ws = null;
     let reconnectTimer = null;
+    let _wsToken = null;
 
-    function connect() {
-        if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    /**
+     * Send a structured command to the backend via WebSocket.
+     * Safe to call even when the socket is not yet open — the message is silently dropped.
+     * @param {string} action   - 'set_layer' | 'set_setting'
+     * @param {object} data     - payload fields (layer, enabled, key, value, etc.)
+     */
+    function sendControlCmd(action, data) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
         try {
-            ws = new WebSocket(`${proto}//${location.host}/ws/live`);
+            ws.send(JSON.stringify({ type: 'cmd', action, ...data }));
+        } catch { /* connection may close between check and send */ }
+    }
+    // Expose globally so script.js and other modules can send settings
+    window.sendControlCmd = sendControlCmd;
+
+    /**
+     * Obtain a viewer-level auth token from the backend.
+     * Returns the token string or null on failure.
+     */
+    async function getViewerToken() {
+        try {
+            const res  = await fetch('/api/auth/token', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ userId: 'dashboard', role: 'viewer' }),
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data.token || null;
+        } catch { return null; }
+    }
+
+    async function connect() {
+        if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+
+        // Get (or reuse) a viewer token for WS authentication
+        if (!_wsToken) _wsToken = await getViewerToken();
+
+        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const tokenParam = _wsToken ? `?token=${encodeURIComponent(_wsToken)}` : '';
+        try {
+            ws = new WebSocket(`${proto}//${location.host}/ws/live${tokenParam}`);
         } catch (e) {
             scheduleReconnect();
             return;
@@ -287,11 +327,19 @@
             state.connected = true;
             updateStatus('connected');
             pushAlert('OSINT stream connected', 'info');
+            // Sync current layer state to backend on (re)connect
+            Object.entries(state.layers).forEach(([layer, enabled]) => {
+                sendControlCmd('set_layer', { layer, enabled });
+            });
         };
 
         ws.onmessage = (event) => {
             let msg;
             try { msg = JSON.parse(event.data); } catch { return; }
+            if (msg.type === 'cmd_ack') {
+                // Backend acknowledged a control command — no UI action needed
+                return;
+            }
             if (msg.type === 'delta_update') {
                 if (Array.isArray(msg.flights) && msg.flights.length > 0) {
                     state.flights = msg.flights;
@@ -326,9 +374,11 @@
             }
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
             state.connected = false;
             updateStatus('disconnected');
+            // If closed due to auth failure (1008), clear cached token so next attempt re-authenticates
+            if (event.code === 1008) _wsToken = null;
             scheduleReconnect();
         };
         ws.onerror = () => { ws.close(); };
