@@ -64,6 +64,8 @@
         const cnt = document.getElementById('alert-count');
         if (cnt) cnt.textContent = list.children.length;
     }
+    // Expose globally
+    window.pushAlert = pushAlert;
 
     // ==========================================
     // INSPECTOR PANEL
@@ -87,6 +89,8 @@
         body.innerHTML = buildInspectorRows(data);
         panel.classList.add('open');
     }
+    // Expose globally for aoi-tool.js and intel-overlay.js
+    window.osintOpenInspector = openInspector;
 
     function closeInspector() {
         const panel = document.getElementById('osint-inspector');
@@ -317,6 +321,8 @@
                         pushAlert(`[${label}] ${a.domain.toUpperCase()} — ${detail}`, level);
                     });
                 }
+                // Forward to intelligence overlay
+                if (window.intelHandleMessage) window.intelHandleMessage(msg);
             }
         };
 

@@ -24,6 +24,7 @@ const { getFlights }        = require('./src/ingest/flights');
 const { getEarthquakes }    = require('./src/ingest/earthquakes');
 const { getThermalHotspots }= require('./src/ingest/thermal');
 const { runChecks, drainQueue } = require('./src/alertEngine');
+const { processBroadcastData } = require('./src/intelligence');
 
 const app = express();
 const server = http.createServer(app);
@@ -145,12 +146,16 @@ async function runBroadcastCycle() {
         const f = flights.status === 'fulfilled'     ? flights.value     : [];
         const e = earthquakes.status === 'fulfilled' ? earthquakes.value : [];
         const t = thermal.status === 'fulfilled'     ? thermal.value     : [];
-        runChecks({ flights: f, earthquakes: e, thermal: t });
+        const enriched = processBroadcastData({ flights: f, earthquakes: e, thermal: t });
+        runChecks({ flights: enriched.flights, earthquakes: enriched.earthquakes, thermal: enriched.thermal });
         const pending = drainQueue();
         broadcast({
             type: 'delta_update',
             ts: Date.now(),
-            flights: f, earthquakes: e, thermal: t,
+            flights:      enriched.flights,
+            earthquakes:  enriched.earthquakes,
+            thermal:      enriched.thermal,
+            intelligence: enriched.intelligence,
             alerts: pending
         });
     } catch (err) { console.error('[Broadcast]', err.message); }

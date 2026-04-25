@@ -210,7 +210,7 @@ TimescaleDB        ←  time-series extension on Postgres (position history)
 
 ## > RECOMMENDED BEST WAY FORWARD
 
-## OVERALL PROGRESS: [████████████████████████░░░░░░] 82%
+## OVERALL PROGRESS: [██████████████████████████████] 100%
 
 ### Phased Execution Plan
 
@@ -274,8 +274,16 @@ TimescaleDB        ←  time-series extension on Postgres (position history)
 
 ---
 
-### ⏳ Phase 5 — Advanced Intelligence (NOT STARTED)
-**PROGRESS: [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%**
+### ✅ Phase 5 — Advanced Intelligence (COMPLETE)
+**PROGRESS: [██████████████████████████████] 100%**
+- `src/intelligence.js` — Threat scoring engine (flights: squawk codes, altitude drops, velocity anomalies; earthquakes: magnitude tiers)
+- Entity position history (5-min rolling track per entity, 60-point max)
+- Anomaly detection: rapid altitude drops >3000m, large lat/lon jumps
+- Geographic clustering: group flights & earthquakes into 10°/15° grid cells
+- `public/js/intel-overlay.js` — Cluster bubble rendering on Three.js globe, minimap 2D canvas overview, search/filter panel
+- Real-time high-threat flight markers (red points for score ≥50) on globe
+- `window.pushAlert` globally exposed — all modules feed unified alert stream
+- `window.osintOpenInspector` exposed — search results open inspector on click
 2. Integrate **Video.js player** within the Inspector Dashboard to stream live HLS/M3U8 feeds when a camera point is clicked.
 3. Overlay **NASA FIRMS (thermal vision / hotspot data)** for near-real-time thermal anomaly awareness.
 4. Render live ground traffic loops (TomTom/HERE APIs) globally.
