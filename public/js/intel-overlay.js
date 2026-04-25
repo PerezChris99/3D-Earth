@@ -114,30 +114,7 @@
     let allFlights = [];
     let allEarthquakes = [];
 
-    function injectSearchPanel() {
-        if (document.getElementById('search-panel')) return;
-        const panel = document.createElement('div');
-        panel.id = 'search-panel';
-        panel.innerHTML = `
-            <div class="panel-title" style="color:#00dcff;font-family:monospace;font-size:11px;padding:7px 10px;border-bottom:1px solid rgba(0,220,255,0.18);letter-spacing:1px;font-weight:700;">SEARCH</div>
-            <div style="padding:8px 10px">
-                <input id="search-input" placeholder="callsign / location / country…" style="width:100%;background:#0a1628;border:1px solid rgba(0,220,255,0.18);color:#c8e6f4;border-radius:3px;padding:4px 7px;font-size:11px;font-family:monospace;box-sizing:border-box;" />
-                <div id="search-results" style="max-height:160px;overflow-y:auto;margin-top:5px;"></div>
-            </div>
-        `;
-        Object.assign(panel.style, {
-            position: 'fixed', bottom: '190px', left: '12px', width: '300px',
-            background: 'var(--osint-bg,rgba(6,12,26,0.92))',
-            border: '1px solid rgba(0,220,255,0.18)',
-            borderRadius: '6px',
-            fontFamily: 'monospace',
-            fontSize: '11px',
-            color: '#c8e6f4',
-            zIndex: '1750',
-            backdropFilter: 'blur(8px)'
-        });
-        document.body.appendChild(panel);
-
+    function initSearchPanel() {
         const input = document.getElementById('search-input');
         input?.addEventListener('input', () => runSearch(input.value.trim().toLowerCase()));
     }
@@ -158,7 +135,7 @@
         });
 
         if (matches.length === 0) {
-            results.innerHTML = '<p style="color:#6a8fa8;font-size:10px;margin:4px 0">No results</p>';
+            results.innerHTML = '<p class="no-results">No results</p>';
             return;
         }
 
@@ -166,7 +143,7 @@
             const label = m._domain === 'flight'
                 ? `✈ ${esc(m.callsign || m.id)} — ${esc(m.country)}`
                 : `⚡ M${m.mag} — ${esc(m.place || '')}`;
-            return `<div class="sr-item" data-idx="${esc(String(matches.indexOf(m)))}" style="padding:3px 0;border-bottom:1px solid rgba(0,220,255,0.05);cursor:pointer;font-size:10px;">${label}</div>`;
+            return `<div class="sr-item" data-idx="${esc(String(matches.indexOf(m)))}">${label}</div>`;
         }).join('');
 
         results.querySelectorAll('.sr-item').forEach((el, i) => {
@@ -183,36 +160,9 @@
     let minimapCanvas = null;
     let minimapCtx    = null;
 
-    function injectMinimap() {
-        if (document.getElementById('osint-minimap')) return;
-        const wrap = document.createElement('div');
-        wrap.id = 'osint-minimap';
-        Object.assign(wrap.style, {
-            position: 'fixed', right: '12px', bottom: '0',
-            width: '200px', height: '110px',
-            background: 'rgba(6,12,26,0.88)',
-            border: '1px solid rgba(0,220,255,0.18)',
-            borderBottom: 'none',
-            borderRadius: '6px 6px 0 0',
-            zIndex: '1750',
-            overflow: 'hidden'
-        });
-        minimapCanvas = document.createElement('canvas');
-        minimapCanvas.width  = 200;
-        minimapCanvas.height = 110;
-        minimapCanvas.style.display = 'block';
-        wrap.appendChild(minimapCanvas);
-        // label
-        const lbl = document.createElement('div');
-        lbl.textContent = 'OVERVIEW';
-        Object.assign(lbl.style, {
-            position: 'absolute', top: '3px', left: '6px',
-            fontSize: '8px', color: 'rgba(0,220,255,0.5)',
-            fontFamily: 'monospace', letterSpacing: '1px', pointerEvents: 'none'
-        });
-        wrap.appendChild(lbl);
-        document.body.appendChild(wrap);
-        minimapCtx = minimapCanvas.getContext('2d');
+    function initMinimap() {
+        minimapCanvas = document.getElementById('minimap-canvas');
+        if (minimapCanvas) minimapCtx = minimapCanvas.getContext('2d');
     }
 
     function drawMinimap(flights, earthquakes) {
@@ -278,12 +228,6 @@
     window.intelHandleMessage = handleIntelMessage;
 
     // ============================
-    // EXPOSE openInspector for search
-    // ============================
-    // Patch: expose osint-dashboard.js openInspector globally
-    const _origInit = window.addEventListener;
-
-    // ============================
     // INIT
     // ============================
     function waitForScene(cb) {
@@ -292,8 +236,8 @@
     }
 
     function init() {
-        injectSearchPanel();
-        injectMinimap();
+        initSearchPanel();
+        initMinimap();
         waitForScene(() => {
             initThreatLayer();
         });

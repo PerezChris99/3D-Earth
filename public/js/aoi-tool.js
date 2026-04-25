@@ -250,7 +250,7 @@
                 loadAOIs();
                 loadNotes();
                 // Show analyst panels
-                document.querySelectorAll('.analyst-only').forEach(el => el.style.display = 'block');
+                document.querySelectorAll('.analyst-only').forEach(el => el.classList.remove('hidden'));
             } else {
                 pushStatus('Auth failed: ' + esc(data.error || 'unknown'));
             }
@@ -303,84 +303,6 @@
         }, true); // capture phase so we get the event before osint-dashboard.js
     }
 
-    // ============================
-    // HTML INJECTION: Analyst panel
-    // ============================
-    function injectAnalystPanel() {
-        if (document.getElementById('analyst-panel')) return; // idempotent
-        const panel = document.createElement('div');
-        panel.id = 'analyst-panel';
-        panel.className = 'analyst-panel';
-        panel.innerHTML = `
-            <div class="panel-title">ANALYST TOOLS</div>
-            <!-- Auth -->
-            <div class="analyst-section">
-                <div class="section-label">AUTH</div>
-                <input id="a-userid" placeholder="User ID" class="a-input" value="analyst1" />
-                <select id="a-role" class="a-input">
-                    <option value="viewer">Viewer</option>
-                    <option value="analyst" selected>Analyst</option>
-                    <option value="admin">Admin</option>
-                </select>
-                <button id="a-login-btn" class="a-btn">Get Token</button>
-            </div>
-            <!-- AOI -->
-            <div class="analyst-section analyst-only" style="display:none">
-                <div class="section-label">AOI</div>
-                <input id="aoi-name-input" placeholder="AOI name" class="a-input" />
-                <div style="display:flex;gap:6px">
-                    <button id="aoi-draw-btn" class="a-btn">Draw AOI</button>
-                    <button id="aoi-save-btn" class="a-btn">Save AOI</button>
-                </div>
-                <div id="aoi-list" class="items-list"></div>
-            </div>
-            <!-- Notes -->
-            <div class="analyst-section analyst-only" style="display:none">
-                <div class="section-label">INTEL NOTES</div>
-                <input id="note-title" placeholder="Title" class="a-input" />
-                <textarea id="note-body" placeholder="Analysis…" class="a-textarea"></textarea>
-                <button id="note-save-btn" class="a-btn">Save Note</button>
-                <div id="notes-list" class="items-list"></div>
-            </div>
-            <!-- Export -->
-            <div class="analyst-section">
-                <button id="snapshot-btn" class="a-btn">Export Snapshot</button>
-            </div>
-        `;
-        document.body.appendChild(panel);
-        injectAnalystStyles();
-        bindAnalystEvents();
-    }
-
-    function injectAnalystStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-            #analyst-panel {
-                position:fixed; right:328px; top:48px; width:200px;
-                background:var(--osint-bg,rgba(6,12,26,0.92));
-                border:1px solid var(--osint-border,rgba(0,220,255,0.18));
-                border-radius:6px; font-family:'Courier New',monospace; font-size:11px;
-                color:var(--osint-text,#c8e6f4); z-index:1700;
-                backdrop-filter:blur(8px); overflow:hidden;
-            }
-            #analyst-panel .panel-title { padding:7px 10px; color:var(--osint-accent,#00dcff); font-weight:700; letter-spacing:1px; font-size:11px; border-bottom:1px solid var(--osint-border,rgba(0,220,255,0.18)); background:rgba(0,220,255,0.05); }
-            .analyst-section { padding:8px 10px; border-bottom:1px solid rgba(0,220,255,0.05); }
-            .section-label { font-size:9px; color:var(--osint-subtext,#6a8fa8); letter-spacing:1px; margin-bottom:4px; }
-            .a-input,.a-textarea { width:100%; background:#0a1628; border:1px solid var(--osint-border,rgba(0,220,255,0.18)); color:var(--osint-text,#c8e6f4); border-radius:3px; padding:3px 6px; font-size:11px; font-family:inherit; margin-bottom:4px; box-sizing:border-box; }
-            .a-textarea { height:56px; resize:vertical; }
-            .a-btn { background:rgba(0,220,255,0.1); border:1px solid var(--osint-border,rgba(0,220,255,0.18)); color:var(--osint-accent,#00dcff); border-radius:3px; padding:3px 8px; font-size:10px; cursor:pointer; font-family:inherit; letter-spacing:1px; }
-            .a-btn:hover { background:rgba(0,220,255,0.2); }
-            .a-btn.active { background:rgba(255,204,0,0.15); color:#ffcc00; border-color:#ffcc00; }
-            .items-list { max-height:100px; overflow-y:auto; margin-top:4px; }
-            .note-item { display:flex; align-items:center; gap:4px; padding:3px 0; border-bottom:1px solid rgba(0,220,255,0.04); font-size:10px; }
-            .note-item .note-title { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-            .note-pts { color:var(--osint-subtext,#6a8fa8); font-size:9px; }
-            .del-btn { background:none; border:none; color:#ff3b3b; cursor:pointer; font-size:12px; padding:0 2px; line-height:1; }
-            .no-items { color:var(--osint-subtext,#6a8fa8); font-size:10px; padding:4px 0; margin:0; }
-        `;
-        document.head.appendChild(style);
-    }
-
     function bindAnalystEvents() {
         document.getElementById('a-login-btn')?.addEventListener('click', () => {
             const userId = document.getElementById('a-userid')?.value?.trim();
@@ -431,7 +353,7 @@
     }
 
     function init() {
-        injectAnalystPanel();
+        bindAnalystEvents();
         waitForScene(() => {
             initGlobeClickExtension();
         });

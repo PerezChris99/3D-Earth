@@ -249,6 +249,233 @@
     z-index: 1500;
 }
 
+/* =================== TOPBAR STAT VALUE COLORS =================== */
+.stat-val--cyan   { color: var(--osint-accent); }
+.stat-val--orange { color: var(--osint-accent2); }
+.stat-val--yellow { color: var(--osint-warning); }
+.stat-val--red    { color: var(--osint-danger); }
+
+/* =================== LAYER COUNT BADGE VARIANTS =================== */
+.count--cyan   { color: var(--osint-accent);  background: rgba(0, 220, 255, 0.12); }
+.count--orange { color: var(--osint-accent2); background: rgba(255, 107, 53, 0.12); }
+.count--yellow { color: var(--osint-warning); background: rgba(255, 204, 0, 0.12); }
+.count--red    { color: var(--osint-danger);  background: rgba(255, 59, 59, 0.12); }
+
+/* =================== INSPECTOR EMPTY STATE =================== */
+.inspector-empty {
+    color: var(--osint-subtext);
+    padding: 12px;
+    font-size: 11px;
+    margin: 0;
+}
+
+/* =================== ALERT COUNT BADGE =================== */
+.alert-counter {
+    color: var(--osint-danger);
+    font-weight: 700;
+    font-size: 11px;
+}
+
+/* =================== ANALYST TOOLS PANEL =================== */
+#analyst-panel {
+    position: fixed;
+    right: 328px;
+    top: 48px;
+    width: 200px;
+    background: var(--osint-bg);
+    border: 1px solid var(--osint-border);
+    border-radius: var(--panel-radius);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--osint-text);
+    z-index: 1700;
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+    box-shadow: var(--panel-shadow);
+}
+#analyst-panel .panel-title {
+    padding: 7px 10px;
+    color: var(--osint-accent);
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 11px;
+    border-bottom: 1px solid var(--osint-border);
+    background: rgba(0, 220, 255, 0.05);
+}
+.analyst-section {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(0, 220, 255, 0.05);
+}
+.section-label {
+    font-size: 9px;
+    color: var(--osint-subtext);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+.a-input,
+.a-textarea {
+    width: 100%;
+    background: #0a1628;
+    border: 1px solid var(--osint-border);
+    color: var(--osint-text);
+    border-radius: 3px;
+    padding: 3px 6px;
+    font-size: 11px;
+    font-family: inherit;
+    margin-bottom: 4px;
+    box-sizing: border-box;
+}
+.a-textarea {
+    height: 56px;
+    resize: vertical;
+}
+.a-btn {
+    background: rgba(0, 220, 255, 0.1);
+    border: 1px solid var(--osint-border);
+    color: var(--osint-accent);
+    border-radius: 3px;
+    padding: 3px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 1px;
+    transition: background 0.15s;
+}
+.a-btn:hover   { background: rgba(0, 220, 255, 0.2); }
+.a-btn.active  { background: rgba(255, 204, 0, 0.15); color: #ffcc00; border-color: #ffcc00; }
+.a-btn--full   { width: 100%; }
+.a-btn-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+.items-list {
+    max-height: 100px;
+    overflow-y: auto;
+    margin-top: 4px;
+}
+.note-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(0, 220, 255, 0.04);
+    font-size: 10px;
+}
+.note-item .note-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.note-pts  { color: var(--osint-subtext); font-size: 9px; }
+.del-btn {
+    background: none;
+    border: none;
+    color: var(--osint-danger);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0 2px;
+    line-height: 1;
+}
+.no-items {
+    color: var(--osint-subtext);
+    font-size: 10px;
+    padding: 4px 0;
+    margin: 0;
+}
+/* analyst-only sections — hidden until authenticated */
+.analyst-only.hidden { display: none; }
+
+/* =================== SEARCH PANEL =================== */
+#search-panel {
+    position: fixed;
+    bottom: 190px;
+    left: 12px;
+    width: 300px;
+    background: var(--osint-bg);
+    border: 1px solid var(--osint-border);
+    border-radius: var(--panel-radius);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--osint-text);
+    z-index: 1750;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--panel-shadow);
+    overflow: hidden;
+}
+#search-panel .panel-title {
+    padding: 7px 10px;
+    color: var(--osint-accent);
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 11px;
+    border-bottom: 1px solid var(--osint-border);
+    background: rgba(0, 220, 255, 0.05);
+}
+.search-body  { padding: 8px 10px; }
+.search-input {
+    width: 100%;
+    background: #0a1628;
+    border: 1px solid var(--osint-border);
+    color: var(--osint-text);
+    border-radius: 3px;
+    padding: 4px 7px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    box-sizing: border-box;
+}
+.search-results {
+    max-height: 160px;
+    overflow-y: auto;
+    margin-top: 5px;
+}
+.sr-item {
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(0, 220, 255, 0.05);
+    cursor: pointer;
+    font-size: 10px;
+    transition: color 0.12s;
+}
+.sr-item:hover { color: var(--osint-accent); }
+.no-results {
+    color: var(--osint-subtext);
+    font-size: 10px;
+    margin: 4px 0;
+}
+
+/* =================== MINIMAP (OVERVIEW CANVAS) =================== */
+#osint-minimap {
+    position: fixed;
+    right: 12px;
+    bottom: 0;
+    width: 200px;
+    height: 110px;
+    background: rgba(6, 12, 26, 0.88);
+    border: 1px solid var(--osint-border);
+    border-bottom: none;
+    border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+    z-index: 1750;
+    overflow: hidden;
+}
+#minimap-canvas {
+    display: block;
+    width: 200px;
+    height: 110px;
+}
+.minimap-label {
+    position: absolute;
+    top: 3px;
+    left: 6px;
+    font-size: 8px;
+    color: rgba(0, 220, 255, 0.5);
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    pointer-events: none;
+    z-index: 1;
+}
+
 /* =================== MOBILE =================== */
 @media (max-width: 640px) {
     #osint-topbar { font-size: 10px; gap: 10px; }
@@ -256,4 +483,7 @@
     #osint-inspector { width: 88vw; right: -90vw; }
     #osint-inspector.open { right: 0; }
     #osint-alerts { width: calc(100vw - 24px); }
+    #analyst-panel { right: 0; top: auto; bottom: 0; width: 100%; }
+    #search-panel  { width: calc(100vw - 24px); }
+    #osint-minimap { display: none; }
 }
