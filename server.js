@@ -65,7 +65,7 @@ app.use(cors({
     origin: process.env.ALLOWED_ORIGINS
         ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
         : IS_PROD ? false : '*',
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -86,11 +86,11 @@ app.disable('x-powered-by');
 app.use(express.static(path.join(__dirname)));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
-app.use('/api', apiRoutes);
 app.use('/api/aoi', aoiRoutes);
 app.use('/api/notes', notesRoutes);
+app.use('/api', apiRoutes);
 
-app.get('*', (req, res, next) => {
+app.use((req, res, next) => {
     if (!req.path.startsWith('/api') && !req.path.includes('.')) {
         return res.sendFile(path.join(__dirname, 'index.html'));
     }

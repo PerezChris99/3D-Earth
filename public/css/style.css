@@ -105,3 +105,52 @@ body {
 }
 #site-footer a { color: rgba(200,235,255,0.9); text-decoration: none; opacity: 0.9; }
 #site-footer a:hover { text-decoration: underline; opacity: 1.0; }
+
+/* ===========================================
+ * Controls panel — semantic classes (replaces all inline styles)
+ * =========================================== */
+.ctrl-header-title {
+    margin: 0;
+    padding: 6px 10px;
+    font-weight: 700;
+}
+.ctrl-action-col {
+    display: flex;
+    gap: 6px;
+    flex-direction: column;
+    margin-bottom: 6px;
+}
+.ctrl-body-content {
+    text-align: left;
+    font-size: 13px;
+}
+.ctrl-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.ctrl-row--spaced { margin-bottom: 6px; }
+.ctrl-row--top    { margin-top: 6px; }
+.ctrl-range       { width: 100%; }
+.ctrl-range-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.ctrl-range-val {
+    min-width: 36px;
+    text-align: right;
+    font-size: 12px;
+    color: #dff;
+    flex-shrink: 0;
+}
+.ctrl-section-label {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+}
+.ctrl-hr {
+    border-color: rgba(255, 255, 255, 0.06);
+    margin: 6px 0;
+}
+.ctrl-hr--lg { margin: 8px 0; }
