@@ -1,68 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>OSINT Intelligence Globe — Perez</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OSINT Intelligence Globe</title>
     <link rel="stylesheet" href="public/css/style.css" />
     <link rel="stylesheet" href="public/css/osint.css" />
-    </head>
-    <body>
-        <div id="canvas-container"></div>
-        <div id="loading">🌍 Loading Earth...</div>
+</head>
+<body>
+    <!-- Globe canvas -->
+    <div id="canvas-container"></div>
+    <div id="loading">◈ INITIALIZING OSINT GLOBE…</div>
 
-    <!-- ===== OSINT TOPBAR ===== -->
-    <div id="osint-topbar">
-        <span class="brand">OSINT GLOBE</span>
+    <!-- ═══ TOPBAR ═══ -->
+    <header id="osint-topbar">
+        <span class="brand">◈ OSINT GLOBE</span>
         <span class="sep">|</span>
         <span class="stat"><span class="dot" id="ws-status-dot"></span><span id="ws-status-text">CONNECTING</span></span>
         <span class="sep">|</span>
-        <span class="stat">SATELLITES <span id="sat-count" class="stat-val--cyan">—</span></span>
-        <span class="stat">FLIGHTS <span id="flight-count" class="stat-val--orange">—</span></span>
-        <span class="stat">SEISMIC <span id="eq-count" class="stat-val--yellow">—</span></span>
+        <span class="stat">SAT <span id="sat-count" class="stat-val--cyan">—</span></span>
+        <span class="stat">FLT <span id="flight-count" class="stat-val--orange">—</span></span>
+        <span class="stat">SIS <span id="eq-count" class="stat-val--yellow">—</span></span>
         <span class="clock" id="osint-clock"></span>
-    </div>
+        <button class="topbar-toggle" id="btn-toggle-left" title="Toggle layers/controls" aria-label="Toggle left panel">☰</button>
+        <button class="topbar-toggle" id="btn-toggle-right" title="Toggle inspector/analyst" aria-label="Toggle right panel">⊞</button>
+    </header>
 
-    <!-- ===== LAYER PANEL (LEFT) ===== -->
-    <div id="osint-layers">
-        <div class="panel-title">LAYERS</div>
-        <div class="layer-row" data-layer="satellites">
-            <span>SATELLITES</span>
-            <span class="count count--cyan">—</span>
-            <span class="layer-toggle on"></span>
-        </div>
-        <div class="layer-row" data-layer="flights">
-            <span>FLIGHTS</span>
-            <span class="count count--orange">—</span>
-            <span class="layer-toggle on"></span>
-        </div>
-        <div class="layer-row" data-layer="earthquakes">
-            <span>SEISMIC</span>
-            <span class="count count--yellow">—</span>
-            <span class="layer-toggle on"></span>
-        </div>
-        <div class="layer-row" data-layer="thermal">
-            <span>THERMAL</span>
-            <span class="count count--red">—</span>
-            <span class="layer-toggle"></span>
-        </div>
-    </div>
+    <!-- ═══ LEFT PANEL — Layers, Globe Controls, Search ═══ -->
+    <aside id="osint-left-panel" aria-label="OSINT layers and globe controls">
 
-    <!-- ===== INSPECTOR PANEL (RIGHT DRAWER) ===== -->
-    <div id="osint-inspector">
-        <div id="inspector-header">
-            <div>
-                <span id="inspector-type-badge" class="sat">OBJECT</span>
-                <div class="inspector-title" id="inspector-object-title">—</div>
+        <!-- LAYERS -->
+        <div class="lpanel-section">
+            <div class="lpanel-section-hdr">LAYERS</div>
+            <div class="lpanel-section-body">
+                <div class="layer-row" data-layer="satellites">
+                    <span class="layer-name">SATELLITES</span>
+                    <span class="count count--cyan">—</span>
+                    <span class="layer-toggle on"></span>
+                </div>
+                <div class="layer-row" data-layer="flights">
+                    <span class="layer-name">FLIGHTS</span>
+                    <span class="count count--orange">—</span>
+                    <span class="layer-toggle on"></span>
+                </div>
+                <div class="layer-row" data-layer="earthquakes">
+                    <span class="layer-name">SEISMIC</span>
+                    <span class="count count--yellow">—</span>
+                    <span class="layer-toggle on"></span>
+                </div>
+                <div class="layer-row" data-layer="thermal">
+                    <span class="layer-name">THERMAL</span>
+                    <span class="count count--red">—</span>
+                    <span class="layer-toggle"></span>
+                </div>
             </div>
-            <button id="inspector-close" aria-label="Close inspector">✕</button>
         </div>
-        <div id="inspector-body"><p class="inspector-empty">Click any object on the globe to inspect it.</p></div>
-    </div>
 
-    <!-- ===== ALERTS PANEL (BOTTOM LEFT) ===== -->
-    <div id="osint-alerts">
+        <!-- GLOBE CONTROLS (collapsible) -->
+        <div class="lpanel-section">
+            <div class="lpanel-section-hdr collapsible" id="globe-ctrl-hdr">
+                <span>GLOBE CONTROLS</span>
+                <span class="collapse-caret">▾</span>
+            </div>
+            <div class="lpanel-section-body" id="globe-ctrl-body">
+                <div class="ctrl-btn-grid">
+                    <button class="ctrl-btn" id="btn-clouds">☁ CLOUDS</button>
+                    <button class="ctrl-btn" id="btn-rotate">↻ ROTATE</button>
+                    <button class="ctrl-btn" id="btn-reset">⌂ RESET</button>
+                    <button class="ctrl-btn" id="btn-follow-iss">📡 ISS</button>
+                </div>
+                <div class="ctrl-divider"></div>
+                <div class="ctrl-check-row">
+                    <input type="checkbox" id="chk-iss" class="ctrl-chk">
+                    <label for="chk-iss">ISS Track</label>
+                </div>
+                <div class="ctrl-check-row">
+                    <input type="checkbox" id="chk-satellites" checked class="ctrl-chk">
+                    <label for="chk-satellites">Satellites</label>
+                </div>
+                <div class="ctrl-check-row">
+                    <input type="checkbox" id="chk-currents" class="ctrl-chk">
+                    <label for="chk-currents">Currents</label>
+                </div>
+                <div class="ctrl-check-row">
+                    <input type="checkbox" id="chk-moon" checked class="ctrl-chk">
+                    <label for="chk-moon">Moon</label>
+                </div>
+                <div class="ctrl-check-row">
+                    <input type="checkbox" id="chk-magnetic" class="ctrl-chk">
+                    <label for="chk-magnetic">Mag. Field</label>
+                </div>
+                <div class="ctrl-check-row">
+                    <input type="checkbox" id="chk-atmosphere" checked class="ctrl-chk">
+                    <label for="chk-atmosphere">Atmosphere</label>
+                </div>
+                <div class="ctrl-divider"></div>
+                <div class="ctrl-slider-row">
+                    <label for="range-atmo">ATMO EXPOSURE</label>
+                    <input type="range" id="range-atmo" min="0" max="1.2" step="0.005" value="0.45" class="ctrl-range">
+                </div>
+                <div class="ctrl-slider-row">
+                    <label for="range-fade">FADE HEIGHT</label>
+                    <input type="range" id="range-fade" min="1" max="8" step="0.1" value="4" class="ctrl-range">
+                </div>
+                <div class="ctrl-slider-row">
+                    <label for="range-sun-distance">SUN DIST <span id="val-sun-distance" class="slider-val">6.0</span></label>
+                    <input type="range" id="range-sun-distance" min="1" max="20" step="0.1" value="6" class="ctrl-range">
+                </div>
+                <div class="ctrl-slider-row">
+                    <label for="range-moon-distance">MOON DIST <span id="val-moon-distance" class="slider-val">2.5</span></label>
+                    <input type="range" id="range-moon-distance" min="0.5" max="8" step="0.1" value="2.5" class="ctrl-range">
+                </div>
+            </div>
+        </div>
+
+        <!-- SEARCH -->
+        <div class="lpanel-section">
+            <div class="lpanel-section-hdr">SEARCH</div>
+            <div class="lpanel-section-body">
+                <input id="search-input" placeholder="callsign / location / country…" class="search-input" autocomplete="off" />
+                <div id="search-results" class="search-results"></div>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ═══ RIGHT PANEL — Inspector + Analyst tabs + Minimap ═══ -->
+    <aside id="osint-right-panel" aria-label="Inspector and analyst tools">
+
+        <nav id="rpanel-tabs" role="tablist">
+            <button class="rpanel-tab active" data-tab="inspector" role="tab">INSPECTOR</button>
+            <button class="rpanel-tab" data-tab="analyst" role="tab">ANALYST</button>
+        </nav>
+
+        <!-- INSPECTOR TAB -->
+        <div class="rpanel-content active" id="rpanel-tab-inspector" role="tabpanel">
+            <div id="rpanel-inspector-empty">
+                <div class="empty-icon">◎</div>
+                <p>Click any object on the globe to inspect it.</p>
+            </div>
+            <div id="osint-inspector">
+                <div id="inspector-header">
+                    <div>
+                        <span id="inspector-type-badge" class="sat">OBJECT</span>
+                        <div class="inspector-title" id="inspector-object-title">—</div>
+                    </div>
+                    <button id="inspector-close" aria-label="Close inspector">✕</button>
+                </div>
+                <div id="inspector-body"></div>
+            </div>
+        </div>
+
+        <!-- ANALYST TAB -->
+        <div class="rpanel-content" id="rpanel-tab-analyst" role="tabpanel">
+            <div id="analyst-panel">
+                <div class="analyst-section">
+                    <div class="section-label">AUTHENTICATION</div>
+                    <input id="a-userid" placeholder="User ID" class="a-input" value="analyst1" autocomplete="off" />
+                    <select id="a-role" class="a-input">
+                        <option value="viewer">Viewer</option>
+                        <option value="analyst" selected>Analyst</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button id="a-login-btn" class="a-btn">▶ Get Token</button>
+                </div>
+                <div class="analyst-section analyst-only hidden">
+                    <div class="section-label">AOI — AREA OF INTEREST</div>
+                    <input id="aoi-name-input" placeholder="AOI name" class="a-input" />
+                    <div class="a-btn-row">
+                        <button id="aoi-draw-btn" class="a-btn">◈ Draw</button>
+                        <button id="aoi-save-btn" class="a-btn">⊕ Save</button>
+                    </div>
+                    <div id="aoi-list" class="items-list"></div>
+                </div>
+                <div class="analyst-section analyst-only hidden">
+                    <div class="section-label">INTEL NOTES</div>
+                    <input id="note-title" placeholder="Title" class="a-input" />
+                    <textarea id="note-body" placeholder="Analysis notes…" class="a-textarea"></textarea>
+                    <button id="note-save-btn" class="a-btn">⊕ Save Note</button>
+                    <div id="notes-list" class="items-list"></div>
+                </div>
+                <div class="analyst-section">
+                    <button id="snapshot-btn" class="a-btn a-btn--full">⬡ Export Globe Snapshot</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MINIMAP — bottom of right panel -->
+        <div id="osint-minimap">
+            <span class="minimap-label">OVERVIEW MAP</span>
+            <canvas id="minimap-canvas" width="280" height="100"></canvas>
+        </div>
+
+    </aside>
+
+    <!-- ═══ ALERTS — Bottom strip ═══ -->
+    <div id="osint-alerts" role="log" aria-live="polite">
         <div class="panel-title">
             <span>⚠ ALERTS</span>
             <span id="alert-count" class="alert-counter">0</span>
@@ -70,112 +203,18 @@
         <div id="alerts-list"></div>
     </div>
 
-    <!-- ===== ANALYST TOOLS PANEL ===== -->
-    <div id="analyst-panel" class="analyst-panel">
-        <div class="panel-title">ANALYST TOOLS</div>
-        <div class="analyst-section">
-            <div class="section-label">AUTH</div>
-            <input id="a-userid" placeholder="User ID" class="a-input" value="analyst1" />
-            <select id="a-role" class="a-input">
-                <option value="viewer">Viewer</option>
-                <option value="analyst" selected>Analyst</option>
-                <option value="admin">Admin</option>
-            </select>
-            <button id="a-login-btn" class="a-btn">Get Token</button>
-        </div>
-        <div class="analyst-section analyst-only hidden">
-            <div class="section-label">AOI</div>
-            <input id="aoi-name-input" placeholder="AOI name" class="a-input" />
-            <div class="a-btn-row">
-                <button id="aoi-draw-btn" class="a-btn">Draw AOI</button>
-                <button id="aoi-save-btn" class="a-btn">Save AOI</button>
-            </div>
-            <div id="aoi-list" class="items-list"></div>
-        </div>
-        <div class="analyst-section analyst-only hidden">
-            <div class="section-label">INTEL NOTES</div>
-            <input id="note-title" placeholder="Title" class="a-input" />
-            <textarea id="note-body" placeholder="Analysis…" class="a-textarea"></textarea>
-            <button id="note-save-btn" class="a-btn">Save Note</button>
-            <div id="notes-list" class="items-list"></div>
-        </div>
-        <div class="analyst-section">
-            <button id="snapshot-btn" class="a-btn a-btn--full">Export Snapshot</button>
-        </div>
+    <!-- Credit -->
+    <div id="site-footer">
+        <a href="https://perezchris.netlify.app/" target="_blank" rel="noopener noreferrer">by Perez C</a>
     </div>
 
-    <!-- ===== SEARCH PANEL ===== -->
-    <div id="search-panel">
-        <div class="panel-title">SEARCH</div>
-        <div class="search-body">
-            <input id="search-input" placeholder="callsign / location / country…" class="search-input" />
-            <div id="search-results" class="search-results"></div>
-        </div>
-    </div>
-
-    <!-- ===== MINIMAP ===== -->
-    <div id="osint-minimap">
-        <span class="minimap-label">OVERVIEW</span>
-        <canvas id="minimap-canvas" width="200" height="110"></canvas>
-    </div>
-
-    <!-- ===== GLOBE CONTROLS ===== -->
-        <div class="controls" id="controls" role="region" aria-label="Controls">
-            <div class="controls-header">
-                <h6 class="ctrl-header-title">⚙ Controls</h6>
-                <button class="ctrl-collapse-btn" id="ctrl-collapse-btn" title="Collapse controls panel" aria-label="Toggle controls panel">−</button>
-            </div>
-            <div class="controls-body p-2">
-                <div class="ctrl-action-col">
-                    <button class="btn btn-sm btn-outline-light" type="button" onclick="toggleClouds()">☁️ Clouds</button>
-                    <button class="btn btn-sm btn-outline-light" type="button" onclick="toggleRotation()">🔄 Rot</button>
-                    <button class="btn btn-sm btn-outline-light" type="button" onclick="resetView()">🏠 Reset</button>
-                    <button class="btn btn-sm btn-primary" id="btn-follow-iss" type="button" onclick="toggleFollowISS()">📡 ISS</button>
-                </div>
-                <div class="ctrl-body-content">
-                    <div class="ctrl-row"><input type="checkbox" id="chk-iss"><label for="chk-iss">ISS</label></div>
-                    <div class="ctrl-row"><input type="checkbox" id="chk-satellites" checked><label for="chk-satellites">Satellites</label></div>
-                    <div class="ctrl-row"><input type="checkbox" id="chk-currents"><label for="chk-currents">Currents</label></div>
-                    <div class="ctrl-row"><input type="checkbox" id="chk-moon" checked><label for="chk-moon">Moon</label></div>
-                    <div class="ctrl-row ctrl-row--spaced"><input type="checkbox" id="chk-magnetic"><label for="chk-magnetic">Magnetic</label></div>
-                    <hr class="ctrl-hr" />
-                    <label class="ctrl-section-label" for="range-atmo">Atmosphere</label>
-                    <input type="range" id="range-atmo" min="0" max="1.2" step="0.005" value="0.45" class="ctrl-range">
-                    <div class="ctrl-row ctrl-row--top"><input type="checkbox" id="chk-atmosphere" checked><label for="chk-atmosphere">On</label></div>
-                    <label class="ctrl-section-label" for="range-fade">Fade height</label>
-                    <input type="range" id="range-fade" min="1" max="8" step="0.1" value="4" class="ctrl-range">
-                    <hr class="ctrl-hr ctrl-hr--lg" />
-                    <label class="ctrl-section-label" for="range-sun-distance">Sun distance</label>
-                    <div class="ctrl-range-row">
-                        <input type="range" id="range-sun-distance" min="1" max="20" step="0.1" value="6" class="ctrl-range">
-                        <span id="val-sun-distance" class="ctrl-range-val">6.0</span>
-                    </div>
-                    <label class="ctrl-section-label" for="range-moon-distance">Moon distance</label>
-                    <div class="ctrl-range-row">
-                        <input type="range" id="range-moon-distance" min="0.5" max="8" step="0.1" value="2.5" class="ctrl-range">
-                        <span id="val-moon-distance" class="ctrl-range-val">2.5</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Hamburger toggle for small screens -->
-        <button id="controls-hamburger" aria-label="Open controls" title="Open controls" class="controls-hamburger">
-            ☰
-        </button>
-
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://unpkg.com/satellite.js@4.0.0/dist/satellite.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="public/js/script.js"></script>
-        <script src="public/js/osint-dashboard.js"></script>
-        <script src="public/js/aoi-tool.js"></script>
-        <script src="public/js/intel-overlay.js"></script>
-        <!-- Subtle footer credit -->
-        <div id="site-footer">
-            <a href="https://perezchris.netlify.app/" target="_blank" rel="noopener noreferrer">by Perez C</a>
-        </div>
-    </body>
+    <script src="public/js/script.js"></script>
+    <script src="public/js/osint-dashboard.js"></script>
+    <script src="public/js/aoi-tool.js"></script>
+    <script src="public/js/intel-overlay.js"></script>
+</body>
 </html>

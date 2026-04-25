@@ -1,183 +1,59 @@
-body {
+/* style.css — base canvas and body styles only.
+   All OSINT panel/layout styles live in osint.css */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
     margin: 0;
     padding: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
-    background: linear-gradient(135deg, #0c1445 0%, #1a1a2e 50%, #16213e 100%);
-    font-family: 'Arial', sans-serif;
+    background: #060c1a;
+    font-family: "Courier New", monospace;
 }
 
+/* Globe canvas fills the entire viewport underneath all panels */
 #canvas-container {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
+    position: fixed;
+    inset: 0;
     z-index: 1;
 }
 
+/* Loading splash */
 #loading {
-    position: absolute;
-    left: 12px;
-    top: 12px;
-    color: #efe;
-    background: rgba(0,0,0,0.35);
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-weight: 600;
-    z-index: 1100;
-}
-
-/* ui-debug removed */
-
-/* Compact always-visible controls panel (small neat card) */
-.controls {
     position: fixed;
-    top: 48px; /* below the 36px OSINT topbar + 12px gap */
-    right: 12px;
-    width: 210px;
-    max-width: 45vw;
-    max-height: calc(100vh - 60px); /* viewport minus top offset and bottom gap */
-    background: rgba(0,0,0,0.36);
-    color: #dff;
-    border-radius: 10px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
-    z-index: 1200;
-    overflow: hidden;
-    font-size: 14px;
-    display: flex;
-    flex-direction: column;
-}
-.controls .controls-header {
-    background: rgba(255,255,255,0.02);
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-right: 4px;
-    flex-shrink: 0;
-}
-.controls .controls-body { padding: 8px; max-height: calc(100vh - 120px); overflow-y: auto; overflow-x: hidden; flex: 1; }
-.controls input[type=range] { accent-color: #8ec5ff; }
-.controls button.btn-sm { padding: 6px 8px; font-size: 13px; }
-.controls label { color: #e6f7ff; }
-
-@media (max-width: 480px) {
-    .controls { width: 84vw; left: 8vw; right: 8vw; top: 48px; max-height: calc(100vh - 60px); }
-    .controls .controls-body { max-height: calc(100vh - 120px); }
-}
-
-/* small visual tweaks */
-.controls.collapsed .controls-body { display: none; }
-.controls .controls-body { transition: max-height 0.18s ease; }
-.controls button { margin: 0 0 6px 0; padding: 8px 10px; background: linear-gradient(45deg, #4fc3f7, #29b6f6); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.18s ease; box-shadow: 0 4px 12px rgba(79, 195, 247, 0.25); width: 100%; text-align: left; }
-.controls button:hover { background: linear-gradient(45deg, #29b6f6, #039be5); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79, 195, 247, 0.4); }
-.controls > div { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; text-align: left; }
-.controls label { display: block; font-size: 13px; }
-
-@media (max-width: 640px) {
-    .controls { top: auto; bottom: 12px; right: 12px; transform: none; width: auto; border-radius: 12px; max-height: 60vh; }
-    .controls button { text-align: center; }
-    .controls .controls-body { max-height: calc(60vh - 48px); }
-}
-
-/* Controls collapse button (desktop header) */
-.ctrl-collapse-btn {
-    background: none;
-    border: none;
-    color: #8ec5ff;
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 2px 8px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: #00dcff;
+    background: rgba(6, 12, 26, 0.88);
+    border: 1px solid rgba(0, 220, 255, 0.2);
+    padding: 14px 24px;
     border-radius: 4px;
-    flex-shrink: 0;
-    transition: background 0.15s;
-}
-.ctrl-collapse-btn:hover { background: rgba(142, 197, 255, 0.15); }
-
-/* Hamburger toggle for mobile */
-.controls-hamburger {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 1250;
-    background: rgba(0,0,0,0.5);
-    color: #eafaff;
-    border: none;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-size: 18px;
-    display: none; /* shown on small screens */
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    z-index: 9000;
+    backdrop-filter: blur(8px);
 }
 
-@media (max-width: 640px) {
-    .controls-hamburger { display: block; }
-    /* hide full controls by default on small screens; toggled via JS */
-    .controls { display: none; }
-    .controls.show-mobile { display: block; width: 84vw; left: 8vw; right: 8vw; top: 8px; }
-}
-
-/* subtle footer credit (non-intrusive) */
+/* Subtle footer credit */
 #site-footer {
     position: fixed;
-    left: 8px;
     bottom: 8px;
-    z-index: 1050; /* under controls but above canvas */
-    font-size: 12px;
-    color: rgba(230,245,255,0.85);
-    background: rgba(0,0,0,0.18);
-    padding: 6px 8px;
-    border-radius: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    font-size: 11px;
+    font-family: "Courier New", monospace;
+    color: rgba(0, 220, 255, 0.3);
     pointer-events: auto;
+    white-space: nowrap;
 }
-#site-footer a { color: rgba(200,235,255,0.9); text-decoration: none; opacity: 0.9; }
-#site-footer a:hover { text-decoration: underline; opacity: 1.0; }
-
-/* ===========================================
- * Controls panel â€” semantic classes (replaces all inline styles)
- * =========================================== */
-.ctrl-header-title {
-    margin: 0;
-    padding: 6px 10px;
-    font-weight: 700;
+#site-footer a {
+    color: rgba(0, 220, 255, 0.4);
+    text-decoration: none;
+    letter-spacing: 1px;
 }
-.ctrl-action-col {
-    display: flex;
-    gap: 6px;
-    flex-direction: column;
-    margin-bottom: 6px;
-}
-.ctrl-body-content {
-    text-align: left;
-    font-size: 13px;
-}
-.ctrl-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-.ctrl-row--spaced { margin-bottom: 6px; }
-.ctrl-row--top    { margin-top: 6px; }
-.ctrl-range       { width: 100%; }
-.ctrl-range-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-.ctrl-range-val {
-    min-width: 36px;
-    text-align: right;
-    font-size: 12px;
-    color: #dff;
-    flex-shrink: 0;
-}
-.ctrl-section-label {
-    display: block;
-    margin-top: 6px;
-    font-size: 12px;
-}
-.ctrl-hr {
-    border-color: rgba(255, 255, 255, 0.06);
-    margin: 6px 0;
-}
-.ctrl-hr--lg { margin: 8px 0; }
+#site-footer a:hover { color: rgba(0, 220, 255, 0.7); }

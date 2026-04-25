@@ -167,7 +167,8 @@
 
     function drawMinimap(flights, earthquakes) {
         if (!minimapCtx) return;
-        const W = 200, H = 110;
+        const W = minimapCanvas.width;
+        const H = minimapCanvas.height;
         minimapCtx.clearRect(0, 0, W, H);
         // Background
         minimapCtx.fillStyle = 'rgba(6,12,26,0.95)';

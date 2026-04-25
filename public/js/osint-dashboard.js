@@ -87,14 +87,22 @@
         if (title) title.textContent = escapeHtml(data.name || data.callsign || data.id || '—');
 
         body.innerHTML = buildInspectorRows(data);
-        panel.classList.add('open');
+
+        // Switch to inspector tab and show content
+        document.querySelectorAll('.rpanel-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'inspector'));
+        document.querySelectorAll('.rpanel-content').forEach(c => c.classList.toggle('active', c.id === 'rpanel-tab-inspector'));
+        const emptyState = document.getElementById('rpanel-inspector-empty');
+        if (emptyState) emptyState.style.display = 'none';
+        panel.classList.add('active');
     }
     // Expose globally for aoi-tool.js and intel-overlay.js
     window.osintOpenInspector = openInspector;
 
     function closeInspector() {
         const panel = document.getElementById('osint-inspector');
-        if (panel) panel.classList.remove('open');
+        if (panel) panel.classList.remove('active');
+        const emptyState = document.getElementById('rpanel-inspector-empty');
+        if (emptyState) emptyState.style.display = '';
     }
 
     function buildInspectorRows(d) {
@@ -402,6 +410,13 @@
     function updateLayerCount(layer, count) {
         const el = document.querySelector(`[data-layer="${layer}"] .count`);
         if (el) el.textContent = count > 999 ? '999+' : count;
+        // Also update topbar stat counts
+        const topMap = { satellites: 'sat-count', flights: 'flight-count', earthquakes: 'eq-count' };
+        const topId = topMap[layer];
+        if (topId) {
+            const topEl = document.getElementById(topId);
+            if (topEl) topEl.textContent = count > 999 ? '999+' : count;
+        }
     }
 
     // ==========================================
@@ -421,6 +436,22 @@
     // ==========================================
     function init() {
         document.getElementById('inspector-close')?.addEventListener('click', closeInspector);
+
+        // Tab switching for right panel
+        document.querySelectorAll('.rpanel-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                document.querySelectorAll('.rpanel-tab').forEach(b => b.classList.toggle('active', b === btn));
+                document.querySelectorAll('.rpanel-content').forEach(c => c.classList.toggle('active', c.id === `rpanel-tab-${tab}`));
+            });
+        });
+
+        // Mobile panel toggles
+        document.getElementById('btn-toggle-left')?.addEventListener('click', () =>
+            document.getElementById('osint-left-panel')?.classList.toggle('open'));
+        document.getElementById('btn-toggle-right')?.addEventListener('click', () =>
+            document.getElementById('osint-right-panel')?.classList.toggle('open'));
+
         initLayerToggles();
         waitForScene(() => {
             initPointClouds();
