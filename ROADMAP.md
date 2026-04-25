@@ -210,7 +210,7 @@ TimescaleDB        ←  time-series extension on Postgres (position history)
 
 ## > RECOMMENDED BEST WAY FORWARD
 
-## OVERALL PROGRESS: [████████████████████░░░░░░░░░░] 70%
+## OVERALL PROGRESS: [████████████████████████░░░░░░] 82%
 
 ### Phased Execution Plan
 
@@ -263,8 +263,14 @@ TimescaleDB        ←  time-series extension on Postgres (position history)
 
 ---
 
-### ⏳ Phase 4 — Collaboration & Reporting (NOT STARTED)
-**PROGRESS: [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%**
+### ✅ Phase 4 — Collaboration & Reporting (COMPLETE)
+**PROGRESS: [██████████████████████████████] 100%**
+- `src/notes.js` — In-memory geo-pinned analyst note store (max 500 notes)
+- `src/routes/notes.js` — Protected REST: `GET/POST/DELETE /api/notes` (analyst+)
+- `public/js/aoi-tool.js` — Globe AOI polygon drawing with click-to-place vertices
+- Analyst panel: login/token, draw AOI, save notes, delete items — all client-side UI
+- Globe snapshot PNG export via canvas `toBlob()`
+- Analyst-only panels shown only after successful token acquisition
 
 ---
 

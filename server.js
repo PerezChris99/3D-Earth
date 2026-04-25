@@ -18,6 +18,7 @@ require('dotenv').config();
 
 const apiRoutes   = require('./src/routes/api');
 const aoiRoutes   = require('./src/routes/aoi');
+const notesRoutes = require('./src/routes/notes');
 const { onConnect, onDisconnect, onMessage, attachIdleTimeout, getIp } = require('./src/middleware/rateLimitWS');
 const { getFlights }        = require('./src/ingest/flights');
 const { getEarthquakes }    = require('./src/ingest/earthquakes');
@@ -86,6 +87,7 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 
 app.use('/api', apiRoutes);
 app.use('/api/aoi', aoiRoutes);
+app.use('/api/notes', notesRoutes);
 
 app.get('*', (req, res, next) => {
     if (!req.path.startsWith('/api') && !req.path.includes('.')) {
