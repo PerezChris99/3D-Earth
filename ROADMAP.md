@@ -210,11 +210,14 @@ TimescaleDB        ←  time-series extension on Postgres (position history)
 
 ## > RECOMMENDED BEST WAY FORWARD
 
+## OVERALL PROGRESS: [████████░░░░░░░░░░░░░░░░░░░░░░] 20%
+
 ### Phased Execution Plan
 
 ---
 
 ### ✅ Phase 0 — Foundation (1–2 weeks) `[START HERE]`
+**PROGRESS: [██████████████████████████████] 100%**
 
 **Goal:** Keep the existing Three.js globe; add a Node.js backend that the frontend talks to. Initialize the UI shell.
 
@@ -224,11 +227,12 @@ TimescaleDB        ←  time-series extension on Postgres (position history)
 4. Add a WebSocket endpoint `/ws/live` that pushes position deltas every 5s.
 5. Replace the frontend `fetchTLES()` + synthetic sats with a unified `fetch('/api/positions')`.
 
-**Result**: Live multi-domain globe with real ships, aircraft, and satellites on one screen within a modern dashboard shell.
+**Result**: Live multi-domain globe with real ships, aircraft, and satellites on one screen within a modern dashboard shell. Security parameters configured via Helmet and Express-Rate-Limit.
 
 ---
 
-### Phase 1 — Global Visual OSINT & Traffic (2–3 weeks)
+### ⏳ Phase 1 — Global Visual OSINT & Traffic (2–3 weeks)
+**PROGRESS: [████░░░░░░░░░░░░░░░░░░░░░░░░░░] 10%**
 
 1. Integrate **Public CCTV/Traffic Feeds**: ingest JSON lists of public camera coordinates. Plot camera icons on the globe.
 2. Integrate **Video.js player** within the Inspector Dashboard to stream live HLS/M3U8 feeds when a camera point is clicked.

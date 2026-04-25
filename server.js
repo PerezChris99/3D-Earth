@@ -61,6 +61,7 @@ app.use(express.json({ limit: '10kb' })); // Restrict JSON body size
 
 // Serve static frontend files (The 3D Earth)
 app.use(express.static(path.join(__dirname, '/')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // ==========================================
 // API ROUTES (REST)

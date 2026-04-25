@@ -230,7 +230,7 @@ let sgp4Worker = null;
 function setupSgp4Worker() {
     if (typeof Worker === 'undefined') return null;
     try {
-        sgp4Worker = new Worker('sgp4-worker.js');
+        sgp4Worker = new Worker('public/js/sgp4-worker.js');
         sgp4Worker.onmessage = (ev) => {
             const msg = ev.data;
             if (msg.type === 'positions' && tlePositionsAttr && msg.positions) {
