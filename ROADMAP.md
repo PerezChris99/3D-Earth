@@ -210,31 +210,65 @@ TimescaleDB        ←  time-series extension on Postgres (position history)
 
 ## > RECOMMENDED BEST WAY FORWARD
 
-## OVERALL PROGRESS: [████████░░░░░░░░░░░░░░░░░░░░░░] 20%
+## OVERALL PROGRESS: [████████████████░░░░░░░░░░░░░░] 55%
 
 ### Phased Execution Plan
 
 ---
 
-### ✅ Phase 0 — Foundation (1–2 weeks) `[START HERE]`
+### ✅ Phase 0 — Foundation (COMPLETE)
 **PROGRESS: [██████████████████████████████] 100%**
-
-**Goal:** Keep the existing Three.js globe; add a Node.js backend that the frontend talks to. Initialize the UI shell.
-
-1. Create a modern OSINT layout: dark mode, semi-transparent UI panels (Tailwind/Bootstrap) layered over the Three.js canvas. Include a right-side "Inspector Dashboard".
-2. `npm init` → Express server with `ws` (WebSocket) and `node-fetch`. Move API key management to `.env`.
-3. **Single `/api/positions` endpoint** aggregating CelesTrak TLE, OpenSky ADS-B (flights), and AISHub (ships).
-4. Add a WebSocket endpoint `/ws/live` that pushes position deltas every 5s.
-5. Replace the frontend `fetchTLES()` + synthetic sats with a unified `fetch('/api/positions')`.
-
-**Result**: Live multi-domain globe with real ships, aircraft, and satellites on one screen within a modern dashboard shell. Security parameters configured via Helmet and Express-Rate-Limit.
+- Node.js Express gateway · Helmet · CORS · Rate-Limiting · WebSocket server
+- `index.html` locked at root · `/public` directory organized · `.gitignore` added
 
 ---
 
-### ⏳ Phase 1 — Global Visual OSINT & Traffic (2–3 weeks)
+### ✅ Phase 1 — Secure Data Ingest Layer (COMPLETE)
+**PROGRESS: [██████████████████████████████] 100%**
+- `src/ingest/tle.js` — CelesTrak TLE (2h cache, built-in https)
+- `src/ingest/flights.js` — OpenSky ADS-B live aircraft (15s cache)
+- `src/ingest/earthquakes.js` — USGS seismic feed (1m cache, no key)
+- `src/ingest/thermal.js` — NASA FIRMS thermal hotspots (5m cache)
+- `src/cache.js` — In-memory LRU/TTL cache (no Redis, zero deps)
+- `src/auth.js` — HMAC-SHA256 token auth using built-in `crypto`
+- `src/middleware/sanitize.js` — XSS/injection/prototype-pollution sanitizer
+- `src/middleware/rateLimitWS.js` — Per-IP WS connection + message limiter + idle timeout
+- `src/routes/api.js` — Unified REST API routes
+- Live 5-second WebSocket broadcast loop (flights, earthquakes, thermal)
+
+---
+
+### ✅ Phase 2 — OSINT Dashboard UI (COMPLETE)
+**PROGRESS: [██████████████████████████████] 100%**
+- `public/css/osint.css` — Palantir-style dark ops dashboard CSS
+- `public/js/osint-dashboard.js` — Inspector panel, layer manager, alerts, click-to-inspect
+- Topbar: live UTC clock, domain object counts, WS status dot
+- Left panel: layer toggles (Satellites · Flights · Seismic · Thermal) with live counts
+- Right drawer: click any globe point → open object inspector with full data card
+- Bottom left: real-time alert feed with severity levels
+- Three.js point clouds: orange (flights), yellow (earthquakes), red (thermal hotspots)
+- Raycaster click detection across all live domains
+- Auto-reconnecting WebSocket client with status feedback
+
+---
+
+### ⏳ Phase 3 — Auth, AOI Engine & Alerting (IN PROGRESS)
 **PROGRESS: [████░░░░░░░░░░░░░░░░░░░░░░░░░░] 10%**
 
-1. Integrate **Public CCTV/Traffic Feeds**: ingest JSON lists of public camera coordinates. Plot camera icons on the globe.
+1. JWT/HMAC token-protected routes for analyst-tier features
+2. AOI polygon draw on globe + persistence to JSON store
+3. Alert engine: AOI intersection check on every broadcast cycle
+4. Webhook output (Slack/Teams/generic) for triggered alerts
+
+---
+
+### ⏳ Phase 4 — Collaboration & Reporting (NOT STARTED)
+**PROGRESS: [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%**
+
+---
+
+### ⏳ Phase 5 — Advanced Intelligence (NOT STARTED)
+**PROGRESS: [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%**
 2. Integrate **Video.js player** within the Inspector Dashboard to stream live HLS/M3U8 feeds when a camera point is clicked.
 3. Overlay **NASA FIRMS (thermal vision / hotspot data)** for near-real-time thermal anomaly awareness.
 4. Render live ground traffic loops (TomTom/HERE APIs) globally.

@@ -1,9 +1,11 @@
-// server.js
+﻿// server.js
 // ----------------------------------------------------
-// Palantir-Style Intelligence Platform Backend Gateway
-// Phase 0/1: Setup secure gateway, serve static files, 
-// stream live positional data over WebSockets
+// Palantir-Style Intelligence Platform — Secure Gateway
+// Phase 1: Live multi-domain data ingest + WS streaming
+// Security: Helmet, CORS, Rate-Limit, WS limiter, sanitize, HMAC auth
 // ----------------------------------------------------
+
+'use strict';
 
 const express = require('express');
 const http = require('http');
@@ -14,110 +16,152 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+const apiRoutes = require('./src/routes/api');
+const { onConnect, onDisconnect, onMessage, attachIdleTimeout, getIp } = require('./src/middleware/rateLimitWS');
+const { getFlights } = require('./src/ingest/flights');
+const { getEarthquakes } = require('./src/ingest/earthquakes');
+const { getThermalHotspots } = require('./src/ingest/thermal');
+
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server, path: '/ws/live' });
 
 const PORT = process.env.PORT || 3000;
+const IS_PROD = process.env.NODE_ENV === 'production';
 
 // ==========================================
-// SECURITY AUDIT & HARDENING (Middleware)
+// SECURITY HARDENING — Layer 1: HTTP Headers
 // ==========================================
-
-// 1. Helmet: Sets 15+ secure HTTP headers (XSS, Clickjacking, MIME-sniff protection)
 app.use(helmet({
     contentSecurityPolicy: {
         useDefaults: true,
         directives: {
-            "default-src": ["'self'"],
-            "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://threejs.org", "https://unpkg.com", "https://raw.githubusercontent.com"],
-            "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-            "img-src": ["'self'", "data:", "blob:", "https://threejs.org", "https://raw.githubusercontent.com"],
-            "connect-src": ["'self'", "https://celestrak.com", "https://unpkg.com", "ws:", "wss:", "http:", "https:"],
-            "worker-src": ["'self'", "blob:"],
+            "default-src":   ["'self'"],
+            "script-src":    ["'self'", "'unsafe-inline'", "'unsafe-eval'",
+                              "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net",
+                              "https://threejs.org", "https://unpkg.com", "https://raw.githubusercontent.com"],
+            "style-src":     ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+            "img-src":       ["'self'", "data:", "blob:", "https://threejs.org", "https://raw.githubusercontent.com", "https://unpkg.com"],
+            "connect-src":   ["'self'", "ws:", "wss:", "https://celestrak.org", "https://celestrak.com",
+                              "https://opensky-network.org", "https://earthquake.usgs.gov",
+                              "https://unpkg.com", "https://cdn.jsdelivr.net"],
+            "worker-src":    ["'self'", "blob:"],
+            "frame-src":     ["'none'"],
+            "object-src":    ["'none'"],
+            "base-uri":      ["'self'"],
         },
     },
-    crossOriginEmbedderPolicy: false // Allows external imagery (like map tiles)
+    crossOriginEmbedderPolicy: false,
+    hsts: IS_PROD ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
 }));
 
-// 2. CORS: Restrict cross-origin requests
+app.set('trust proxy', 1);
+
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
-    methods: ['GET', 'POST']
+    origin: process.env.ALLOWED_ORIGINS
+        ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+        : IS_PROD ? false : '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// 3. Rate Limiting: Prevent DDoS and Brute Force attacks
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per clock sync
-    message: 'Too many requests from this IP, please try again later.',
+    windowMs: 15 * 60 * 1000,
+    max: 120,
+    message: { error: 'Too many requests — throttled.' },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.path === '/api/health'
 });
 app.use('/api/', apiLimiter);
 
-// 4. Data parsing & limits (Prevent payload abuse)
-app.use(express.json({ limit: '10kb' })); // Restrict JSON body size
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: false, limit: '10kb' }));
+app.disable('x-powered-by');
 
-// Serve static frontend files (The 3D Earth)
-app.use(express.static(path.join(__dirname, '/')));
+app.use(express.static(path.join(__dirname)));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
-// ==========================================
-// API ROUTES (REST)
-// ==========================================
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'secure', uptime: process.uptime() });
-});
+app.use('/api', apiRoutes);
 
-// Mock/Proxy endpoint for Positions (To be wired to OpenSky, AISHub, CelesTrak)
-app.get('/api/positions', async (req, res) => {
-    try {
-        // Here we'd proxy out to APIs securely using backend keys
-        // Returning a stub for Phase 0 demonstration
-        res.json({
-            satellites: [],
-            flights: [],
-            vessels: []
-        });
-    } catch (err) {
-        res.status(500).json({ error: 'Data gateway failure' });
+app.get('*', (req, res, next) => {
+    if (!req.path.startsWith('/api') && !req.path.includes('.')) {
+        return res.sendFile(path.join(__dirname, 'index.html'));
     }
+    next();
+});
+
+app.use((err, req, res, next) => {
+    console.error('[ERROR]', err.message);
+    res.status(500).json({ error: 'Internal server error' });
 });
 
 // ==========================================
-// WEBSOCKET (REAL-TIME STREAMING)
+// WEBSOCKET — Secure Live Intel Stream
 // ==========================================
-wss.on('connection', (ws, req) => {
-    // Validate origins if necessary
-    const ip = req.socket.remoteAddress;
-    console.log(`[SECURE WS] Client connected targeting live feeds from IP: ${ip}`);
+function safeSend(ws, payload) {
+    if (ws.readyState !== WebSocket.OPEN) return;
+    try { ws.send(JSON.stringify(payload)); } catch { }
+}
 
-    // Stream mocked delta updates every 5 seconds (Phase 0)
-    const streamInterval = setInterval(() => {
+function broadcast(payload) {
+    const msg = JSON.stringify(payload);
+    wss.clients.forEach(ws => {
         if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-                type: 'delta_update',
-                timestamp: Date.now(),
-                data: {
-                    domain: 'flight', 
-                    updates: [] 
-                }
-            }));
+            try { ws.send(msg); } catch { }
         }
-    }, 5000);
-
-    ws.on('close', () => {
-        clearInterval(streamInterval);
-        console.log(`[SECURE WS] Client disconnected`);
     });
+}
+
+wss.on('connection', (ws, req) => {
+    const { allowed, ip, reason } = onConnect(req);
+    if (!allowed) { ws.close(1008, reason || 'Policy violation'); return; }
+    console.log(`[WS] Connected: ${ip}`);
+    attachIdleTimeout(ws);
+    ws.on('message', (raw) => {
+        if (raw.length > 1024) { ws.close(1009, 'Message too large'); return; }
+        if (!onMessage(ip)) { ws.close(1008, 'Rate limit exceeded'); return; }
+    });
+    ws.on('close', () => { onDisconnect(ip); console.log(`[WS] Disconnected: ${ip}`); });
+    ws.on('error', (err) => { console.error(`[WS] Error ${ip}:`, err.message); });
+    safeSend(ws, { type: 'connected', msg: 'OSINT stream active', ts: Date.now() });
 });
 
-// START SERVER
+// ==========================================
+// LIVE DATA BROADCAST LOOP
+// ==========================================
+let broadcastInterval = null;
+
+async function runBroadcastCycle() {
+    try {
+        const [flights, earthquakes, thermal] = await Promise.allSettled([
+            getFlights(), getEarthquakes(), getThermalHotspots()
+        ]);
+        broadcast({
+            type: 'delta_update',
+            ts: Date.now(),
+            flights:     flights.status === 'fulfilled'     ? flights.value     : [],
+            earthquakes: earthquakes.status === 'fulfilled' ? earthquakes.value : [],
+            thermal:     thermal.status === 'fulfilled'     ? thermal.value     : []
+        });
+    } catch (err) { console.error('[Broadcast]', err.message); }
+}
+
+function startBroadcast() {
+    if (broadcastInterval) return;
+    broadcastInterval = setInterval(runBroadcastCycle, 5000);
+    runBroadcastCycle();
+}
+
 server.listen(PORT, () => {
-    console.log(`\n================================`);
-    console.log(`🛡️ Intelligence Gateway Active 🛡️`);
-    console.log(`================================`);
-    console.log(`➔ Port: ${PORT}`);
-    console.log(`➔ Security: Helmet, CORS, Rate-Limiting enabled.`);
+    console.log(`\n====================================`);
+    console.log(` OSINT Intelligence Gateway v1.0`);
+    console.log(` Port     : ${PORT}`);
+    console.log(` Security : Helmet, CORS, RateLimit, WSGuard, HMAC Auth`);
+    console.log(` Static   : index.html @ root`);
+    console.log(`====================================\n`);
+    startBroadcast();
 });
+
+process.on('SIGTERM', () => { clearInterval(broadcastInterval); wss.close(() => server.close(() => process.exit(0))); });
+process.on('SIGINT',  () => { clearInterval(broadcastInterval); wss.close(() => server.close(() => process.exit(0))); });
