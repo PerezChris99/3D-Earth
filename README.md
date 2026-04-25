@@ -22,10 +22,12 @@ npx http-server -p 8000
 Then open http://localhost:8000 in your browser.
 
 Files of primary interest:
-- `index.html` — application shell and UI markup
-- `style.css` — page and UI styling
-- `script.js` — main application logic (rendering, scene setup, UI wiring)
-- `sgp4-worker.js` — optional Web Worker for SGP4 satellite propagation
+- `index.html` — application shell and UI markup (root, keeping deployment safe)
+- `public/css/style.css` — page and UI styling
+- `public/js/script.js` — main application logic (rendering, scene setup, UI wiring)
+- `public/js/sgp4-worker.js` — optional Web Worker for SGP4 satellite propagation
+- `server.js` — Secure Node.js Gateway & WebSocket streamer
+- `SECURITY_AUDIT.md` — Hack-proofing status and threat model
 
 ---
 
