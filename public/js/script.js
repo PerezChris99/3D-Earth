@@ -306,14 +306,22 @@ function wireUiToggles() {
         try { issChk.onchange = () => { console.log('ui-onchange-fallback chk-iss', issChk.checked); updateIssVisibility(issChk.checked); }; } catch (e) {}
     }
 
-    // Controls panel collapse/expand toggle
-    const collapseBtn = document.getElementById('ctrl-collapse-btn');
-    const controlsPanel = document.getElementById('controls');
-    if (collapseBtn && controlsPanel) {
-        collapseBtn.addEventListener('click', () => {
-            const isCollapsed = controlsPanel.classList.toggle('collapsed');
-            collapseBtn.textContent = isCollapsed ? '+' : '−';
-            collapseBtn.title = isCollapsed ? 'Expand controls panel' : 'Collapse controls panel';
+    // Controls panel collapse/expand toggle — removed (old .controls element no longer exists)
+
+    // Globe control action buttons
+    document.getElementById('btn-clouds')?.addEventListener('click', () => toggleClouds());
+    document.getElementById('btn-rotate')?.addEventListener('click', () => toggleRotation());
+    document.getElementById('btn-reset')?.addEventListener('click', () => resetView());
+    document.getElementById('btn-follow-iss')?.addEventListener('click', () => toggleFollowISS());
+
+    // Globe controls collapsible section
+    const globeCtrlHdr = document.getElementById('globe-ctrl-hdr');
+    const globeCtrlBody = document.getElementById('globe-ctrl-body');
+    if (globeCtrlHdr && globeCtrlBody) {
+        globeCtrlHdr.addEventListener('click', () => {
+            const collapsed = globeCtrlBody.classList.toggle('collapsed');
+            const caret = globeCtrlHdr.querySelector('.collapse-caret');
+            if (caret) caret.textContent = collapsed ? '▸' : '▾';
         });
     }
 
@@ -528,31 +536,6 @@ function updateMagneticVisibility(checked) {
 
 // Track ISS using open-notify API
 // ISS removed: trackISS and createISSModel intentionally omitted
-
-// Create WebSocket connection fallback for Palantir-style dashboard
-let osintSocket = null;
-function initOSINTStream() {
-    try {
-        // Try connecting to the local secure dashboard backend
-        osintSocket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/live');
-        osintSocket.onopen = () => {
-            console.log('[OSINT] Secured WebSocket stream established.');
-        };
-        osintSocket.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            if (msg.type === 'delta_update') {
-               // console.log('[OSINT] Delta update received:', msg.data);
-               // Future phase: update planes/ships dynamically
-            }
-        };
-        osintSocket.onclose = () => {
-            console.warn('[OSINT] Stream disconnected. Reconnecting in 5s...');
-            setTimeout(initOSINTStream, 5000);
-        };
-    } catch (e) {
-        console.warn('[OSINT] Backend not found. Running in static fallback mode.');
-    }
-}
 
 // Satellites group (ISS + other simple satellites)
 function createSatellites() {
@@ -1109,29 +1092,6 @@ function createMoon() {
 
 // Timezone visualization removed per user request
 
-function initOSINTStream() {
-    try {
-        // Try connecting to the local secure dashboard backend
-        osintSocket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/live');
-        osintSocket.onopen = () => {
-            console.log('[OSINT] Secured WebSocket stream established.');
-        };
-        osintSocket.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            if (msg.type === 'delta_update') {
-               // console.log('[OSINT] Delta update received:', msg.data);
-               // Future phase: update planes/ships dynamically
-            }
-        };
-        osintSocket.onclose = () => {
-            console.warn('[OSINT] Stream disconnected. Reconnecting in 5s...');
-            setTimeout(initOSINTStream, 5000);
-        };
-    } catch (e) {
-        console.warn('[OSINT] Backend not found. Running in static fallback mode.');
-    }
-}
-
 function init() {
     // Scene setup
     scene = new THREE.Scene();
@@ -1164,33 +1124,6 @@ function init() {
         document.body.style.background = spaceGradient;
         document.documentElement.style.height = '100%';
         document.body.style.height = '100%';
-    } catch (e) {}
-
-    // Mobile hamburger toggle: hide full panel on small screens and show via hamburger
-    try {
-        const hamburger = document.getElementById('controls-hamburger');
-        const controlsEl = document.getElementById('controls');
-        const MOBILE_BREAK = 640;
-        function updateControlsForSize() {
-            if (window.innerWidth <= MOBILE_BREAK) {
-                if (controlsEl) controlsEl.classList.remove('show');
-                if (controlsEl) controlsEl.classList.remove('show-mobile');
-                if (hamburger) hamburger.style.display = 'block';
-            } else {
-                if (controlsEl) controlsEl.style.display = ''; // revert to CSS block
-                if (hamburger) hamburger.style.display = 'none';
-                if (controlsEl) controlsEl.classList.remove('show-mobile');
-            }
-        }
-        if (hamburger && controlsEl) {
-            hamburger.addEventListener('click', () => {
-                const isShown = controlsEl.classList.toggle('show-mobile');
-                // scroll to top of panel when opening
-                if (isShown) controlsEl.scrollTop = 0;
-            });
-            window.addEventListener('resize', updateControlsForSize);
-            updateControlsForSize();
-        }
     } catch (e) {}
 
     // Controls
@@ -1227,32 +1160,6 @@ function init() {
 
     // Wire UI toggles
     wireUiToggles();
-
-    // restore controls collapsed state
-    const controlsEl = document.getElementById('controls');
-    try {
-        const collapsed = localStorage.getItem('controls.collapsed') === '1';
-        if (controlsEl && collapsed) controlsEl.classList.add('collapsed');
-    } catch (e) {}
-
-    // On large screens, ensure the Bootstrap offcanvas controls are visible by default
-    try {
-        const LG_BREAKPOINT = 992; // Bootstrap 'lg' in px
-        if (controlsEl && window.innerWidth >= LG_BREAKPOINT) {
-            // Prefer using Bootstrap's Offcanvas API if available
-            if (typeof bootstrap !== 'undefined' && bootstrap.Offcanvas) {
-                try {
-                    const inst = bootstrap.Offcanvas.getOrCreateInstance(controlsEl);
-                    inst.show();
-                } catch (e) {
-                    // fallback to adding show class
-                    controlsEl.classList.add('show');
-                }
-            } else {
-                controlsEl.classList.add('show');
-            }
-        }
-    } catch (e) {}
 
     // Prepare optional feature groups
     createSatellites();
