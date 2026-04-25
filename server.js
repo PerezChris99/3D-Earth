@@ -16,11 +16,13 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const apiRoutes = require('./src/routes/api');
+const apiRoutes   = require('./src/routes/api');
+const aoiRoutes   = require('./src/routes/aoi');
 const { onConnect, onDisconnect, onMessage, attachIdleTimeout, getIp } = require('./src/middleware/rateLimitWS');
-const { getFlights } = require('./src/ingest/flights');
-const { getEarthquakes } = require('./src/ingest/earthquakes');
-const { getThermalHotspots } = require('./src/ingest/thermal');
+const { getFlights }        = require('./src/ingest/flights');
+const { getEarthquakes }    = require('./src/ingest/earthquakes');
+const { getThermalHotspots }= require('./src/ingest/thermal');
+const { runChecks, drainQueue } = require('./src/alertEngine');
 
 const app = express();
 const server = http.createServer(app);
@@ -83,6 +85,7 @@ app.use(express.static(path.join(__dirname)));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 app.use('/api', apiRoutes);
+app.use('/api/aoi', aoiRoutes);
 
 app.get('*', (req, res, next) => {
     if (!req.path.startsWith('/api') && !req.path.includes('.')) {
@@ -137,12 +140,16 @@ async function runBroadcastCycle() {
         const [flights, earthquakes, thermal] = await Promise.allSettled([
             getFlights(), getEarthquakes(), getThermalHotspots()
         ]);
+        const f = flights.status === 'fulfilled'     ? flights.value     : [];
+        const e = earthquakes.status === 'fulfilled' ? earthquakes.value : [];
+        const t = thermal.status === 'fulfilled'     ? thermal.value     : [];
+        runChecks({ flights: f, earthquakes: e, thermal: t });
+        const pending = drainQueue();
         broadcast({
             type: 'delta_update',
             ts: Date.now(),
-            flights:     flights.status === 'fulfilled'     ? flights.value     : [],
-            earthquakes: earthquakes.status === 'fulfilled' ? earthquakes.value : [],
-            thermal:     thermal.status === 'fulfilled'     ? thermal.value     : []
+            flights: f, earthquakes: e, thermal: t,
+            alerts: pending
         });
     } catch (err) { console.error('[Broadcast]', err.message); }
 }

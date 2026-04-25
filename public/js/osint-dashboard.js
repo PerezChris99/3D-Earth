@@ -308,6 +308,15 @@
                     updateLayerCount('thermal', state.thermal.length);
                 }
                 updateLayerCount('satellites', window.tleData ? window.tleData.length : 0);
+                // Server-side alert triggers (AOI intersections, threshold alerts)
+                if (Array.isArray(msg.alerts)) {
+                    msg.alerts.forEach(a => {
+                        const level = a.domain === 'earthquake' ? 'danger' : a.domain === 'flight' ? 'warn' : 'info';
+                        const label = a.aoiName || a.domain;
+                        const detail = a.item.callsign || a.item.place || `${a.item.lat?.toFixed(2)},${a.item.lon?.toFixed(2)}`;
+                        pushAlert(`[${label}] ${a.domain.toUpperCase()} — ${detail}`, level);
+                    });
+                }
             }
         };
 

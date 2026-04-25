@@ -210,7 +210,7 @@ TimescaleDB        ←  time-series extension on Postgres (position history)
 
 ## > RECOMMENDED BEST WAY FORWARD
 
-## OVERALL PROGRESS: [████████████████░░░░░░░░░░░░░░] 55%
+## OVERALL PROGRESS: [████████████████████░░░░░░░░░░] 70%
 
 ### Phased Execution Plan
 
@@ -252,13 +252,14 @@ TimescaleDB        ←  time-series extension on Postgres (position history)
 
 ---
 
-### ⏳ Phase 3 — Auth, AOI Engine & Alerting (IN PROGRESS)
-**PROGRESS: [████░░░░░░░░░░░░░░░░░░░░░░░░░░] 10%**
-
-1. JWT/HMAC token-protected routes for analyst-tier features
-2. AOI polygon draw on globe + persistence to JSON store
-3. Alert engine: AOI intersection check on every broadcast cycle
-4. Webhook output (Slack/Teams/generic) for triggered alerts
+### ✅ Phase 3 — Auth, AOI Engine & Alerting (COMPLETE)
+**PROGRESS: [██████████████████████████████] 100%**
+- `src/aoi.js` — In-memory polygon AOI store with ray-casting point-in-polygon
+- `src/alertEngine.js` — Threshold + AOI intersection checks per broadcast cycle, dedup, webhook delivery (HMAC-signed)
+- `src/routes/aoi.js` — Protected REST: `GET /api/aoi`, `POST /api/aoi`, `DELETE /api/aoi/:id` (analyst+ role)
+- Emergency squawk alerts: 7500 (hijack), 7600 (comms failure), 7700 (emergency) auto-triggered
+- Server-pushed alerts delivered over WebSocket to all connected clients
+- Client alert feed updated to display server-side trigger messages
 
 ---
 
