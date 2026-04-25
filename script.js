@@ -510,6 +510,31 @@ function updateMagneticVisibility(checked) {
 // Track ISS using open-notify API
 // ISS removed: trackISS and createISSModel intentionally omitted
 
+// Create WebSocket connection fallback for Palantir-style dashboard
+let osintSocket = null;
+function initOSINTStream() {
+    try {
+        // Try connecting to the local secure dashboard backend
+        osintSocket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/live');
+        osintSocket.onopen = () => {
+            console.log('[OSINT] Secured WebSocket stream established.');
+        };
+        osintSocket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'delta_update') {
+               // console.log('[OSINT] Delta update received:', msg.data);
+               // Future phase: update planes/ships dynamically
+            }
+        };
+        osintSocket.onclose = () => {
+            console.warn('[OSINT] Stream disconnected. Reconnecting in 5s...');
+            setTimeout(initOSINTStream, 5000);
+        };
+    } catch (e) {
+        console.warn('[OSINT] Backend not found. Running in static fallback mode.');
+    }
+}
+
 // Satellites group (ISS + other simple satellites)
 function createSatellites() {
     satellitesGroup = new THREE.Group();
@@ -1064,6 +1089,29 @@ function createMoon() {
 
 
 // Timezone visualization removed per user request
+
+function initOSINTStream() {
+    try {
+        // Try connecting to the local secure dashboard backend
+        osintSocket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/live');
+        osintSocket.onopen = () => {
+            console.log('[OSINT] Secured WebSocket stream established.');
+        };
+        osintSocket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'delta_update') {
+               // console.log('[OSINT] Delta update received:', msg.data);
+               // Future phase: update planes/ships dynamically
+            }
+        };
+        osintSocket.onclose = () => {
+            console.warn('[OSINT] Stream disconnected. Reconnecting in 5s...');
+            setTimeout(initOSINTStream, 5000);
+        };
+    } catch (e) {
+        console.warn('[OSINT] Backend not found. Running in static fallback mode.');
+    }
+}
 
 function init() {
     // Scene setup
