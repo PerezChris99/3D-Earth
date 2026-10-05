@@ -598,6 +598,8 @@ function createSatellites() {
     satellitePanelInstances = new THREE.InstancedMesh(panelGeo, panelMat, maxVisuals);
     satelliteInstances.frustumCulled = false;
     satellitePanelInstances.frustumCulled = false;
+    satelliteInstances.count = 0;
+    satellitePanelInstances.count = 0;
     satelliteInstances.userData.domain = 'satellite';
     satellitePanelInstances.userData.domain = 'satellite-panel';
     satellitesGroup.add(satelliteInstances);
@@ -608,9 +610,6 @@ function createSatellites() {
     // ISS removed: no per-satellite highlight mesh created
 
     scene.add(satellitesGroup);
-
-    // create ISS placeholder/model
-    createISSModel();
 
     // Fetch TLEs from CelesTrak (active satellites)
     fetchTLES();
