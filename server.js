@@ -28,6 +28,7 @@ const aoiRoutes   = require('./src/routes/aoi');
 const notesRoutes = require('./src/routes/notes');
 const dataEngineRoutes = require('./src/routes/data-engine');
 const { onConnect, onDisconnect, onMessage, attachIdleTimeout, getIp } = require('./src/middleware/rateLimitWS');
+// Vercel production requires JWT_SECRET to be provisioned as a deployment environment secret.
 const { verifyToken } = require('./src/auth');
 const { getFlights }          = require('./src/ingest/flights');
 const { getEarthquakes }      = require('./src/ingest/earthquakes');
