@@ -615,25 +615,7 @@ function createSatellites() {
     // Fetch TLEs from CelesTrak (active satellites)
     fetchTLES();
 
-    // Create many synthetic satellites for visual density
-    const synthGeom = new THREE.BufferGeometry();
-    const synthPositions = new Float32Array(SYNTHETIC_SAT_COUNT * 3);
-    synthGeom.setAttribute('position', new THREE.BufferAttribute(synthPositions, 3));
-    syntheticPoints = new THREE.Points(synthGeom, new THREE.PointsMaterial({ color: 0x66ccff, size: 2, sizeAttenuation: false }));
-    syntheticPoints.frustumCulled = false;
-    satellitesGroup.add(syntheticPoints);
-    syntheticPositionsAttr = synthGeom.getAttribute('position');
 
-    // initialize synthetic orbital params
-    syntheticParams = [];
-    for (let i = 0; i < SYNTHETIC_SAT_COUNT; i++) {
-        syntheticParams.push({
-            altitude: 1.05 + Math.random() * 0.5,
-            speed: 0.002 + Math.random() * 0.01,
-            phase: Math.random() * Math.PI * 2,
-            inclination: Math.random() * Math.PI
-        });
-    }
 }
 
 // Load a small ISS GLTF model (fallback to a simple box if loader unavailable)
@@ -839,19 +821,13 @@ function findIssTleIndex() {
 // Fetch TLE data from CelesTrak (active satellites) and parse into tleData
 async function fetchTLES() {
     try {
-        // CelesTrak active satellites TLE file (text)
-        const url = 'https://celestrak.com/NORAD/elements/active.txt';
-        const res = await fetch(url);
-        const text = await res.text();
-        const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-        tleData = [];
-        for (let i = 0; i < lines.length; i += 3) {
-            const name = lines[i];
-            const tle1 = lines[i + 1];
-            const tle2 = lines[i + 2];
-            if (!tle1 || !tle2) break;
-            tleData.push({ name, tle1, tle2 });
-        }
+        // Fetch the real active catalog through our server-side CelesTrak gateway.
+        // This avoids browser CORS/redirect problems and keeps the provider request cached.
+        const res = await fetch('/api/satellites', { cache: 'no-store' });
+        if (!res.ok) throw new Error(\`Satellite gateway HTTP \${res.status}\`);
+        const payload = await res.json();
+        tleData = Array.isArray(payload) ? payload : [];
+        if (!tleData.length) throw new Error('CelesTrak returned no active satellites');
 
     // allocate positions buffer
         const count = tleData.length;
@@ -886,29 +862,17 @@ async function fetchTLES() {
             sgp4Worker.postMessage({ type: 'update' });
         } else updateTLEPositions();
     } catch (e) {
-        console.warn('Failed to fetch TLEs', e);
-        // Fallback: create a few synthetic satellites so user sees something
-    console.log('Using synthetic satellite fallback');
+        console.warn('Failed to fetch real satellite catalog', e);
+        // Do not fabricate satellite positions. A failed provider means no satellite layer.
         tleData = [];
-        for (let i = 0; i < 12; i++) {
-            tleData.push({ name: 'SYNTH-' + i, tle1: '', tle2: '' });
+        tleCount = 0;
+        if (tlePoints) {
+            tlePoints.geometry.dispose();
+            tlePoints.geometry = new THREE.BufferGeometry();
+            tlePoints.count = 0;
         }
-        const count = tleData.length;
-        const positions = new Float32Array(count * 3);
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        tlePoints.geometry.dispose();
-        tlePoints.geometry = geom;
-        tlePositionsAttr = geom.getAttribute('position');
-        // populate synthetic positions
-        for (let i = 0; i < tleData.length; i++) {
-            const a = (i / tleData.length) * Math.PI * 2;
-            const r = 1.1;
-            tlePositionsAttr.array[i * 3 + 0] = r * Math.cos(a);
-            tlePositionsAttr.array[i * 3 + 1] = r * Math.sin(a) * 0.2;
-            tlePositionsAttr.array[i * 3 + 2] = r * Math.sin(a);
-        }
-        tlePositionsAttr.needsUpdate = true;
+        if (satelliteInstances) satelliteInstances.count = 0;
+        if (satellitePanelInstances) satellitePanelInstances.count = 0;
         lastTleUpdate = Date.now();
     }
 }
