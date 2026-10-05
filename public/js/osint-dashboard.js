@@ -136,9 +136,25 @@
             rows.push(row('Date', d.date));
             rows.push(row('Time UTC', d.time));
         } else if (d.type === 'sat') {
-            rows.push(row('Name', d.name));
-            rows.push(row('TLE Line 1', d.tle1?.slice(0, 32) + '…'));
-            rows.push(row('TLE Line 2', d.tle2?.slice(0, 32) + '…'));
+            rows.push(row('Callsign', d.callsign || 'Not assigned / not cataloged'));
+            rows.push(row('NORAD ID', d.norad));
+            rows.push(row('International Designator', d.intdes));
+            rows.push(row('Owner / operator', d.owner));
+            rows.push(row('Launch / origin', d.launchSite || '—'));
+            rows.push(row('Launch date', d.launchDate || '—'));
+            rows.push(row('Time in space', d.timeInSpace || '—'));
+            rows.push(row('Current speed', d.speed || '—', 'highlight'));
+            rows.push(row('Altitude', d.altitude || '—'));
+            rows.push(row('Latitude', d.latitude || '—'));
+            rows.push(row('Longitude', d.longitude || '—'));
+            rows.push(row('Orbital period', d.period || '—'));
+            rows.push(row('Inclination', d.inclination || '—'));
+            rows.push(row('Apogee', d.apogee || '—'));
+            rows.push(row('Perigee', d.perigee || '—'));
+            rows.push(row('Deployment', d.deployment || 'Launch date only'));
+            rows.push(row('ETR / decay', d.etr || 'Not available from current catalog'));
+            rows.push(row('Element epoch', d.epoch || '—'));
+            rows.push(row('Data source', 'CelesTrak SATCAT + GP/SGP4'));
         }
         return rows.join('');
     }
@@ -258,6 +274,17 @@
                 ...(eqPoints ? [{ obj: eqPoints, domain: 'eq', data: state.earthquakes }] : []),
                 ...(thermalPoints && thermalPoints.visible ? [{ obj: thermalPoints, domain: 'thermal', data: state.thermal }] : []),
             ];
+
+            if (window.satelliteInstances && window.satelliteInstances.visible) {
+                const hits = raycaster.intersectObject(window.satelliteInstances);
+                if (hits.length && hits[0].instanceId != null) {
+                    const tracked = window.getTrackedSatellite?.(hits[0].instanceId);
+                    if (tracked) {
+                        window.trackSatelliteSelection?.(tracked);
+                        return;
+                    }
+                }
+            }
 
             let bestDist = Infinity;
             let bestMatch = null;
