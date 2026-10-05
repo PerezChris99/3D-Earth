@@ -16,13 +16,13 @@ let rotationOffsetStart = 0.0; // initial offset between current rotation and GM
 
 // Texture URLs (using reliable sources)
 const textureUrls = {
-    earth: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg',
-    earthBump: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg',
-    earthSpecular: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg',
-    clouds: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png',
-    earthLights: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_lights_2048.png',
-    moon: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg',
-    starfield: 'https://threejs.org/examples/textures/cube/MilkyWay/dark_s_px.jpg'
+    earth: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg',
+    earthBump: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_normal_2048.jpg',
+    earthSpecular: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_specular_2048.jpg',
+    clouds: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_clouds_1024.png',
+    earthLights: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_lights_2048.png',
+    moon: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/moon_1024.jpg',
+    starfield: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/cube/MilkyWay/dark_s_px.jpg'
 };
 
 // Backup texture URLs
@@ -592,8 +592,8 @@ function createSatellites() {
     // The orbital state remains sourced from CelesTrak + SGP4; the geometry is a visual marker,
     // not a claim that every spacecraft has an identical physical design.
     const maxVisuals = MAX_REAL_SATELLITE_VISUALS;
-    const bodyGeo = new THREE.BoxGeometry(0.026, 0.010, 0.010);
-    const panelGeo = new THREE.BoxGeometry(0.008, 0.0016, 0.040);
+    const bodyGeo = new THREE.BoxGeometry(0.040, 0.015, 0.015);
+    const panelGeo = new THREE.BoxGeometry(0.012, 0.0022, 0.065);
     const bodyMat = new THREE.MeshPhongMaterial({ color: 0xf2f5f8, emissive: 0x31465d, emissiveIntensity: 0.65, shininess: 35 });
     const panelMat = new THREE.MeshPhongMaterial({ color: 0x4779a8, emissive: 0x16304b, emissiveIntensity: 0.45, shininess: 20 });
     satelliteInstances = new THREE.InstancedMesh(bodyGeo, bodyMat, maxVisuals);
@@ -833,7 +833,7 @@ function findIssTleIndex() {
 }
 
 // Fetch TLE data from CelesTrak (active satellites) and parse into tleData
-async function fetchTLES() {
+async async function fetchTLES() {
     try {
         // Fetch the real active catalog through our server-side CelesTrak gateway.
         // This avoids browser CORS/redirect problems and keeps the provider request cached.
@@ -874,7 +874,7 @@ async function fetchTLES() {
         if (sgp4Worker) {
             sgp4Worker.postMessage({ type: 'setTLE', tle: tleData });
             sgp4Worker.postMessage({ type: 'update' });
-        } else updateTLEPositions();
+        } else updateTLEPositionsFallback();
     } catch (e) {
         console.warn('Failed to fetch real satellite catalog', e);
         // Do not fabricate satellite positions. A failed provider means no satellite layer.
@@ -979,46 +979,22 @@ function stopTleUpdateLoop() {
 
 // Simple Sun representation (mesh + directional light)
 function createSun() {
-    // Create an additive sun sprite (bright disk + soft corona layers)
-    const sunGroup = new THREE.Group();
-
-    // Primary sun sprite (sharp center)
-    const sunTex = createSunTexture(512);
-    const spriteMat = new THREE.SpriteMaterial({ map: sunTex, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-    const sunCore = new THREE.Sprite(spriteMat);
-    // scale sprites so the Sun appears large and detailed when it's closer
-    sunCore.scale.set(1.8 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.8 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
-    sunGroup.add(sunCore);
-
-    // Corona layer (warmer, larger)
-    const coronaTex = createSunTexture(512, { innerColor: '#fff9e6', outerColor: '#ffbb55', falloff: 0.9 });
-    const coronaMat = new THREE.SpriteMaterial({ map: coronaTex, color: 0xffeeaa, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-    const corona = new THREE.Sprite(coronaMat);
-    corona.scale.set(4.2 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 4.2 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
-    sunGroup.add(corona);
-
-    // Soft halo (very large, faint)
-    const haloTex = createSunTexture(512, { innerColor: '#ffeecc', outerColor: '#221100', falloff: 0.6 });
-    const haloMat = new THREE.SpriteMaterial({ map: haloTex, color: 0xffeecc, transparent: true, blending: THREE.AdditiveBlending, opacity: 0.5, depthWrite: false });
-    const halo = new THREE.Sprite(haloMat);
-    halo.scale.set(9.0 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 9.0 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
-    sunGroup.add(halo);
-
-    sunObject = sunGroup;
-    // expose sprite parts so UI sliders can rescale them at runtime
-    try { sunObject.userData = { core: sunCore, corona: corona, halo: halo }; } catch (e) {}
-    scene.add(sunObject);
-    // keep sun sprite always rendered (avoid accidental frustum culling)
-    try { sunObject.traverse((o) => { if (o && typeof o.frustumCulled !== 'undefined') o.frustumCulled = false; }); } catch (e) {}
-
-    // Directional light representing the sun's illumination
-    sunLight = new THREE.DirectionalLight(0xfff3d9, 1.25);
+    const group = new THREE.Group();
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.11, 24, 24), new THREE.MeshBasicMaterial({ color: 0xfff4c2 }));
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: createSunTexture(256, { innerColor: '#ffffff', outerColor: '#ff9d2e', falloff: 0.78 }),
+        color: 0xffd36b, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false
+    }));
+    glow.scale.set(0.7, 0.7, 1);
+    group.add(core, glow);
+    group.userData = { core, corona: glow, halo: glow };
+    group.frustumCulled = false;
+    sunObject = group;
+    scene.add(group);
+    sunLight = new THREE.DirectionalLight(0xfff3d9, 1.7);
     sunLight.castShadow = false;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
     scene.add(sunLight);
 }
-
 // create a radial gradient texture for the sun/corona
 function createSunTexture(size, opts) {
     opts = opts || {};
@@ -1197,92 +1173,26 @@ function createTides() {
 
 // Moon placeholder
 function createMoon() {
-    // Moon texture (publicly available low-res for demo). Use fallback canvas if unavailable.
     const loader = new THREE.TextureLoader();
-    const moonTexUrl = textureUrls.moon;
-    const moonNormUrl = textureUrls.earthBump;
-    const moonTex = loader.load(moonTexUrl, undefined, undefined, () => {
-        console.warn('Moon texture failed to load, using fallback');
+    const moonMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0x111111, shininess: 4 });
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(0.16, 64, 64), moonMaterial);
+    moon.castShadow = false;
+    moon.receiveShadow = false;
+    moon.frustumCulled = false;
+    moon.userData = { material: moonMaterial };
+    loader.load(textureUrls.moon, (texture) => {
+        texture.encoding = THREE.sRGBEncoding;
+        texture.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 1);
+        moonMaterial.map = texture;
+        moonMaterial.needsUpdate = true;
+    }, undefined, (error) => {
+        console.warn('[3D Earth] Moon texture unavailable; using lit lunar fallback.', error);
+        moonMaterial.color.setHex(0x9a9a9a);
     });
-    const moonNormal = loader.load(moonNormUrl, undefined, undefined, () => {});
-
-    // Shader material to compute lunar phases and subtle earthshine on the night side
-    const moonMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-            u_map: { value: moonTex },
-            u_normal: { value: moonNormal },
-            u_sunDir: { value: new THREE.Vector3(1, 0, 0) },
-            u_earthColor: { value: new THREE.Color(0x223355) },
-            u_earthshineIntensity: { value: 0.06 },
-            u_lightIntensity: { value: 1.0 }
-        },
-        vertexShader: `
-            varying vec3 vNormal;
-            varying vec3 vWorldPos;
-            varying vec2 vUv;
-            void main() {
-                vUv = uv;
-                vNormal = normalize(normalMatrix * normal);
-                vec4 wp = modelMatrix * vec4(position, 1.0);
-                vWorldPos = wp.xyz;
-                gl_Position = projectionMatrix * viewMatrix * wp;
-            }
-        `,
-        fragmentShader: `
-            uniform sampler2D u_map;
-            uniform vec3 u_sunDir;
-            uniform vec3 u_earthColor;
-            uniform float u_earthshineIntensity;
-            uniform float u_lightIntensity;
-            varying vec3 vNormal;
-            varying vec3 vWorldPos;
-            varying vec2 vUv;
-
-            void main() {
-                vec3 n = normalize(vNormal);
-                // Lambertian illumination from sun direction
-                float sunDot = clamp(dot(n, normalize(u_sunDir)), -1.0, 1.0);
-                // fetch albedo
-                vec3 albedo = texture2D(u_map, vUv).rgb;
-
-                // Day side lit color
-                float diff = max(sunDot, 0.0);
-                vec3 day = albedo * (0.12 + diff * u_lightIntensity);
-
-                // Night side: Earthshine (soft bluish fill on the dark limb)
-                float nightFac = smoothstep(-0.05, -0.5, sunDot);
-                // Earthshine stronger near limb (perpendicular to sunDir)
-                float limb = pow(1.0 - max(0.0, dot(n, vec3(0.0,1.0,0.0))), 1.5);
-                vec3 earthshine = u_earthColor * u_earthshineIntensity * limb * nightFac;
-
-                // subtle ambient fill for deep shadow
-                vec3 ambient = albedo * 0.02;
-
-                vec3 color = day + earthshine + ambient;
-                // darken and desaturate in shadow
-                if (diff <= 0.0) {
-                    color *= 0.55;
-                }
-
-                // apply slight gamma
-                color = pow(color, vec3(1.0/1.8));
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `,
-        side: THREE.FrontSide
-    });
-
-    const geom = new THREE.SphereGeometry(0.16, 64, 64);
-    moonObject = new THREE.Mesh(geom, moonMaterial);
-    moonObject.castShadow = false;
-    moonObject.receiveShadow = false;
-    // place the Moon at visual moonDistance scaled position
-    moonObject.position.set(moonDistance, 0, 0);
-    moonObject.userData = { material: moonMaterial };
-    try { moonObject.frustumCulled = false; } catch (e) {}
+    moon.position.set(moonDistance, 0, 0);
+    moonObject = moon;
     scene.add(moonObject);
 }
-
 // Population heatmap placeholder (a tinted sphere)
 
 // Historical events placeholder
@@ -1346,7 +1256,7 @@ function init() {
     scene = new THREE.Scene();
 
     // Camera setup
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 500);
     camera.position.set(0, 0, 3);
 
     // Renderer setup
@@ -1574,117 +1484,29 @@ function updateSunPosition() {
 }
 
 function createStarfield() {
-    // Procedural starfield on a distant celestial sphere
-    const STAR_COUNT = 8000;
-    const radius = 800.0; // far away so parallax is minimal
-
+    const STAR_COUNT = 7000, radius = 60;
     const positions = new Float32Array(STAR_COUNT * 3);
     const colors = new Float32Array(STAR_COUNT * 3);
-    const sizes = new Float32Array(STAR_COUNT);
-
-    // helper: color from temperature approximation (Kelvin -> rgb roughly)
-    function tempToRgb(t) {
-        // t: 1000..40000, clamp
-        t = Math.max(1000, Math.min(40000, t)) / 100.0;
-        let r, g, b;
-        if (t <= 66) {
-            r = 255;
-            g = 99.4708025861 * Math.log(t) - 161.1195681661;
-            b = (t <= 19) ? 0 : (138.5177312231 * Math.log(t - 10) - 305.0447927307);
-        } else {
-            r = 329.698727446 * Math.pow(t - 60, -0.1332047592);
-            g = 288.1221695283 * Math.pow(t - 60, -0.0755148492);
-            b = 255;
-        }
-        return [Math.max(0, Math.min(255, r)) / 255, Math.max(0, Math.min(255, g)) / 255, Math.max(0, Math.min(255, b)) / 255];
-    }
-
     for (let i = 0; i < STAR_COUNT; i++) {
-        // sample uniform direction on sphere
-        const z = 2.0 * Math.random() - 1.0;
-        const phi = Math.random() * Math.PI * 2.0;
-        const r = Math.sqrt(Math.max(0, 1.0 - z * z));
-        const x = r * Math.cos(phi);
-        const y = r * Math.sin(phi);
-
-        positions[i * 3 + 0] = x * radius;
-        positions[i * 3 + 1] = y * radius;
+        const z = 2 * Math.random() - 1, phi = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.max(0, 1 - z * z));
+        positions[i * 3] = r * Math.cos(phi) * radius;
+        positions[i * 3 + 1] = r * Math.sin(phi) * radius;
         positions[i * 3 + 2] = z * radius;
-
-        // magnitude: faint stars more common, a few very bright ones
-        const mag = Math.pow(Math.random(), 1.6) * 6.5 - 1.5; // approx -1.5 .. 5.0
-        // map mag to size (brighter => larger)
-        const size = THREE.MathUtils.clamp(6.5 - (mag + 1.5) * 1.6, 0.6, 6.5);
-        sizes[i] = size;
-
-        // approximate stellar temperature from magnitude/randomness for color
-        const temp = 3000 + Math.pow(Math.random(), 0.7) * 7000; // 3000K..10000K
-        const col = tempToRgb(temp);
-        // brighter stars slightly whiter
-        const brightness = THREE.MathUtils.clamp(1.2 - (mag / 6.0), 0.6, 1.4);
-        colors[i * 3 + 0] = col[0] * brightness;
-        colors[i * 3 + 1] = col[1] * brightness;
-        colors[i * 3 + 2] = col[2] * brightness;
+        const brightness = 0.65 + Math.random() * 0.35, warm = Math.random();
+        colors[i * 3] = brightness;
+        colors[i * 3 + 1] = brightness * (0.88 + warm * 0.12);
+        colors[i * 3 + 2] = brightness * (0.82 + warm * 0.18);
     }
-
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geom.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
-    geom.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
-
-    starUniforms = {
-        u_time: { value: 0.0 },
-        u_pixelRatio: { value: window.devicePixelRatio || 1.0 },
-        u_twinkleSpeed: { value: starTwinkleSpeed },
-        u_densityScale: { value: starDensityScale }
-    };
-
-    const vs = `
-        attribute vec3 aColor;
-        attribute float aSize;
-        varying vec3 vColor;
-        uniform float u_time;
-        uniform float u_pixelRatio;
-        void main() {
-            vColor = aColor;
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            // twinkle factor (slow per-star phase using position.x)
-            float phase = fract((position.x + 1234.0) * 0.0001 + u_time * 0.05);
-            float tw = 0.8 + 0.4 * sin(phase * 6.28318);
-            float size = aSize * tw * (200.0 / -mvPosition.z) * u_pixelRatio;
-            gl_PointSize = clamp(size, 0.5, 96.0);
-            gl_Position = projectionMatrix * mvPosition;
-        }
-    `;
-
-    const fs = `
-        varying vec3 vColor;
-        void main() {
-            vec2 c = gl_PointCoord - vec2(0.5);
-            float r = length(c);
-            float alpha = smoothstep(0.5, 0.0, r);
-            // give a tighter core and soft halo
-            float core = smoothstep(0.12, 0.0, r);
-            vec3 col = vColor;
-            // soft additive glow
-            gl_FragColor = vec4(col * (0.6 * core + 0.4 * alpha), alpha * 0.9);
-        }
-    `;
-
-    const mat = new THREE.ShaderMaterial({
-        uniforms: starUniforms,
-        vertexShader: vs,
-        fragmentShader: fs,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
-    });
-
-    const points = new THREE.Points(geom, mat);
-    points.frustumCulled = false;
-    scene.add(points);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const material = new THREE.PointsMaterial({ size: 0.075, sizeAttenuation: true, vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false });
+    const stars = new THREE.Points(geometry, material);
+    stars.frustumCulled = false;
+    stars.renderOrder = -100;
+    scene.add(stars);
 }
-
 // Create comet group container
 function createCometGroup() {
     if (!cometsGroup) {
