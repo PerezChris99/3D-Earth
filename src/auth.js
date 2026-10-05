@@ -11,6 +11,9 @@
 const crypto = require('crypto');
 
 const SECRET = process.env.JWT_SECRET || 'change-me-in-production-use-64-char-random-string';
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)) {
+    throw new Error('JWT_SECRET must be configured with at least 32 random characters in production.');
+}
 const TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 function _b64url(str) {
