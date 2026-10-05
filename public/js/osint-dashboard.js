@@ -149,14 +149,14 @@
     function initLayerToggles() {
         document.querySelectorAll('.layer-row[data-layer]').forEach(row => {
             const key = row.dataset.layer;
-            const tog = row.querySelector('.layer-toggle');
-            if (!tog) return;
-            if (state.layers[key]) tog.classList.add('on');
+            if (!(key in state.layers)) return;
+            row.classList.toggle('active', state.layers[key]);
+            row.setAttribute('aria-pressed', String(state.layers[key]));
             row.addEventListener('click', () => {
                 state.layers[key] = !state.layers[key];
-                tog.classList.toggle('on', state.layers[key]);
+                row.classList.toggle('active', state.layers[key]);
+                row.setAttribute('aria-pressed', String(state.layers[key]));
                 applyLayerVisibility(key, state.layers[key]);
-                // Notify backend of layer preference change
                 sendControlCmd('set_layer', { layer: key, enabled: state.layers[key] });
             });
         });
@@ -448,9 +448,9 @@
 
         // Mobile panel toggles
         document.getElementById('btn-toggle-left')?.addEventListener('click', () =>
-            document.getElementById('osint-left-panel')?.classList.toggle('open'));
+            document.body.classList.toggle('left-open'));
         document.getElementById('btn-toggle-right')?.addEventListener('click', () =>
-            document.getElementById('osint-right-panel')?.classList.toggle('open'));
+            document.body.classList.toggle('right-open'));
 
         initLayerToggles();
         waitForScene(() => {

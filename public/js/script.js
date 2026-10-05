@@ -312,16 +312,16 @@ function wireUiToggles() {
     document.getElementById('btn-clouds')?.addEventListener('click', () => toggleClouds());
     document.getElementById('btn-rotate')?.addEventListener('click', () => toggleRotation());
     document.getElementById('btn-reset')?.addEventListener('click', () => resetView());
-    document.getElementById('btn-follow-iss')?.addEventListener('click', () => toggleFollowISS());
+    document.getElementById('btn-follow-iss')?.addEventListener('click', () => resetView());
 
     // Globe controls collapsible section
     const globeCtrlHdr = document.getElementById('globe-ctrl-hdr');
     const globeCtrlBody = document.getElementById('globe-ctrl-body');
     if (globeCtrlHdr && globeCtrlBody) {
         globeCtrlHdr.addEventListener('click', () => {
-            const collapsed = globeCtrlBody.classList.toggle('collapsed');
+            const open = globeCtrlBody.classList.toggle('open');
             const caret = globeCtrlHdr.querySelector('.collapse-caret');
-            if (caret) caret.textContent = collapsed ? '▸' : '▾';
+            if (caret) caret.textContent = open ? '▾' : '▸';
         });
     }
 
@@ -342,7 +342,7 @@ function wireUiToggles() {
             }
             if (window.sendControlCmd) window.sendControlCmd('set_setting', { key: 'atmo_exposure', value: proc });
         });
-        try { atRange.oninput = () => { const v = parseFloat(atRange.value || 1.0); console.log('ui-oninput-fallback range-atmo', v); atmoPendingRaw = v; const proc = Math.pow(v, 1.2); atmoPendingValue = proc; if (atmosphere && atmosphere.material && atmosphere.material.uniforms && atmosphere.material.uniforms.u_exposure) atmosphere.material.uniforms.u_exposure.value = atmoPendingValue; }; } catch (e) {}
+
     }
 
     const chkAtm = document.getElementById('chk-atmosphere');
@@ -364,7 +364,7 @@ function wireUiToggles() {
             }
             if (window.sendControlCmd) window.sendControlCmd('set_setting', { key: 'fade_height', value: v });
         });
-        try { fadeRange.oninput = () => { const v = parseFloat(fadeRange.value || 4.0); console.log('ui-oninput-fallback range-fade', v); if (atmosphere && atmosphere.material && atmosphere.material.uniforms && atmosphere.material.uniforms.u_fadeHeight) atmosphere.material.uniforms.u_fadeHeight.value = v; }; } catch (e) {}
+
     }
 
     // Sun and Moon distance sliders (live tuning)
