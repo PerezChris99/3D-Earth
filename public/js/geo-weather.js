@@ -170,6 +170,24 @@
       $('weather-local-time').textContent = localNow.toLocaleString([], { dateStyle: 'medium', timeStyle: 'medium', timeZone: data.timezone });
       updateDayState(data.current.time, data.daily.sunrise[0], data.daily.sunset[0]);
       $('location-timezone').textContent = `Timezone: ${data.timezone} · UTC${data.utc_offset_seconds >= 0 ? '+' : ''}${(data.utc_offset_seconds/3600).toFixed(1)}`;
+
+      const forecast = $('weather-forecast');
+      if (forecast) {
+        forecast.innerHTML = '';
+        const nowMs = Date.now();
+        const rows = data.hourly.time.map((time, i) => ({
+          time, temp: data.hourly.temperature_2m[i], rain: data.hourly.precipitation_probability[i],
+          wind: data.hourly.wind_speed_10m[i]
+        })).filter(row => new Date(row.time).getTime() >= nowMs).slice(0, 12);
+        rows.forEach(row => {
+          const item = document.createElement('div');
+          item.className = 'forecast-row';
+          const t = new Date(row.time);
+          item.innerHTML = `<span>${t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',timeZone:data.timezone})}</span><b>${Math.round(row.temp)}°</b><span>${Math.round(row.rain)}% rain</span><span>${Math.round(row.wind)} km/h</span>`;
+          forecast.appendChild(item);
+        });
+      }
+      $('weather-source').textContent = `Model grid: ${Number(data.latitude).toFixed(3)}°, ${Number(data.longitude).toFixed(3)}° · elevation ${Math.round(data.elevation || 0)} m · Open-Meteo`;
       return data;
     } catch (error) {
       console.error('Weather load failed:', error);
