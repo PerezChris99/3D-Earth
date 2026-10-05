@@ -68,3 +68,11 @@ test('dashboard control contracts match the compact UI', () => {
   assert.match(globe, /btn-follow-iss.*resetView/);
   assert.match(globe, /globeCtrlBody\.classList\.toggle\('open'/);
 });
+
+test('privileged authentication requires a configured secret', () => {
+  const api = fs.readFileSync(path.join(root, 'src/routes/api.js'), 'utf8');
+  const authUi = fs.readFileSync(path.join(root, 'public/js/aoi-tool.js'), 'utf8');
+  assert.match(api, /ANALYST_AUTH_SECRET/);
+  assert.match(api, /timingSafeEqual/);
+  assert.match(authUi, /a-secret/);
+});
