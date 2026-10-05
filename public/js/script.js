@@ -16,12 +16,12 @@ let rotationOffsetStart = 0.0; // initial offset between current rotation and GM
 
 // Texture URLs (using reliable sources)
 const textureUrls = {
-    earth: '/public/assets/earth/earth_atmos_2048.jpg',
-    earthBump: '/public/assets/earth/earth_normal_2048.jpg',
-    earthSpecular: '/public/assets/earth/earth_specular_2048.jpg',
-    clouds: '/public/assets/earth/earth_clouds_1024.png',
-    earthLights: '/public/assets/earth/earth_lights_2048.png',
-    moon: '/public/assets/earth/moon_1024.jpg',
+    earth: '/assets/earth/earth_atmos_2048.jpg',
+    earthBump: '/assets/earth/earth_normal_2048.jpg',
+    earthSpecular: '/assets/earth/earth_specular_2048.jpg',
+    clouds: '/assets/earth/earth_clouds_1024.png',
+    earthLights: '/assets/earth/earth_lights_2048.png',
+    moon: '/assets/earth/moon_1024.jpg',
     starfield: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/cube/MilkyWay/dark_s_px.jpg'
 };
 
@@ -1642,7 +1642,7 @@ function assetMimeType(filename) {
     return 'image/jpeg';
 }
 
-const EARTH_ASSET_ROOTS = ['/public/assets/earth', '/assets/earth'];
+const EARTH_ASSET_ROOTS = ['/assets/earth', '/public/assets/earth'];
 
 async function fetchLocalTextureBlob(filename) {
     let lastError = null;
