@@ -144,8 +144,11 @@ app.use((req, res, next) => {
     }
     next();
 });
+const publicDir = path.join(__dirname, 'public');
+// Expose public/ at both legacy /public/* paths and Vercel-style root asset paths.
+app.use(express.static(publicDir, { etag: true }));
+app.use('/public', express.static(publicDir, { etag: true }));
 app.use(express.static(path.join(__dirname), { etag: true }));
-app.use('/public', express.static(path.join(__dirname, 'public'), { etag: true }));
 
 // ==========================================
 // API ROUTES
@@ -356,6 +359,7 @@ function startBroadcast() {
 // ==========================================
 // SERVER STARTUP
 // ==========================================
+if (!process.env.VERCEL) {
 server.listen(PORT, () => {
     logger.info('Server', '====================================');
     logger.info('Server', ' OSINT Intelligence Gateway v1.0');
@@ -367,6 +371,11 @@ server.listen(PORT, () => {
     logger.info('Server', '====================================');
     startBroadcast();
 });
+}
+
+// Vercel captures the HTTP server (including the WebSocket server) as a Node.js function.
+// Local development retains the traditional listener above.
+module.exports = server;
 
 // ==========================================
 // GRACEFUL SHUTDOWN
