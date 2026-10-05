@@ -1205,9 +1205,7 @@ function init() {
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
 
-    // Lighting, starfield and Earth are independently protected.
-    safeInitStep('lighting', setupLighting);
-    safeInitStep('starfield', createStarfield);
+    // Only the lighting and core Earth are startup-critical. Starfield is deferred.
 
     const earthCreated = safeInitStep('Earth', createEarth);
     if (!earthCreated || !earthGroup) {
@@ -1228,9 +1226,6 @@ function init() {
     renderer.domElement.addEventListener('click', onMouseClick);
 
     publishGlobeBridge();
-
-    // Hide loading message
-    document.getElementById('loading').style.display = 'none';
 
     // initialize simTime and UI datetime input
     simTime = new Date();
@@ -1258,16 +1253,14 @@ function init() {
         atmosphere.material.uniforms.u_fadeHeight.value = parseFloat(fadeRange.value || 4.0);
     }
 
-    // start tle update loop
-    startTleUpdateLoop();
-
-    // Start the renderer immediately. The globe does not wait for remote textures or feeds.
+    // Start the renderer immediately. Do not wait for any external resource. The globe does not wait for remote textures or feeds.
     if (renderer.setAnimationLoop) renderer.setAnimationLoop(animate);
     else requestAnimationFrame(animate);
     updateUiDebug();
 
     // Everything below this point is enhancement work, not startup-critical rendering.
     setTimeout(() => {
+        safeInitStep('starfield', createStarfield);
         safeInitStep('earth textures', enhanceEarthAppearance);
         safeInitStep('satellite layer', createSatellites);
         safeInitStep('ocean-current layer', createCurrents);
@@ -1276,6 +1269,7 @@ function init() {
         safeInitStep('tide layer', createTides);
         safeInitStep('magnetic-field layer', createMagneticField);
         safeInitStep('night-lights layer', createNightLights);
+        startTleUpdateLoop();
         ['satellites','currents','moon','magnetic'].forEach((id) => {
             const el = document.getElementById('chk-' + id);
             if (el) el.dispatchEvent(new Event('change'));
