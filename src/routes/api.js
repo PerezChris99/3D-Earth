@@ -10,6 +10,7 @@ const router  = express.Router();
 const logger  = require('../logger');
 
 const { getTLEs }            = require('../ingest/tle');
+const { getSatelliteCatalog } = require('../ingest/satcat');
 const { getFlights }         = require('../ingest/flights');
 const { getEarthquakes }     = require('../ingest/earthquakes');
 const { getThermalHotspots } = require('../ingest/thermal');
@@ -82,6 +83,17 @@ router.get('/positions', async (req, res) => {
 router.get('/satellites', async (req, res) => {
     try { res.json(await getTLEs()); }
     catch (err) { logger.error('API', '/satellites error', { message: err.message }); res.status(500).json({ error: 'Satellite data unavailable' }); }
+});
+
+router.get('/satellites/:norad', async (req, res) => {
+    try {
+        const norad = String(req.params.norad || '').replace(/\\D/g, '');
+        if (!norad || norad.length > 9) return res.status(400).json({ error: 'Invalid satellite catalog number' });
+        res.json(await getSatelliteCatalog(norad));
+    } catch (err) {
+        logger.error('API', '/satellites/:norad error', { message: err.message });
+        res.status(404).json({ error: 'Satellite catalog record unavailable' });
+    }
 });
 
 router.get('/flights', async (req, res) => {
