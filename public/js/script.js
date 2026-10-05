@@ -1501,7 +1501,7 @@ function createStarfield() {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    const material = new THREE.PointsMaterial({ size: 0.075, sizeAttenuation: true, vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false });
+    const material = new THREE.PointsMaterial({ size: 0.12, sizeAttenuation: true, vertexColors: true, transparent: true, opacity: 0.98, depthWrite: false, depthTest: false });
     const stars = new THREE.Points(geometry, material);
     stars.frustumCulled = false;
     stars.renderOrder = -100;
