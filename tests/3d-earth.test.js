@@ -56,4 +56,5 @@ test('server exposes the reverse geocoding route', () => {
   const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
   assert.match(server, /require\('\.\/src\/routes\/geocode'\)/);
   assert.match(server, /app\.use\('\/api\/geocode'/);
+  assert.match(server, /app\.use\('\/api\/weather'/);
 });
