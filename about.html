@@ -8,17 +8,31 @@
 <body>
 <header class="info-header"><a class="logo" href="/">3D <span>EARTH</span></a><nav><a href="/about.html" aria-current="page">About</a><a href="/dashboard.html">Globe</a><a href="/data-policy.html">Sources</a></nav></header>
 <main class="info-layout">
-<aside class="info-rail"><p>PROJECT NOTE</p><a href="#purpose">Purpose</a><a href="#interface">Interface</a><a href="#limitations">Limitations</a></aside>
+<aside class="info-rail"><p>PROJECT NOTE</p><a href="#purpose">Purpose</a><a href="#community">Community use</a><a href="#interface">Interface</a><a href="#limitations">Limitations</a></aside>
 <article class="info-article">
 <div class="article-meta"><span>ABOUT</span><span>Updated 05 October 2026</span></div>
 <h1>About 3D Earth</h1>
 <p class="lead">3D Earth is a browser-based geospatial visualization project. It brings a navigable globe, location tools, map context and weather information into one interface.</p>
-<section id="purpose"><h2>Purpose</h2><p>The project is intended for geographic exploration and situational context. It is designed around a simple principle: the Earth should remain the primary object on screen, while supporting information appears when it is relevant.</p></section>
+<section id="purpose"><h2>Why it was developed</h2>
+<p>3D Earth was developed from a personal interest in maps, tracking and the perspective of seeing the world from above. The aim was to turn that interest into a useful geographic instrument rather than another dashboard assembled around decorative widgets.</p>
+<p>The Earth remains the starting point. A location can be selected on the map or obtained from the device, then represented on the globe with the corresponding geographic position, local weather and map context.</p></section>
+<section id="community"><h2>What it can be used for</h2>
+<p>The project is intended to have practical value in Uganda and beyond. Students and researchers can use it to explore geography, coordinate systems, weather and orbital concepts. Developers and geospatial practitioners can use it as a working reference for browser-based mapping and 3D visualization.</p>
+<p>For community organisations, educators and local teams, the combination of location, weather, map and environmental layers can provide a quick visual starting point for discussing weather conditions, geographic areas, environmental events, aviation context and disaster-awareness information. It is not an emergency-response system, but it can help people understand the spatial context around an event.</p>
+<p>The longer-term direction is to make the platform useful for African geospatial learning and situational awareness while keeping the underlying sources and limitations visible.</p></section>
 <section id="interface"><h2>Interface</h2><p>The globe is rendered with Three.js. Location can come from the browser's positioning service or from coordinates selected on the map. Weather is requested for the selected coordinates, and OpenStreetMap provides the conventional map view. Additional layers may include satellites, flights, seismic activity and other feeds where available.</p></section>
 <section id="limitations"><h2>Limitations</h2><p>3D Earth does not create the underlying geographic, weather or satellite data. Each source has its own accuracy, update cycle, licensing terms and availability. A visual layer should therefore be treated as context rather than as a definitive operational record.</p><p>Device positioning can be affected by hardware, signal conditions and browser settings. Weather forecasts are model output. Live feeds can be delayed, incomplete or temporarily unavailable.</p></section>
 <div class="article-note"><strong>Project scope</strong><span>Visualization, geographic context and exploration. Not a navigation, emergency-response or safety-critical system.</span></div>
 <a class="button" href="/dashboard.html">Open the globe</a>
 </article>
 </main>
-<footer class="info-footer"><a href="/">3D Earth</a><nav><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/data-policy.html">Sources</a></nav></footer>
+<footer class="info-footer"><a href="/">3D Earth</a><nav><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/data-policy.html">Sources</a></nav><span class="built-by">Built by <a href="https://kweeziperez.com" target="_blank" rel="noopener noreferrer">Kweezi Perez</a></span></footer>
+<nav class="mobile-bottom-nav" aria-label="Primary navigation">
+  <a href="/" data-nav="home"><span>HOME</span></a>
+  <a href="/dashboard.html" data-nav="globe"><span>GLOBE</span></a>
+  <a href="/data-policy.html" data-nav="sources"><span>SOURCES</span></a>
+  <a href="/about.html" data-nav="about"><span>ABOUT</span></a>
+  <a href="/privacy.html" data-nav="privacy"><span>PRIVACY</span></a>
+</nav>
+<script src="/public/js/navigation.js" defer></script>
 </body></html>

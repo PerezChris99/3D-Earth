@@ -2087,7 +2087,14 @@ function publishGlobeBridge() {
         resetView,
         toggleRotation,
         toggleClouds,
-        getSimulationTime: () => new Date(simTime)
+        getSimulationTime: () => new Date(simTime),
+        pauseRotation: () => { isRotating = false; rotationTransitionActive = false; },
+        resumeRotation: () => {
+            isRotating = true;
+            rotationTransitionActive = true;
+            rotationTransitionStart = performance.now() / 1000;
+            rotationTransitionDuration = 0.9;
+        }
     };
 }
 

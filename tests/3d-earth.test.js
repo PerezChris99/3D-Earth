@@ -121,3 +121,30 @@ test('globe startup does not depend on remote assets or heavy optional layers', 
   assert.match(globe, /safeInitStep\('starfield', createStarfield\)/);
   assert.match(globe, /safeInitStep\('earth textures', enhanceEarthAppearance\)/);
 });
+
+test('location integration keeps one WGS84 coordinate synchronized across map and globe', () => {
+  const geo = fs.readFileSync(path.join(root, 'public/js/geo-weather.js'), 'utf8');
+  assert.match(geo, /wgs84ToUnitVector/);
+  assert.match(geo, /placeMapMarker\(lat, lon, accuracy\)/);
+  assert.match(geo, /addEarthMarker\(lat, lon\)/);
+  assert.match(geo, /centerGlobe\(lat, lon\)/);
+  assert.match(geo, /api\.pauseRotation/);
+  assert.match(geo, /destination = world\.multiplyScalar\(2\.05\)/);
+});
+
+test('mobile navigation and project attribution are present across public pages', () => {
+  for (const file of ['index.html','about.html','privacy.html','terms.html','data-policy.html','dashboard.html']) {
+    const html = fs.readFileSync(path.join(root, file), 'utf8');
+    assert.match(html, /mobile-bottom-nav/);
+    assert.match(html, /https:\/\/kweeziperez\.com/);
+    assert.match(html, /target="_blank"/);
+  }
+});
+
+test('navigation prefetch and static caching contracts exist', () => {
+  const nav = fs.readFileSync(path.join(root, 'public/js/navigation.js'), 'utf8');
+  const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+  assert.match(nav, /rel = 'prefetch'/);
+  assert.match(server, /stale-while-revalidate/);
+  assert.match(server, /Cache-Control.*no-cache/);
+});

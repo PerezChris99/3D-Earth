@@ -18,3 +18,15 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,"Helvet
 .statement{background:#e5e7e4;padding:70px 7vw;margin-bottom:120px}.statement h2{max-width:760px}.statement>p:not(.eyebrow){max-width:700px;color:#5d6978;line-height:1.7;margin:22px 0 28px}
 .landing-footer{border-top:1px solid var(--line);padding:48px 5.5vw 28px;display:grid;grid-template-columns:1fr 1fr;gap:28px;color:var(--muted)}.landing-footer .logo{color:var(--ink)}.landing-footer p{font-size:13px;margin:12px 0 0}.landing-footer nav{display:flex;gap:22px;justify-content:flex-end;flex-wrap:wrap}.landing-footer nav a{color:var(--muted);text-decoration:none;font-size:12px}.landing-footer small{grid-column:1/-1;font-size:11px}
 @media(max-width:760px){.landing-nav{padding:18px 6vw}.landing-nav nav{gap:15px}.landing-nav nav a:not(.nav-cta){display:none}.hero-content{margin:0 6vw 12vh}.hero h1{font-size:56px}.hero-copy{font-size:16px}.intro,.capabilities{grid-template-columns:1fr}.intro{gap:25px;padding:95px 0 80px}.capabilities{padding:90px 0}.capability-heading{margin-bottom:55px}.statement{width:100%;padding:60px 6vw;margin-bottom:80px}.landing-footer{grid-template-columns:1fr}.landing-footer nav{justify-content:flex-start}.landing-footer small{grid-column:auto}}
+
+/* Mobile navigation: persistent, thumb-reachable, and intentionally restrained. */
+.mobile-bottom-nav{display:none}
+.built-by{font-size:12px;color:inherit}
+.built-by a{color:inherit;font-weight:700;text-decoration:none}
+@media(max-width:700px){
+  .mobile-bottom-nav{position:fixed;z-index:1000;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:58px;display:grid;grid-template-columns:repeat(5,1fr);align-items:stretch;background:rgba(18,29,43,.97);border:1px solid rgba(255,255,255,.14);box-shadow:0 10px 30px rgba(0,0,0,.28);padding:5px}
+  .mobile-bottom-nav a{display:flex;align-items:center;justify-content:center;color:#cbd6e3;text-decoration:none;font-size:9px;font-weight:700;letter-spacing:.06em;border:0}
+  .mobile-bottom-nav a[aria-current="page"]{background:#4d8fd8;color:#fff}
+  .built-by{display:block;margin-top:10px}
+}
+@media(min-width:701px){.mobile-bottom-nav{display:none!important}}
