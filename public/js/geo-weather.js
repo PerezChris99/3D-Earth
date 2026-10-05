@@ -114,7 +114,7 @@
     if (wait) await new Promise(r => setTimeout(r, wait));
     state.lastReverseAt = Date.now();
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`;
+      const url = `/api/geocode/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
       const response = await fetch(url, { headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error(`Reverse geocode HTTP ${response.status}`);
       const data = await response.json();
