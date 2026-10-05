@@ -234,8 +234,25 @@ test('rendering uses deterministic celestial fallbacks and valid satellite loadi
     assert.match(script, /async function fetchTLES\(\)/);
     assert.doesNotMatch(script, /async async function fetchTLES/);
     assert.match(script, /new THREE\.MeshPhongMaterial\(\{ color: 0xffffff, specular: 0x111111, shininess: 4 \}\)/);
-    assert.match(script, /new THREE\.PointsMaterial\(\{ size: 0\.075/);
+    assert.match(script, /new THREE\.PointsMaterial\(\{ size: 0\.12/);
     assert.match(script, /new THREE\.Mesh\(new THREE\.SphereGeometry\(0\.11, 24, 24\)/);
-    assert.match(script, /@r128\/examples\/textures\/planets/);
+    assert.match(script, /\/public\/assets\/earth\/earth_atmos_2048\.jpg/);
 });
-\n\ntest('globe visual assets are locally vendored and cannot be lost to CDN/CSP failure', () => {\n  const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');\n  const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');\n  for (const asset of ['earth_atmos_2048.jpg','earth_normal_2048.jpg','earth_specular_2048.jpg','earth_clouds_1024.png','earth_lights_2048.png','moon_1024.jpg']) {\n    assert.match(globe, new RegExp('/public/assets/earth/' + asset.replace('.', '\\\\.')));\n    assert.ok(fs.existsSync(path.join(root, 'public/assets/earth', asset)), 'missing vendored globe asset: ' + asset);\n  }\n  assert.doesNotMatch(globe, /cdn\\.jsdelivr\\.net\\/gh\\/mrdoob\\/three\\.js@r128\\/examples\\/textures\\/planets/);\n  assert.match(dashboard, /three-r128\\.min\\.js/);\n});\n
+
+test('globe visual assets are locally vendored and cannot be lost to CDN/CSP failure', () => {
+  const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+  const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
+  for (const asset of [
+    'earth_atmos_2048.jpg',
+    'earth_normal_2048.jpg',
+    'earth_specular_2048.jpg',
+    'earth_clouds_1024.png',
+    'earth_lights_2048.png',
+    'moon_1024.jpg'
+  ]) {
+    assert.match(globe, new RegExp('/public/assets/earth/' + asset.replace('.', '\\\\.')));
+    assert.ok(fs.existsSync(path.join(root, 'public/assets/earth', asset)), 'missing vendored globe asset: ' + asset);
+  }
+  assert.doesNotMatch(globe, /cdn\.jsdelivr\.net\/gh\/mrdoob\/three\.js@r128\/examples\/textures\/planets/);
+  assert.match(dashboard, /three-r128\.min\.js/);
+});
