@@ -2294,7 +2294,8 @@ function publishGlobeBridge() {
 }
 
 // Initialize the scene
-window.addEventListener('load', init);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+else init();
 
 // small utility dot product for three.Vector3-like objects
 function dot3(a, b) {
