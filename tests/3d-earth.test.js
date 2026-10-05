@@ -5,6 +5,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
+const script = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
 
 test('all application JavaScript parses', () => {
   const files = [];
@@ -202,6 +203,31 @@ test('real Earth assets and visual layers are initialized reliably', () => {
     assert.ok(script.includes('normalScale = new THREE.Vector2(0.55, 0.55)'));
     assert.ok(script.includes('earth.material.specularMap = specular'));
     assert.ok(!script.includes('const bodyGeo = new THREE.BoxGeometry(0.018, 0.007, 0.007)'));
+});
+
+
+
+test('celestial asset security contract permits every remote texture origin', () => {
+  const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+  assert.match(server, /"img-src":\s*\[[^\]]*https:\\/\\/cdn\\.jsdelivr\\.net/);
+  for (const asset of [
+    'earth_atmos_2048.jpg', 'earth_normal_2048.jpg', 'earth_specular_2048.jpg',
+    'earth_clouds_1024.png', 'earth_lights_2048.png', 'moon_1024.jpg'
+  ]) assert.match(script, new RegExp('cdn\\\\.jsdelivr\\\\.net[^\\n]*' + asset));
+});
+
+test('celestial asset failures remain observable instead of silently becoming production-ready', () => {
+  assert.match(script, /Real Earth texture unavailable/);
+  assert.match(script, /Moon texture unavailable/);
+  assert.match(script, /Cloud texture unavailable/);
+  assert.match(script, /console\\.warn/);
+});
+
+test('local Three.js runtime remains authoritative for rendering', () => {
+  const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+  assert.match(dashboard, /\\/public\\/vendor\\/three-r128\\.min\\.js/);
+  assert.match(dashboard, /\\/public\\/vendor\\/OrbitControls-r128\\.js/);
+  assert.match(dashboard, /\\/public\\/vendor\\/GLTFLoader-r128\\.js/);
 });
 
 test('rendering uses deterministic celestial fallbacks and valid satellite loading', () => {
