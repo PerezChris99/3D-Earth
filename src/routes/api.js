@@ -5,6 +5,7 @@
  */
 
 const express = require('express');
+const crypto = require('crypto');
 const router  = express.Router();
 const logger  = require('../logger');
 
@@ -41,9 +42,17 @@ router.get('/status', (req, res) => {
 // --- Auth ---
 // Issue a demo viewer token (production: add real credential verification here)
 router.post('/auth/token', (req, res) => {
-    const userId = (req.body.userId || 'anonymous').slice(0, 64);
-    const role = (req.body.role || 'viewer');
-    // Production: validate userId/password against a real store before issuing
+    const userId = String(req.body.userId || 'anonymous').slice(0, 64);
+    const role = ['viewer', 'analyst', 'admin'].includes(req.body.role) ? req.body.role : 'viewer';
+    const privilegedSecret = process.env.ANALYST_AUTH_SECRET;
+    if (role !== 'viewer') {
+        if (!privilegedSecret || !req.body.secret || !crypto.timingSafeEqual(
+            Buffer.from(String(req.body.secret)),
+            Buffer.from(privilegedSecret)
+        )) {
+            return res.status(403).json({ error: 'Privileged authentication required.' });
+        }
+    }
     const token = issueToken(userId, role);
     res.json({ token });
 });
