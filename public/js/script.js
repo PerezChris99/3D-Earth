@@ -602,6 +602,8 @@ function createSatellites() {
     satellitePanelInstances.userData.domain = 'satellite-panel';
     satellitesGroup.add(satelliteInstances);
     satellitesGroup.add(satellitePanelInstances);
+    window.satelliteInstances = satelliteInstances;
+    window.satellitePanelInstances = satellitePanelInstances;
 
     // ISS removed: no per-satellite highlight mesh created
 
@@ -662,6 +664,117 @@ function updateSatelliteModels(arr) {
     satelliteInstances.instanceMatrix.needsUpdate = true;
     satellitePanelInstances.instanceMatrix.needsUpdate = true;
 }
+
+function formatSatelliteAge(launchDate) {
+    if (!launchDate) return '—';
+    const start = new Date(launchDate + 'T00:00:00Z');
+    if (Number.isNaN(start.getTime())) return '—';
+    const days = Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
+    const years = Math.floor(days / 365.2425);
+    const months = Math.floor((days % 365.2425) / 30.44);
+    return years ? \`\${years}y \${months}m\` : \`\${months}m\`;
+}
+
+function formatSpeed(kmps) {
+    if (!Number.isFinite(kmps)) return '—';
+    return \`\${kmps.toFixed(3)} km/s (\${Math.round(kmps * 3600)} km/h)\`;
+}
+
+function createSelectedSatelliteMarker() {
+    if (selectedSatellite) return selectedSatellite;
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(
+        new THREE.BoxGeometry(0.035, 0.012, 0.012),
+        new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x4d8fd8, emissiveIntensity: 0.9 })
+    );
+    const panel = new THREE.Mesh(
+        new THREE.BoxGeometry(0.008, 0.002, 0.052),
+        new THREE.MeshPhongMaterial({ color: 0x4d8fd8, emissive: 0x163d68 })
+    );
+    const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.035, 0.003, 8, 32),
+        new THREE.MeshBasicMaterial({ color: 0x6eb6ff, transparent: true, opacity: 0.9 })
+    );
+    ring.rotation.x = Math.PI / 2;
+    group.add(body, panel, ring);
+    group.visible = false;
+    group.userData = { ring };
+    scene.add(group);
+    selectedSatellite = group;
+    return group;
+}
+
+async function trackSatelliteSelection(tracked) {
+    if (!tracked || tracked.index == null) return;
+    const t = tleData[tracked.index];
+    if (!t) return;
+
+    const marker = createSelectedSatelliteMarker();
+    const arr = window._tleLatestBuffer;
+    if (arr && arr.length >= tracked.index * 3 + 3) {
+        marker.position.set(arr[tracked.index * 3], arr[tracked.index * 3 + 1], arr[tracked.index * 3 + 2]);
+        marker.visible = true;
+    }
+
+    let orbital = {};
+    try {
+        if (window.satellite && t.tle1 && t.tle2) {
+            const now = new Date();
+            const satrec = satellite.twoline2satrec(t.tle1, t.tle2);
+            const state = satellite.propagate(satrec, now);
+            if (state?.position && state?.velocity) {
+                const gmst = satellite.gstime(now);
+                const geo = satellite.eciToGeodetic(state.position, gmst);
+                const speed = Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z);
+                orbital = {
+                    latitude: \`\${(geo.latitude * 180 / Math.PI).toFixed(3)}°\`,
+                    longitude: \`\${(geo.longitude * 180 / Math.PI).toFixed(3)}°\`,
+                    altitude: \`\${geo.height.toFixed(1)} km\`,
+                    speed: formatSpeed(speed),
+                    period: t.tle2 ? \`\${(1440 / Number(t.tle2.slice(52, 63))).toFixed(2)} min\` : '—',
+                    epoch: t.tle1.slice(18, 32).trim()
+                };
+            }
+        }
+    } catch (e) {
+        console.warn('Satellite propagation failed', e);
+    }
+
+    let catalog = {};
+    try {
+        if (tracked.norad) {
+            const res = await fetch(\`/api/satellites/\${encodeURIComponent(tracked.norad)}\`);
+            if (res.ok) catalog = await res.json();
+        }
+    } catch (e) {
+        console.warn('Satellite catalog lookup failed', e);
+    }
+
+    const launchDate = catalog.LAUNCH_DATE || catalog.launchDate;
+    const decayDate = catalog.DECAY_DATE || catalog.decayDate;
+    const display = {
+        type: 'sat',
+        name: t.name,
+        norad: tracked.norad || catalog.NORAD_CAT_ID,
+        intdes: catalog.OBJECT_ID || catalog.intdes || '—',
+        owner: catalog.OWNER || catalog.owner || '—',
+        launchSite: catalog.LAUNCH_SITE || catalog.launchSite || '—',
+        launchDate: launchDate || '—',
+        timeInSpace: formatSatelliteAge(launchDate),
+        deployment: launchDate ? \`Launch: \${launchDate}. Separate deployment date is not present in SATCAT.\` : 'Not cataloged',
+        etr: decayDate ? \`Decay recorded: \${decayDate}\` : 'No cataloged decay date',
+        callsign: 'Not assigned / not provided by SATCAT',
+        period: catalog.PERIOD ? \`\${Number(catalog.PERIOD).toFixed(2)} min\` : orbital.period,
+        inclination: catalog.INCLINATION != null ? \`\${Number(catalog.INCLINATION).toFixed(3)}°\` : '—',
+        apogee: catalog.APOGEE != null ? \`\${Number(catalog.APOGEE).toLocaleString()} km\` : '—',
+        perigee: catalog.PERIGEE != null ? \`\${Number(catalog.PERIGEE).toLocaleString()} km\` : '—',
+        ...orbital,
+        tle1: t.tle1,
+        tle2: t.tle2
+    };
+    window.osintOpenInspector?.(display);
+}
+window.trackSatelliteSelection = trackSatelliteSelection;
 
 function getSatelliteCatalogNumber(t) {
     const match = String(t?.tle1 || '').match(/^1\\s+(\\d{1,9})/);
