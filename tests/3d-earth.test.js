@@ -113,6 +113,16 @@ test('legal and source pages use the formal information layout', () => {
   assert.match(data, /non-commercial/i);
 });
 
+test('dashboard vendors the Three.js runtime required by the globe', () => {
+  const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+  for (const asset of [
+    '/public/vendor/three-r128.min.js',
+    '/public/vendor/OrbitControls-r128.js',
+    '/public/vendor/GLTFLoader-r128.js'
+  ]) assert.ok(dashboard.includes(asset), `missing local globe runtime asset: ${asset}`);
+  assert.doesNotMatch(dashboard, /cdnjs\\.cloudflare\\.com\\/ajax\\/libs\\/three\\.js\\/r128/);
+  assert.doesNotMatch(dashboard, /cdn\\.jsdelivr\\.net\\/npm\\/three@0\\.128\\.0\\/examples/);
+});
 test('globe startup does not depend on remote assets or synthetic satellite layers', () => {
   const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
   assert.match(globe, /preserveDrawingBuffer: false/);
