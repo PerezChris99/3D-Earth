@@ -1092,7 +1092,30 @@ function createMoon() {
 
 // Timezone visualization removed per user request
 
+function showGlobeError(error) {
+    console.error('[3D Earth] Globe initialization failed:', error);
+    const loading = document.getElementById('loading');
+    if (loading) {
+        loading.style.display = 'block';
+        loading.textContent = 'Globe renderer unavailable — check WebGL/GPU support and reload.';
+        loading.setAttribute('role', 'alert');
+    }
+    const host = document.getElementById('canvas-container');
+    if (host) host.classList.add('renderer-error');
+}
+
+function safeInitStep(label, fn) {
+    try {
+        fn();
+        return true;
+    } catch (error) {
+        console.error('[3D Earth]', label, 'failed:', error);
+        return false;
+    }
+}
+
 function init() {
+    try {
     // Scene setup
     scene = new THREE.Scene();
 
@@ -1101,12 +1124,18 @@ function init() {
     camera.position.set(0, 0, 3);
 
     // Renderer setup
-    renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: true,
-        preserveDrawingBuffer: true,
-        powerPreference: 'high-performance'
-    });
+    try {
+        renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true,
+            preserveDrawingBuffer: true,
+            powerPreference: 'high-performance',
+            failIfMajorPerformanceCaveat: false
+        });
+    } catch (error) {
+        showGlobeError(error);
+        return;
+    }
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
@@ -1160,18 +1189,17 @@ function init() {
 
     // timezone visualization removed
 
-    // Wire UI toggles
-    wireUiToggles();
+    // Wire UI toggles. A control failure must never prevent the core globe from rendering.
+    safeInitStep('UI controls', wireUiToggles);
 
-    // Prepare optional feature groups
-    createSatellites();
-    createCurrents();
-    createMoon();
-    createSun();
-    // create tidal overlay showing ocean bulges driven by Moon and Sun
-    createTides();
-    createMagneticField();
-    createNightLights();
+    // Optional systems are isolated so a failed feed/model/shader cannot blank the globe.
+    safeInitStep('satellite layer', createSatellites);
+    safeInitStep('ocean-current layer', createCurrents);
+    safeInitStep('moon layer', createMoon);
+    safeInitStep('sun layer', createSun);
+    safeInitStep('tide layer', createTides);
+    safeInitStep('magnetic-field layer', createMagneticField);
+    safeInitStep('night-lights layer', createNightLights);
     // comets removed
     // ISS removed
 
