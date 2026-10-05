@@ -1296,6 +1296,23 @@ function init() {
         renderer.domElement.style.display = 'block';
     } catch (e) {}
     document.getElementById('canvas-container').appendChild(renderer.domElement);
+    renderer.domElement.addEventListener('webglcontextlost', (event) => {
+        event.preventDefault();
+        console.error('[3D Earth] WebGL context lost.');
+        const loading = document.getElementById('loading');
+        if (loading) {
+            loading.classList.remove('hidden');
+            loading.textContent = 'Graphics context lost — attempting recovery…';
+        }
+    }, false);
+    renderer.domElement.addEventListener('webglcontextrestored', () => {
+        console.warn('[3D Earth] WebGL context restored; forcing texture/material refresh.');
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        if (earth?.material) earth.material.needsUpdate = true;
+        if (clouds?.material) clouds.material.needsUpdate = true;
+        const loading = document.getElementById('loading');
+        if (loading) loading.classList.add('hidden');
+    }, false);
 
     // Fallback: explicitly set a realistic outer-space gradient on the document in case CSS wasn't applied
     try {
@@ -1644,55 +1661,29 @@ function assetMimeType(filename) {
 
 const EARTH_ASSET_ROOTS = ['/assets/earth', '/public/assets/earth'];
 
-async function fetchLocalTextureBlob(filename) {
-    let lastError = null;
-    for (const root of EARTH_ASSET_ROOTS) {
-        const url = root + '/' + filename;
-        try {
-            const response = await fetch(url, {
-                method: 'GET',
-                cache: 'force-cache',
-                credentials: 'same-origin'
-            });
-            if (!response.ok) {
-                throw new Error(`${response.status} ${response.statusText}`);
-            }
-            const bytes = await response.arrayBuffer();
-            if (!bytes.byteLength) throw new Error('empty response');
-            const declaredType = response.headers.get('content-type') || '';
-            const blob = new Blob([bytes], { type: assetMimeType(filename) });
-            console.info('[3D Earth] Local asset ready:', filename, {
-                url,
-                bytes: bytes.byteLength,
-                contentType: declaredType || '(missing)'
-            });
-            return URL.createObjectURL(blob);
-        } catch (error) {
-            lastError = error;
-            console.warn('[3D Earth] Local asset candidate failed:', url, error);
-        }
-    }
-    throw lastError || new Error('No local asset candidate succeeded');
-}
-
 function loadLocalTexture(filename, onLoad, onError) {
     const loader = new THREE.TextureLoader();
-    fetchLocalTextureBlob(filename)
-        .then((blobUrl) => {
-            loader.load(
-                blobUrl,
-                (texture) => {
-                    try { URL.revokeObjectURL(blobUrl); } catch (e) {}
-                    onLoad(texture);
-                },
-                undefined,
-                (error) => {
-                    try { URL.revokeObjectURL(blobUrl); } catch (e) {}
-                    onError?.(error);
-                }
-            );
-        })
-        .catch(onError);
+    let index = 0;
+    const tryNext = (lastError) => {
+        if (index >= EARTH_ASSET_ROOTS.length) {
+            onError?.(lastError || new Error('No local Earth texture candidate succeeded'));
+            return;
+        }
+        const url = EARTH_ASSET_ROOTS[index++] + '/' + filename;
+        loader.load(
+            url,
+            (texture) => {
+                console.info('[3D Earth] Local texture loaded:', filename, url);
+                onLoad(texture);
+            },
+            undefined,
+            (error) => {
+                console.warn('[3D Earth] Texture candidate failed:', url, error);
+                tryNext(error);
+            }
+        );
+    };
+    tryNext();
 }
 
 function enhanceEarthAppearance() {
@@ -1750,48 +1741,6 @@ function enhanceEarthAppearance() {
     }, (error) => console.warn('[3D Earth] Cloud texture unavailable; clouds remain disabled.', error));
 }
 
-function loadTexture(url, fallback) {
-    const textureLoader = new THREE.TextureLoader();
-    const texture = textureLoader.load(
-        url,
-        function() {
-            console.log('Texture loaded successfully:', url);
-        },
-        undefined,
-        function() {
-            console.warn('Failed to load texture:', url, 'Using fallback');
-            // Create a simple colored texture as fallback
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 128;
-            const context = canvas.getContext('2d');
-
-            if (url.includes('clouds')) {
-                // Create cloud-like pattern
-                context.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                for (let i = 0; i < 20; i++) {
-                    context.beginPath();
-                    context.arc(Math.random() * 256, Math.random() * 128, Math.random() * 30 + 10, 0, Math.PI * 2);
-                    context.fill();
-                }
-            } else {
-                // Create Earth-like texture
-                const gradient = context.createLinearGradient(0, 0, 256, 128);
-                gradient.addColorStop(0, '#4a90e2');
-                gradient.addColorStop(0.3, '#2e7d32');
-                gradient.addColorStop(0.7, '#8bc34a');
-                gradient.addColorStop(1, '#4a90e2');
-                context.fillStyle = gradient;
-                context.fillRect(0, 0, 256, 128);
-            }
-
-            texture.image = canvas;
-            texture.needsUpdate = true;
-        }
-    );
-    return texture;
-}
-
 function onMouseClick(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -1829,6 +1778,9 @@ function animate() {
         return;
     }
 
+    // Everything after the first render is enhancement work. Keep one broken
+    // telemetry/astronomy layer from killing the animation loop.
+    try {
     // compute delta time
     const nowPerf = performance.now() / 1000.0;
     if (typeof animate._lastTime === 'undefined') animate._lastTime = nowPerf;
@@ -1947,6 +1899,9 @@ function animate() {
 
     // update on-screen UI debug display
     try { updateUiDebug(); } catch (e) {}
+    } catch (error) {
+        console.error('[3D Earth] Animation enhancement error:', error);
+    }
     // update ISS model position using latest worker buffer if available
     try {
         const issChk = document.getElementById('chk-iss');
