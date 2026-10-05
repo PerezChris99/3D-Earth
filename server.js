@@ -22,6 +22,7 @@ const logger        = require('./src/logger');
 const requestLogger = require('./src/middleware/requestLogger');
 
 const apiRoutes   = require('./src/routes/api');
+const geocodeRoutes = require('./src/routes/geocode');
 const aoiRoutes   = require('./src/routes/aoi');
 const notesRoutes = require('./src/routes/notes');
 const { onConnect, onDisconnect, onMessage, attachIdleTimeout, getIp } = require('./src/middleware/rateLimitWS');
@@ -72,10 +73,10 @@ app.use(helmet({
                               "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net",
                               "https://threejs.org", "https://unpkg.com", "https://raw.githubusercontent.com"],
             "style-src":     ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-            "img-src":       ["'self'", "data:", "blob:", "https://threejs.org", "https://raw.githubusercontent.com", "https://unpkg.com"],
+            "img-src":       ["'self'", "data:", "blob:", "https://threejs.org", "https://raw.githubusercontent.com", "https://unpkg.com", "https://tile.openstreetmap.org"],
             "connect-src":   ["'self'", "ws:", "wss:", "https://celestrak.org", "https://celestrak.com",
                               "https://opensky-network.org", "https://earthquake.usgs.gov",
-                              "https://unpkg.com", "https://cdn.jsdelivr.net"],
+                              "https://unpkg.com", "https://cdn.jsdelivr.net", "https://tile.openstreetmap.org"],
             "worker-src":    ["'self'", "blob:"],
             "frame-src":     ["'none'"],
             "object-src":    ["'none'"],
@@ -138,6 +139,7 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 // ==========================================
 // API ROUTES
 // ==========================================
+app.use('/api/geocode', geocodeRoutes);
 app.use('/api/aoi',   aoiRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api',       apiRoutes);
