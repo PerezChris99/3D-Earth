@@ -833,7 +833,7 @@ function findIssTleIndex() {
 }
 
 // Fetch TLE data from CelesTrak (active satellites) and parse into tleData
-async async function fetchTLES() {
+async function fetchTLES() {
     try {
         // Fetch the real active catalog through our server-side CelesTrak gateway.
         // This avoids browser CORS/redirect problems and keeps the provider request cached.
