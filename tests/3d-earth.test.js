@@ -240,7 +240,7 @@ test('rendering uses deterministic celestial fallbacks and valid satellite loadi
 });
 
 test('local Earth texture loading validates same-origin bytes before GPU upload', () => {
-  assert.match(script, /const EARTH_ASSET_ROOTS = \\['\\/public\\/assets\\/earth', '\\/assets\\/earth'\\]/);
+  assert.match(script, /const EARTH_ASSET_ROOTS = \['\/public\/assets\/earth', '\/assets\/earth'\]/);
   assert.match(script, /fetchLocalTextureBlob/);
   assert.match(script, /response\.ok/);
   assert.match(script, /new Blob\(\[bytes\], \{ type: assetMimeType\(filename\) \}\)/);
