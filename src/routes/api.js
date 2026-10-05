@@ -46,10 +46,9 @@ router.post('/auth/token', (req, res) => {
     const role = ['viewer', 'analyst', 'admin'].includes(req.body.role) ? req.body.role : 'viewer';
     const privilegedSecret = process.env.ANALYST_AUTH_SECRET;
     if (role !== 'viewer') {
-        if (!privilegedSecret || !req.body.secret || !crypto.timingSafeEqual(
-            Buffer.from(String(req.body.secret)),
-            Buffer.from(privilegedSecret)
-        )) {
+        const supplied = Buffer.from(String(req.body.secret || ''));
+        const expected = Buffer.from(String(privilegedSecret || ''));
+        if (!privilegedSecret || supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) {
             return res.status(403).json({ error: 'Privileged authentication required.' });
         }
     }
