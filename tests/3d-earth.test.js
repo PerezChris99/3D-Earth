@@ -225,9 +225,9 @@ test('celestial asset failures remain observable instead of silently becoming pr
 
 test('local Three.js runtime remains authoritative for rendering', () => {
   const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
-  assert.match(dashboard, /\\/public\\/vendor\\/three-r128\\.min\\.js/);
-  assert.match(dashboard, /\\/public\\/vendor\\/OrbitControls-r128\\.js/);
-  assert.match(dashboard, /\\/public\\/vendor\\/GLTFLoader-r128\\.js/);
+  assert.match(dashboard, /\\/vendor\\/three-r128\\.min\\.js/);
+  assert.match(dashboard, /\\/vendor\\/OrbitControls-r128\\.js/);
+  assert.match(dashboard, /\\/vendor\\/GLTFLoader-r128\\.js/);
 });
 
 test('rendering uses deterministic celestial fallbacks and valid satellite loading', () => {
@@ -239,12 +239,11 @@ test('rendering uses deterministic celestial fallbacks and valid satellite loadi
     assert.match(script, /\/public\/assets\/earth\/earth_atmos_2048\.jpg/);
 });
 
-test('local Earth texture loading validates same-origin bytes before GPU upload', () => {
+test('local Earth texture loading uses browser-cacheable same-origin assets with fallback roots', () => {
   assert.match(script, /const EARTH_ASSET_ROOTS = \['\\/assets\\/earth', '\\/public\\/assets\\/earth'\]/);
-  assert.match(script, /fetchLocalTextureBlob/);
-  assert.match(script, /response\.ok/);
-  assert.match(script, /new Blob\(\[bytes\], \{ type: assetMimeType\(filename\) \}\)/);
-  assert.match(script, /URL\.createObjectURL/);
+  assert.match(script, /function loadLocalTexture\(filename, onLoad, onError\)/);
+  assert.match(script, /new THREE\.TextureLoader\(\)/);
+  assert.match(script, /loader\.load\(/);
   assert.match(script, /loadLocalTexture\('earth_atmos_2048\.jpg'/);
   assert.match(script, /loadLocalTexture\('earth_clouds_1024\.png'/);
   assert.match(script, /loadLocalTexture\('earth_lights_2048\.png'/);
@@ -273,4 +272,26 @@ test('globe visual assets are locally vendored and cannot be lost to CDN/CSP fai
   }
   assert.doesNotMatch(globe, /cdn\.jsdelivr\.net\/gh\/mrdoob\/three\.js@r128\/examples\/textures\/planets/);
   assert.match(dashboard, /three-r128\.min\.js/);
+});
+
+
+test('Vercel satellite runtime is served locally instead of relying on a browser CDN', () => {
+  const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+  const worker = fs.readFileSync(path.join(root, 'public/js/sgp4-worker.js'), 'utf8');
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  assert.equal(pkg.dependencies['satellite.js'], '^4.0.0');
+  assert.match(server, /require\.resolve\('satellite\.js\/dist\/satellite\.min\.js'\)/);
+  assert.match(server, /app\.get\('\/vendor\/satellite\.min\.js'/);
+  assert.match(worker, /importScripts\('\/vendor\/satellite\.min\.js'\)/);
+});
+
+test('landing hero loads progressively instead of downloading every slide immediately', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const landing = fs.readFileSync(path.join(root, 'public/js/landing.js'), 'utf8');
+  assert.match(html, /preconnect.*images\.unsplash\.com/);
+  assert.match(html, /preload.*images\.unsplash\.com/);
+  assert.match(html, /data-bg=/);
+  assert.doesNotMatch(html, /hero-slide[^>]*style="[^"]*background-image/);
+  assert.match(landing, /new Image\(\)/);
+  assert.match(landing, /img\.decoding='async'/);
 });
