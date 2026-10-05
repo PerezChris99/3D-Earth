@@ -117,9 +117,9 @@ test('legal and source pages use the formal information layout', () => {
 test('dashboard vendors Three.js and does not block on optional runtimes', () => {
   const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
   for (const asset of [
-    '/public/vendor/three-r128.min.js',
-    '/public/vendor/OrbitControls-r128.js',
-    '/public/vendor/GLTFLoader-r128.js'
+    '/vendor/three-r128.min.js',
+    '/vendor/OrbitControls-r128.js',
+    '/vendor/GLTFLoader-r128.js'
   ]) assert.ok(dashboard.includes(asset), `missing local globe runtime asset: ${asset}`);
   assert.doesNotMatch(dashboard, /cdnjs\\.cloudflare\\.com\\/ajax\\/libs\\/three\\.js\\/r128/);
   assert.doesNotMatch(dashboard, /cdn\\.jsdelivr\\.net\\/npm\\/three@0\\.128\\.0\\/examples/);
@@ -191,7 +191,7 @@ test('globe startup is independent of window load and optional runtimes', () => 
 });
 
 test('real Earth assets and visual layers are initialized reliably', () => {
-    assert.ok(script.includes("'/public/assets/earth/earth_atmos_2048.jpg'"));
+    assert.ok(script.includes("'/assets/earth/earth_atmos_2048.jpg'"));
     assert.ok(script.includes('textureUrls.earthBump'));
     assert.ok(script.includes('textureUrls.earthSpecular'));
     assert.ok(script.includes('textureUrls.earthLights'));
@@ -213,7 +213,7 @@ test('celestial asset security contract permits every remote texture origin', ()
   for (const asset of [
     'earth_atmos_2048.jpg', 'earth_normal_2048.jpg', 'earth_specular_2048.jpg',
     'earth_clouds_1024.png', 'earth_lights_2048.png', 'moon_1024.jpg'
-  ]) assert.match(script, new RegExp('/public/assets/earth/' + asset));
+  ]) assert.match(script, new RegExp('/assets/earth/' + asset));
 });
 
 test('celestial asset failures remain observable instead of silently becoming production-ready', () => {
@@ -268,7 +268,7 @@ test('globe visual assets are locally vendored and cannot be lost to CDN/CSP fai
     'earth_lights_2048.png',
     'moon_1024.jpg'
   ]) {
-    assert.match(globe, new RegExp('/public/assets/earth/' + asset.replace('.', '\\\\.')));
+    assert.match(globe, new RegExp('/assets/earth/' + asset.replace('.', '\\\\.')));
     assert.ok(fs.existsSync(path.join(root, 'public/assets/earth', asset)), 'missing vendored globe asset: ' + asset);
   }
   assert.doesNotMatch(globe, /cdn\.jsdelivr\.net\/gh\/mrdoob\/three\.js@r128\/examples\/textures\/planets/);
