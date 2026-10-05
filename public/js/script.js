@@ -663,6 +663,11 @@ function updateSatelliteModels(arr) {
     satellitePanelInstances.count = count;
     satelliteInstances.instanceMatrix.needsUpdate = true;
     satellitePanelInstances.instanceMatrix.needsUpdate = true;
+
+    if (selectedSatellite?.visible && window._selectedSatelliteIndex != null) {
+        const i = window._selectedSatelliteIndex;
+        if (i < count) selectedSatellite.position.set(arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]);
+    }
 }
 
 function formatSatelliteAge(launchDate) {
@@ -706,6 +711,7 @@ function createSelectedSatelliteMarker() {
 
 async function trackSatelliteSelection(tracked) {
     if (!tracked || tracked.index == null) return;
+    window._selectedSatelliteIndex = tracked.index;
     const t = tleData[tracked.index];
     if (!t) return;
 
