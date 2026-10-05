@@ -19,9 +19,17 @@ jobs:
           node-version: 24
           cache: npm
       - name: Install dependencies
-        run: npm ci 2>&1 | tee /tmp/npm-ci.log
+        id: install
+        continue-on-error: true
+        run: |
+          set +e
+          npm install --no-audit --no-fund 2>&1 | tee /tmp/npm-install.log
+          code=${PIPESTATUS[0]}
+          echo "exit_code=${code}" >> "${GITHUB_OUTPUT}"
+          exit "${code}"
       - name: Run tests
         id: tests
+        if: steps.install.outputs.exit_code == '0'
         continue-on-error: true
         run: |
           set +e
@@ -39,6 +47,9 @@ jobs:
           name: validation-logs-${{ github.run_id }}
           path: /tmp/*.log
           if-no-files-found: warn
+      - name: Fail if installation failed
+        if: steps.install.outputs.exit_code != '0'
+        run: exit 1
       - name: Fail if tests failed
         if: steps.tests.outputs.exit_code != '0'
         run: exit 1
