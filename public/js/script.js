@@ -1076,8 +1076,15 @@ function createMagneticField() {
 
 // Night lights overlay (shadered) that lights only the dark side based on sun direction
 function createNightLights() {
-    const loader = new THREE.TextureLoader();
-    const nightTex = loader.load(textureUrls.earthLights);
+    // Start with a transparent 1x1 texture so this optional layer can never
+    // interfere with the core Earth material if its asset is unavailable.
+    const placeholder = document.createElement('canvas');
+    placeholder.width = 1;
+    placeholder.height = 1;
+    const ctx = placeholder.getContext('2d');
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, 1, 1);
+    const nightTex = new THREE.CanvasTexture(placeholder);
 
     nightMaterial = new THREE.ShaderMaterial({
         uniforms: {
@@ -1115,8 +1122,13 @@ function createNightLights() {
 
     const geom = new THREE.SphereGeometry(1.0015, 64, 64);
     nightMesh = new THREE.Mesh(geom, nightMaterial);
-    // attach to earthGroup so it follows rotation
     if (earthGroup) earthGroup.add(nightMesh);
+
+    loadLocalTexture('earth_lights_2048.png', (texture) => {
+        texture.encoding = THREE.sRGBEncoding;
+        nightMaterial.uniforms.uNight.value = texture;
+        nightMaterial.needsUpdate = true;
+    }, (error) => console.warn('[3D Earth] Night-lights texture unavailable; layer remains inert.', error));
 }
 
 // Create a subtle tidal overlay that simulates tidal bulges driven by Moon (primary) and Sun (secondary)
@@ -1173,26 +1185,28 @@ function createTides() {
 
 // Moon placeholder
 function createMoon() {
-    const loader = new THREE.TextureLoader();
     const moonMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0x111111, shininess: 4 });
     const moon = new THREE.Mesh(new THREE.SphereGeometry(0.16, 64, 64), moonMaterial);
     moon.castShadow = false;
     moon.receiveShadow = false;
     moon.frustumCulled = false;
     moon.userData = { material: moonMaterial };
-    loader.load(textureUrls.moon, (texture) => {
+
+    loadLocalTexture('moon_1024.jpg', (texture) => {
         texture.encoding = THREE.sRGBEncoding;
         texture.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 1);
         moonMaterial.map = texture;
         moonMaterial.needsUpdate = true;
-    }, undefined, (error) => {
+    }, (error) => {
         console.warn('[3D Earth] Moon texture unavailable; using lit lunar fallback.', error);
         moonMaterial.color.setHex(0x9a9a9a);
     });
+
     moon.position.set(moonDistance, 0, 0);
     moonObject = moon;
     scene.add(moonObject);
 }
+
 // Population heatmap placeholder (a tinted sphere)
 
 // Historical events placeholder
@@ -1622,17 +1636,78 @@ function createEarth() {
     scene.add(earthGroup);
 }
 
+function assetMimeType(filename) {
+    if (/\\.png$/i.test(filename)) return 'image/png';
+    if (/\\.webp$/i.test(filename)) return 'image/webp';
+    return 'image/jpeg';
+}
+
+const EARTH_ASSET_ROOTS = ['/public/assets/earth', '/assets/earth'];
+
+async function fetchLocalTextureBlob(filename) {
+    let lastError = null;
+    for (const root of EARTH_ASSET_ROOTS) {
+        const url = root + '/' + filename;
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                cache: 'force-cache',
+                credentials: 'same-origin'
+            });
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText}`);
+            }
+            const bytes = await response.arrayBuffer();
+            if (!bytes.byteLength) throw new Error('empty response');
+            const declaredType = response.headers.get('content-type') || '';
+            const blob = new Blob([bytes], { type: assetMimeType(filename) });
+            console.info('[3D Earth] Local asset ready:', filename, {
+                url,
+                bytes: bytes.byteLength,
+                contentType: declaredType || '(missing)'
+            });
+            return URL.createObjectURL(blob);
+        } catch (error) {
+            lastError = error;
+            console.warn('[3D Earth] Local asset candidate failed:', url, error);
+        }
+    }
+    throw lastError || new Error('No local asset candidate succeeded');
+}
+
+function loadLocalTexture(filename, onLoad, onError) {
+    const loader = new THREE.TextureLoader();
+    fetchLocalTextureBlob(filename)
+        .then((blobUrl) => {
+            loader.load(
+                blobUrl,
+                (texture) => {
+                    try { URL.revokeObjectURL(blobUrl); } catch (e) {}
+                    onLoad(texture);
+                },
+                undefined,
+                (error) => {
+                    try { URL.revokeObjectURL(blobUrl); } catch (e) {}
+                    onError?.(error);
+                }
+            );
+        })
+        .catch(onError);
+}
+
 function enhanceEarthAppearance() {
     if (!earth || !clouds) return;
-
-    const loader = new THREE.TextureLoader();
 
     const applyColorTexture = (texture) => {
         texture.encoding = THREE.sRGBEncoding;
         texture.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 1);
+        texture.needsUpdate = true;
     };
 
-    loader.load(textureUrls.earth, (texture) => {
+    // The core renderer is already alive. Upgrade it from repository-local assets.
+    // Fetching the bytes first makes the failure mode explicit and avoids depending
+    // on a browser/server MIME mapping for image decoding.
+    loadLocalTexture('earth_atmos_2048.jpg', (texture) => {
         if (!earth) return;
         applyColorTexture(texture);
         const old = earth.material;
@@ -1645,35 +1720,36 @@ function enhanceEarthAppearance() {
         earth.material = material;
         if (old && old.dispose) old.dispose();
 
-        loader.load(textureUrls.earthBump, (normal) => {
+        loadLocalTexture('earth_normal_2048.jpg', (normal) => {
             if (!earth || !earth.material) return;
             normal.encoding = THREE.LinearEncoding;
+            normal.anisotropy = Math.min(4, renderer?.capabilities?.getMaxAnisotropy?.() || 1);
             earth.material.normalMap = normal;
             earth.material.normalScale = new THREE.Vector2(0.55, 0.55);
             earth.material.needsUpdate = true;
-        }, undefined, (error) => console.warn('[3D Earth] Earth normal map unavailable', error));
+        }, (error) => console.warn('[3D Earth] Earth normal map unavailable.', error));
 
-        loader.load(textureUrls.earthSpecular, (specular) => {
+        loadLocalTexture('earth_specular_2048.jpg', (specular) => {
             if (!earth || !earth.material) return;
             specular.encoding = THREE.LinearEncoding;
+            specular.anisotropy = Math.min(4, renderer?.capabilities?.getMaxAnisotropy?.() || 1);
             earth.material.specularMap = specular;
             earth.material.needsUpdate = true;
-        }, undefined, (error) => console.warn('[3D Earth] Earth specular map unavailable', error));
-    }, undefined, (error) => {
-        console.warn('[3D Earth] Real Earth texture unavailable; retaining fallback globe.', error);
+        }, (error) => console.warn('[3D Earth] Earth specular map unavailable.', error));
+    }, (error) => {
+        console.error('[3D Earth] Real Earth texture unavailable; retaining fallback globe.', error);
     });
 
-    loader.load(textureUrls.clouds, (texture) => {
+    loadLocalTexture('earth_clouds_1024.png', (texture) => {
         if (!clouds) return;
         applyColorTexture(texture);
         clouds.material.map = texture;
         clouds.material.opacity = 0.72;
         clouds.material.needsUpdate = true;
         clouds.visible = showClouds;
-    }, undefined, (error) => {
-        console.warn('[3D Earth] Cloud texture unavailable; clouds remain disabled.', error);
-    });
+    }, (error) => console.warn('[3D Earth] Cloud texture unavailable; clouds remain disabled.', error));
 }
+
 function loadTexture(url, fallback) {
     const textureLoader = new THREE.TextureLoader();
     const texture = textureLoader.load(
