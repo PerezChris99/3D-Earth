@@ -23,6 +23,7 @@ const requestLogger = require('./src/middleware/requestLogger');
 
 const apiRoutes   = require('./src/routes/api');
 const geocodeRoutes = require('./src/routes/geocode');
+const weatherRoutes = require('./src/routes/weather');
 const aoiRoutes   = require('./src/routes/aoi');
 const notesRoutes = require('./src/routes/notes');
 const { onConnect, onDisconnect, onMessage, attachIdleTimeout, getIp } = require('./src/middleware/rateLimitWS');
@@ -140,6 +141,7 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 // API ROUTES
 // ==========================================
 app.use('/api/geocode', geocodeRoutes);
+app.use('/api/weather', weatherRoutes);
 app.use('/api/aoi',   aoiRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api',       apiRoutes);
