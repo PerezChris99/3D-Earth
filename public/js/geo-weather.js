@@ -300,5 +300,6 @@
   }
 
   window.geoWeather = { selectLocation, requestGps, setMapVisible, getLocation: () => state.location, getWeather: () => state.weather };
-  window.addEventListener('load', bind);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once: true });
+  else bind();
 })();
