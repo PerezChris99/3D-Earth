@@ -16,11 +16,13 @@ let rotationOffsetStart = 0.0; // initial offset between current rotation and GM
 
 // Texture URLs (using reliable sources)
 const textureUrls = {
-    earth: 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
-    earthBump: 'https://threejs.org/examples/textures/planets/earth_normal_2048.jpg',
-    earthSpecular: 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg',
-    clouds: 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png',
-    starfield: 'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_px.jpg'
+    earth: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg',
+    earthBump: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg',
+    earthSpecular: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg',
+    clouds: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png',
+    earthLights: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_lights_2048.png',
+    moon: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg',
+    starfield: 'https://threejs.org/examples/textures/cube/MilkyWay/dark_s_px.jpg'
 };
 
 // Backup texture URLs
@@ -590,10 +592,10 @@ function createSatellites() {
     // The orbital state remains sourced from CelesTrak + SGP4; the geometry is a visual marker,
     // not a claim that every spacecraft has an identical physical design.
     const maxVisuals = MAX_REAL_SATELLITE_VISUALS;
-    const bodyGeo = new THREE.BoxGeometry(0.018, 0.007, 0.007);
-    const panelGeo = new THREE.BoxGeometry(0.006, 0.0012, 0.026);
-    const bodyMat = new THREE.MeshPhongMaterial({ color: 0xe8edf2, emissive: 0x17202a, shininess: 45 });
-    const panelMat = new THREE.MeshPhongMaterial({ color: 0x315f91, emissive: 0x0b1623, shininess: 25 });
+    const bodyGeo = new THREE.BoxGeometry(0.026, 0.010, 0.010);
+    const panelGeo = new THREE.BoxGeometry(0.008, 0.0016, 0.040);
+    const bodyMat = new THREE.MeshPhongMaterial({ color: 0xf2f5f8, emissive: 0x31465d, emissiveIntensity: 0.65, shininess: 35 });
+    const panelMat = new THREE.MeshPhongMaterial({ color: 0x4779a8, emissive: 0x16304b, emissiveIntensity: 0.45, shininess: 20 });
     satelliteInstances = new THREE.InstancedMesh(bodyGeo, bodyMat, maxVisuals);
     satellitePanelInstances = new THREE.InstancedMesh(panelGeo, panelMat, maxVisuals);
     satelliteInstances.frustumCulled = false;
@@ -981,7 +983,7 @@ function createSun() {
     const sunGroup = new THREE.Group();
 
     // Primary sun sprite (sharp center)
-    const sunTex = createSunTexture(1024);
+    const sunTex = createSunTexture(512);
     const spriteMat = new THREE.SpriteMaterial({ map: sunTex, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
     const sunCore = new THREE.Sprite(spriteMat);
     // scale sprites so the Sun appears large and detailed when it's closer
@@ -989,14 +991,14 @@ function createSun() {
     sunGroup.add(sunCore);
 
     // Corona layer (warmer, larger)
-    const coronaTex = createSunTexture(1024, { innerColor: '#fff9e6', outerColor: '#ffbb55', falloff: 0.9 });
+    const coronaTex = createSunTexture(512, { innerColor: '#fff9e6', outerColor: '#ffbb55', falloff: 0.9 });
     const coronaMat = new THREE.SpriteMaterial({ map: coronaTex, color: 0xffeeaa, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
     const corona = new THREE.Sprite(coronaMat);
     corona.scale.set(4.2 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 4.2 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
     sunGroup.add(corona);
 
     // Soft halo (very large, faint)
-    const haloTex = createSunTexture(1024, { innerColor: '#ffeecc', outerColor: '#221100', falloff: 0.6 });
+    const haloTex = createSunTexture(512, { innerColor: '#ffeecc', outerColor: '#221100', falloff: 0.6 });
     const haloMat = new THREE.SpriteMaterial({ map: haloTex, color: 0xffeecc, transparent: true, blending: THREE.AdditiveBlending, opacity: 0.5, depthWrite: false });
     const halo = new THREE.Sprite(haloMat);
     halo.scale.set(9.0 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 9.0 * Math.sqrt(1.0 / Math.max(0.001, sunDistance)), 1.0);
@@ -1099,7 +1101,7 @@ function createMagneticField() {
 // Night lights overlay (shadered) that lights only the dark side based on sun direction
 function createNightLights() {
     const loader = new THREE.TextureLoader();
-    const nightTex = loader.load('https://threejs.org/examples/textures/planets/earth_lights_2048.png');
+    const nightTex = loader.load(textureUrls.earthLights);
 
     nightMaterial = new THREE.ShaderMaterial({
         uniforms: {
@@ -1197,8 +1199,8 @@ function createTides() {
 function createMoon() {
     // Moon texture (publicly available low-res for demo). Use fallback canvas if unavailable.
     const loader = new THREE.TextureLoader();
-    const moonTexUrl = 'https://threejs.org/examples/textures/planets/moon_1024.jpg';
-    const moonNormUrl = 'https://threejs.org/examples/textures/planets/moon_normal.jpg';
+    const moonTexUrl = textureUrls.moon;
+    const moonNormUrl = textureUrls.earthBump;
     const moonTex = loader.load(moonTexUrl, undefined, undefined, () => {
         console.warn('Moon texture failed to load, using fallback');
     });
@@ -1270,7 +1272,7 @@ function createMoon() {
         side: THREE.FrontSide
     });
 
-    const geom = new THREE.SphereGeometry(0.27, 128, 128);
+    const geom = new THREE.SphereGeometry(0.16, 64, 64);
     moonObject = new THREE.Mesh(geom, moonMaterial);
     moonObject.castShadow = false;
     moonObject.receiveShadow = false;
@@ -1416,6 +1418,15 @@ function init() {
 
     // timezone visualization removed
 
+    // Establish the celestial/real-data scene graph before the first frame.
+    // Texture/network loading is asynchronous, but Sun, Moon, stars and satellite
+    // containers are present immediately and cannot disappear behind a deferred init.
+    safeInitStep('starfield', createStarfield);
+    safeInitStep('sun layer', createSun);
+    safeInitStep('moon layer', createMoon);
+    safeInitStep('satellite layer', createSatellites);
+    safeInitStep('night-lights layer', createNightLights);
+
     // Wire UI toggles. A control failure must never prevent the core globe from rendering.
     safeInitStep('UI controls', wireUiToggles);
 
@@ -1460,15 +1471,10 @@ function init() {
 
     // Everything below this point is enhancement work, not startup-critical rendering.
     setTimeout(() => {
-        safeInitStep('starfield', createStarfield);
         safeInitStep('earth textures', enhanceEarthAppearance);
-        safeInitStep('satellite layer', createSatellites);
         safeInitStep('ocean-current layer', createCurrents);
-        safeInitStep('moon layer', createMoon);
-        safeInitStep('sun layer', createSun);
         safeInitStep('tide layer', createTides);
         safeInitStep('magnetic-field layer', createMagneticField);
-        safeInitStep('night-lights layer', createNightLights);
         startTleUpdateLoop();
         ['satellites','currents','moon','magnetic'].forEach((id) => {
             const el = document.getElementById('chk-' + id);
@@ -1760,9 +1766,9 @@ function createEarth() {
     // Core globe: no network dependency. This is deliberately ready for the first frame.
     const earthGeometry = new THREE.SphereGeometry(1, 48, 48);
     const earthMaterial = new THREE.MeshPhongMaterial({
-        color: 0x3f8edb,
-        emissive: 0x071b31,
-        shininess: 8
+        color: 0xffffff,
+        specular: 0x222222,
+        shininess: 12
     });
     earth = new THREE.Mesh(earthGeometry, earthMaterial);
     earth.castShadow = false;
@@ -1796,32 +1802,56 @@ function createEarth() {
 
 function enhanceEarthAppearance() {
     if (!earth || !clouds) return;
+
     const loader = new THREE.TextureLoader();
+
+    const applyColorTexture = (texture) => {
+        texture.encoding = THREE.sRGBEncoding;
+        texture.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 1);
+    };
 
     loader.load(textureUrls.earth, (texture) => {
         if (!earth) return;
+        applyColorTexture(texture);
         const old = earth.material;
         const material = new THREE.MeshPhongMaterial({
             map: texture,
             color: 0xffffff,
-            shininess: 5
+            specular: 0x333333,
+            shininess: 14
         });
         earth.material = material;
         if (old && old.dispose) old.dispose();
-    }, undefined, () => {
-        console.warn('[3D Earth] Earth texture unavailable; keeping local globe.');
+
+        loader.load(textureUrls.earthBump, (normal) => {
+            if (!earth || !earth.material) return;
+            normal.encoding = THREE.LinearEncoding;
+            earth.material.normalMap = normal;
+            earth.material.normalScale = new THREE.Vector2(0.55, 0.55);
+            earth.material.needsUpdate = true;
+        }, undefined, (error) => console.warn('[3D Earth] Earth normal map unavailable', error));
+
+        loader.load(textureUrls.earthSpecular, (specular) => {
+            if (!earth || !earth.material) return;
+            specular.encoding = THREE.LinearEncoding;
+            earth.material.specularMap = specular;
+            earth.material.needsUpdate = true;
+        }, undefined, (error) => console.warn('[3D Earth] Earth specular map unavailable', error));
+    }, undefined, (error) => {
+        console.warn('[3D Earth] Real Earth texture unavailable; retaining fallback globe.', error);
     });
 
     loader.load(textureUrls.clouds, (texture) => {
         if (!clouds) return;
+        applyColorTexture(texture);
         clouds.material.map = texture;
+        clouds.material.opacity = 0.72;
         clouds.material.needsUpdate = true;
         clouds.visible = showClouds;
-    }, undefined, () => {
-        console.warn('[3D Earth] Cloud texture unavailable; keeping clouds off.');
+    }, undefined, (error) => {
+        console.warn('[3D Earth] Cloud texture unavailable; clouds remain disabled.', error);
     });
 }
-
 function loadTexture(url, fallback) {
     const textureLoader = new THREE.TextureLoader();
     const texture = textureLoader.load(
