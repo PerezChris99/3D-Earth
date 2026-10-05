@@ -1092,6 +1092,34 @@ function createMoon() {
 
 // Timezone visualization removed per user request
 
+let globeFirstFrameRendered = false;
+let globeRenderFailures = 0;
+
+function createFallbackEarth() {
+    console.warn('[3D Earth] Creating guaranteed fallback globe.');
+    earthGroup = new THREE.Group();
+    const geometry = new THREE.SphereGeometry(1, 48, 48);
+    const material = new THREE.MeshPhongMaterial({
+        color: 0x3f8edb,
+        emissive: 0x071b31,
+        shininess: 12
+    });
+    earth = new THREE.Mesh(geometry, material);
+    earthGroup.add(earth);
+
+    const atmosphereGeometry = new THREE.SphereGeometry(1.075, 32, 32);
+    const atmosphereMaterial = new THREE.MeshBasicMaterial({
+        color: 0x74b8f2,
+        transparent: true,
+        opacity: 0.12,
+        side: THREE.BackSide,
+        depthWrite: false
+    });
+    atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+    earthGroup.add(atmosphere);
+    scene.add(earthGroup);
+}
+
 function showGlobeError(error) {
     console.error('[3D Earth] Globe initialization failed:', error);
     const loading = document.getElementById('loading');
@@ -1178,14 +1206,16 @@ function init() {
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
 
-    // Lighting
-    setupLighting();
+    // Lighting, starfield and Earth are independently protected.
+    safeInitStep('lighting', setupLighting);
+    safeInitStep('starfield', createStarfield);
 
-    // Create starfield background
-    createStarfield();
-
-    // Create Earth
-    createEarth();
+    const earthCreated = safeInitStep('Earth', createEarth);
+    if (!earthCreated || !earthGroup) {
+        createFallbackEarth();
+    } else if (!earthGroup.parent) {
+        scene.add(earthGroup);
+    }
 
     // timezone visualization removed
 
@@ -1249,8 +1279,9 @@ function init() {
     // start tle update loop
     startTleUpdateLoop();
 
-    // Start animation
-    animate();
+    // Start animation only after the scene is ready.
+    if (renderer.setAnimationLoop) renderer.setAnimationLoop(animate);
+    else requestAnimationFrame(animate);
     // initial debug update
     updateUiDebug();
 }
@@ -1747,7 +1778,6 @@ function onWindowResize() {
 }
 
 function animate() {
-    requestAnimationFrame(animate);
     // compute delta time
     const nowPerf = performance.now() / 1000.0;
     if (typeof animate._lastTime === 'undefined') animate._lastTime = nowPerf;
@@ -1969,7 +1999,33 @@ function animate() {
         updateComets(deltaSec);
     } catch (e) {}
 
-    renderer.render(scene, camera);
+    try {
+        renderer.render(scene, camera);
+        if (!globeFirstFrameRendered) {
+            globeFirstFrameRendered = true;
+            const loading = document.getElementById('loading');
+            if (loading) loading.classList.add('hidden');
+        }
+    } catch (error) {
+        globeRenderFailures++;
+        console.error('[3D Earth] Render failure:', error);
+        if (globeRenderFailures === 1) {
+            try {
+                if (earthGroup) {
+                    earthGroup.traverse(obj => {
+                        if (obj.material && obj !== earth) {
+                            if (obj.material.isShaderMaterial) obj.visible = false;
+                        }
+                    });
+                }
+                if (earth && earth.material && earth.material.isMeshStandardMaterial) {
+                    earth.material = new THREE.MeshPhongMaterial({color:0x3f8edb,shininess:10});
+                }
+            } catch (fallbackError) {
+                console.error('[3D Earth] Render fallback failed:', fallbackError);
+            }
+        }
+    }
 }
 
 function toggleFollowISS() {
