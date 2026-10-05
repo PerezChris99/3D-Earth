@@ -26,6 +26,7 @@ const geocodeRoutes = require('./src/routes/geocode');
 const weatherRoutes = require('./src/routes/weather');
 const aoiRoutes   = require('./src/routes/aoi');
 const notesRoutes = require('./src/routes/notes');
+const dataEngineRoutes = require('./src/routes/data-engine');
 const { onConnect, onDisconnect, onMessage, attachIdleTimeout, getIp } = require('./src/middleware/rateLimitWS');
 const { verifyToken } = require('./src/auth');
 const { getFlights }          = require('./src/ingest/flights');
@@ -153,6 +154,7 @@ app.use('/api/geocode', geocodeRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/aoi',   aoiRoutes);
 app.use('/api/notes', notesRoutes);
+app.use('/api/data', dataEngineRoutes);
 app.use('/api',       apiRoutes);
 
 // Clean public routes
