@@ -734,3 +734,5 @@
 .map-mode-btn:hover{background:rgba(0,220,255,.16)}
 #map-shell.map-visible{z-index:120}
 .leaflet-control-attribution{font-size:8px!important}
+
+.forecast-title{margin-top:16px}.weather-forecast{display:grid;gap:4px;max-height:250px;overflow:auto}.forecast-row{display:grid;grid-template-columns:52px 42px 1fr 68px;gap:4px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(0,220,255,.06);font:8px var(--osint-font);color:var(--osint-subtext)}.forecast-row b{color:var(--osint-text)}.weather-source{margin-top:9px;font:7px/1.5 var(--osint-font);color:var(--osint-subtext)}
