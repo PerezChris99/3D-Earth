@@ -190,16 +190,16 @@ test('globe startup is independent of window load and optional runtimes', () => 
 });
 
 test('real Earth assets and visual layers are initialized reliably', () => {
-    assert.match(script, /raw\.githubusercontent\.com\/mrdoob\/three\.js\/master\/examples\/textures\/planets\/earth_atmos_2048\.jpg/);
-    assert.match(script, /textureUrls\.earthBump/);
-    assert.match(script, /textureUrls\.earthSpecular/);
-    assert.match(script, /textureUrls\.earthLights/);
-    assert.match(script, /textureUrls\.moon/);
-    assert.match(script, /safeInitStep\('sun layer', createSun\)/);
-    assert.match(script, /safeInitStep\('moon layer', createMoon\)/);
-    assert.match(script, /safeInitStep\('satellite layer', createSatellites\)/);
-    assert.match(script, /safeInitStep\('night-lights layer', createNightLights\)/);
-    assert.match(script, /normalScale = new THREE\.Vector2\(0\.55, 0\.55\)/);
-    assert.match(script, /earth\.material\.specularMap = specular/);
-    assert.doesNotMatch(script, /const bodyGeo = new THREE\.BoxGeometry\(0\.018, 0\.007, 0\.007\)/);
+    assert.ok(script.includes('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg'));
+    assert.ok(script.includes('textureUrls.earthBump'));
+    assert.ok(script.includes('textureUrls.earthSpecular'));
+    assert.ok(script.includes('textureUrls.earthLights'));
+    assert.ok(script.includes('textureUrls.moon'));
+    assert.ok(script.includes("safeInitStep('sun layer', createSun)"));
+    assert.ok(script.includes("safeInitStep('moon layer', createMoon)"));
+    assert.ok(script.includes("safeInitStep('satellite layer', createSatellites)"));
+    assert.ok(script.includes("safeInitStep('night-lights layer', createNightLights)"));
+    assert.ok(script.includes('normalScale = new THREE.Vector2(0.55, 0.55)'));
+    assert.ok(script.includes('earth.material.specularMap = specular'));
+    assert.ok(!script.includes('const bodyGeo = new THREE.BoxGeometry(0.018, 0.007, 0.007)'));
 });
