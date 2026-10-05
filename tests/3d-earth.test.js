@@ -29,7 +29,7 @@ test('landing and dashboard expose the public application surfaces', () => {
   assert.match(html, /landing\.js/);
   const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
   for (const required of [
-    'leaflet.js', 'public/js/geo-weather.js', 'locate-me-btn',
+    'public/js/geo-weather.js', 'locate-me-btn',
     'geo-consent', 'osm-map', 'weather-forecast', 'weather-local-time'
   ]) assert.ok(dashboard.includes(required), `missing ${required}`);
   for (const legal of ['about.html','privacy.html','terms.html','data-policy.html'])
@@ -113,7 +113,7 @@ test('legal and source pages use the formal information layout', () => {
   assert.match(data, /non-commercial/i);
 });
 
-test('dashboard vendors the Three.js runtime required by the globe', () => {
+test('dashboard vendors Three.js and does not block on optional runtimes', () => {
   const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
   for (const asset of [
     '/public/vendor/three-r128.min.js',
@@ -122,6 +122,9 @@ test('dashboard vendors the Three.js runtime required by the globe', () => {
   ]) assert.ok(dashboard.includes(asset), `missing local globe runtime asset: ${asset}`);
   assert.doesNotMatch(dashboard, /cdnjs\\.cloudflare\\.com\\/ajax\\/libs\\/three\\.js\\/r128/);
   assert.doesNotMatch(dashboard, /cdn\\.jsdelivr\\.net\\/npm\\/three@0\\.128\\.0\\/examples/);
+  assert.doesNotMatch(dashboard, /unpkg\\.com\\/satellite\\.js/);
+  assert.doesNotMatch(dashboard, /unpkg\\.com\\/leaflet@1\\.9\\.4\\/dist\\/leaflet\\.js/);
+  assert.doesNotMatch(dashboard, /unpkg\\.com\\/leaflet@1\\.9\\.4\\/dist\\/leaflet\\.css/);
 });
 test('globe startup does not depend on remote assets or synthetic satellite layers', () => {
   const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
@@ -173,4 +176,15 @@ test('navigation prefetch and static caching contracts exist', () => {
   assert.match(nav, /rel = 'prefetch'/);
   assert.match(server, /stale-while-revalidate/);
   assert.match(server, /Cache-Control.*no-cache/);
+});
+
+
+test('globe startup is independent of window load and optional runtimes', () => {
+  const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
+  const geo = fs.readFileSync(path.join(root, 'public/js/geo-weather.js'), 'utf8');
+  assert.match(globe, /DOMContentLoaded/);
+  assert.match(globe, /loadExternalScriptOnce/);
+  assert.match(globe, /ensureSatelliteRuntime/);
+  assert.match(geo, /loadLeafletRuntime/);
+  assert.match(geo, /DOMContentLoaded/);
 });
