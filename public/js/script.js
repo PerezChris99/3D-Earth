@@ -1183,6 +1183,8 @@ function init() {
     window.addEventListener('resize', onWindowResize);
     renderer.domElement.addEventListener('click', onMouseClick);
 
+    publishGlobeBridge();
+
     // Hide loading message
     document.getElementById('loading').style.display = 'none';
 
@@ -2069,6 +2071,46 @@ function toggleControlPanel() {
     try {
         localStorage.setItem('controls.collapsed', collapsed ? '1' : '0');
     } catch (e) {}
+}
+
+
+// Publish a stable bridge for the OSINT modules. These accessors stay live as the
+// simulation replaces arrays/groups during runtime instead of copying stale values.
+function publishGlobeBridge() {
+    const bindings = {
+        scene: () => scene,
+        camera: () => camera,
+        renderer: () => renderer,
+        controls: () => controls,
+        THREE: () => THREE,
+        earth: () => earth,
+        earthGroup: () => earthGroup,
+        clouds: () => clouds,
+        atmosphere: () => atmosphere,
+        satellitesGroup: () => satellitesGroup,
+        tleData: () => tleData,
+        raycaster: () => raycaster,
+        mouse: () => mouse
+    };
+    Object.entries(bindings).forEach(([key, getter]) => {
+        try {
+            Object.defineProperty(window, key, { configurable: true, get: getter });
+        } catch (e) {
+            try { window[key] = getter(); } catch (_) {}
+        }
+    });
+    window.globeAPI = {
+        getScene: () => scene,
+        getCamera: () => camera,
+        getRenderer: () => renderer,
+        getControls: () => controls,
+        getEarth: () => earth,
+        getEarthGroup: () => earthGroup,
+        resetView,
+        toggleRotation,
+        toggleClouds,
+        getSimulationTime: () => new Date(simTime)
+    };
 }
 
 // Initialize the scene
