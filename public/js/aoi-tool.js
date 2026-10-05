@@ -238,11 +238,11 @@
     // ============================
     // AUTH PANEL: GET TOKEN
     // ============================
-    async function requestToken(userId, role) {
+    async function requestToken(userId, role, secret) {
         try {
             const data = await apiFetch('/api/auth/token', {
                 method: 'POST',
-                body: JSON.stringify({ userId: userId || 'analyst1', role: role || 'analyst' })
+                body: JSON.stringify({ userId: userId || 'analyst1', role: role || 'analyst', secret: secret || '' })
             });
             if (data.token) {
                 setToken(data.token);
@@ -307,7 +307,8 @@
         document.getElementById('a-login-btn')?.addEventListener('click', () => {
             const userId = document.getElementById('a-userid')?.value?.trim();
             const role   = document.getElementById('a-role')?.value;
-            if (userId) requestToken(userId, role);
+            const secret = document.getElementById('a-secret')?.value || '';
+            if (userId) requestToken(userId, role, secret);
         });
 
         document.getElementById('aoi-draw-btn')?.addEventListener('click', () => {
