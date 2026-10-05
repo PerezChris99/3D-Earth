@@ -87,6 +87,14 @@ let satInterpStart = 0;
 let prevSatBuffer = null; // Float32Array
 let nextSatBuffer = null; // Float32Array
 let tleCount = 0;
+let satelliteInstances = null;
+let satellitePanelInstances = null;
+let selectedSatellite = null;
+const MAX_REAL_SATELLITE_VISUALS = 5000;
+const satelliteMatrix = new THREE.Object3D();
+const satelliteQuaternion = new THREE.Quaternion();
+const satelliteForward = new THREE.Vector3(0, 0, 1);
+
 
 // atmosphere slider pending value
 // atmosphere slider pending value (raw slider value 0..1.2)
@@ -235,6 +243,7 @@ function setupSgp4Worker() {
             const msg = ev.data;
             if (msg.type === 'positions' && tlePositionsAttr && msg.positions) {
                 const arr = msg.positions;
+                updateSatelliteModels(arr);
                 // copy into attribute buffer safely
                 const len = arr.length;
                 // keep a separate copy for interpolation / ISS lookups
@@ -573,41 +582,211 @@ function createSatellites() {
             u_pointSize: { value: 6.0 }
         }
     }));
+    // Keep the legacy interpolation buffer for propagation, but do not present satellites as dots.
+    tlePoints.visible = false;
     satellitesGroup.add(tlePoints);
-    tlePoints.frustumCulled = false;
+
+    // Real tracked objects are rendered as lightweight 3D spacecraft silhouettes.
+    // The orbital state remains sourced from CelesTrak + SGP4; the geometry is a visual marker,
+    // not a claim that every spacecraft has an identical physical design.
+    const maxVisuals = MAX_REAL_SATELLITE_VISUALS;
+    const bodyGeo = new THREE.BoxGeometry(0.018, 0.007, 0.007);
+    const panelGeo = new THREE.BoxGeometry(0.006, 0.0012, 0.026);
+    const bodyMat = new THREE.MeshPhongMaterial({ color: 0xe8edf2, emissive: 0x17202a, shininess: 45 });
+    const panelMat = new THREE.MeshPhongMaterial({ color: 0x315f91, emissive: 0x0b1623, shininess: 25 });
+    satelliteInstances = new THREE.InstancedMesh(bodyGeo, bodyMat, maxVisuals);
+    satellitePanelInstances = new THREE.InstancedMesh(panelGeo, panelMat, maxVisuals);
+    satelliteInstances.frustumCulled = false;
+    satellitePanelInstances.frustumCulled = false;
+    satelliteInstances.count = 0;
+    satellitePanelInstances.count = 0;
+    satelliteInstances.userData.domain = 'satellite';
+    satellitePanelInstances.userData.domain = 'satellite-panel';
+    satellitesGroup.add(satelliteInstances);
+    satellitesGroup.add(satellitePanelInstances);
+    window.satelliteInstances = satelliteInstances;
+    window.satellitePanelInstances = satellitePanelInstances;
 
     // ISS removed: no per-satellite highlight mesh created
 
     scene.add(satellitesGroup);
 
-    // create ISS placeholder/model
-    createISSModel();
-
     // Fetch TLEs from CelesTrak (active satellites)
     fetchTLES();
 
-    // Create many synthetic satellites for visual density
-    const synthGeom = new THREE.BufferGeometry();
-    const synthPositions = new Float32Array(SYNTHETIC_SAT_COUNT * 3);
-    synthGeom.setAttribute('position', new THREE.BufferAttribute(synthPositions, 3));
-    syntheticPoints = new THREE.Points(synthGeom, new THREE.PointsMaterial({ color: 0x66ccff, size: 2, sizeAttenuation: false }));
-    syntheticPoints.frustumCulled = false;
-    satellitesGroup.add(syntheticPoints);
-    syntheticPositionsAttr = synthGeom.getAttribute('position');
 
-    // initialize synthetic orbital params
-    syntheticParams = [];
-    for (let i = 0; i < SYNTHETIC_SAT_COUNT; i++) {
-        syntheticParams.push({
-            altitude: 1.05 + Math.random() * 0.5,
-            speed: 0.002 + Math.random() * 0.01,
-            phase: Math.random() * Math.PI * 2,
-            inclination: Math.random() * Math.PI
-        });
-    }
 }
 
 // Load a small ISS GLTF model (fallback to a simple box if loader unavailable)
+function updateSatelliteModels(arr) {
+    if (!satelliteInstances || !satellitePanelInstances || !arr) return;
+    const count = Math.min(tleData.length, MAX_REAL_SATELLITE_VISUALS, Math.floor(arr.length / 3));
+    for (let i = 0; i < count; i++) {
+        const x = arr[i * 3], y = arr[i * 3 + 1], z = arr[i * 3 + 2];
+        if (![x,y,z].every(Number.isFinite) || (x === 0 && y === 0 && z === 0)) {
+            satelliteMatrix.position.set(0, 0, 0);
+            satelliteMatrix.scale.setScalar(0);
+        } else {
+            satelliteMatrix.position.set(x, y, z);
+            satelliteMatrix.scale.setScalar(1);
+            const prevX = i > 0 ? arr[i * 3] : x;
+            // Use the orbit radial direction as a stable spacecraft attitude fallback.
+            const radial = new THREE.Vector3(x, y, z).normalize();
+            satelliteQuaternion.setFromUnitVectors(satelliteForward, radial);
+            satelliteMatrix.quaternion.copy(satelliteQuaternion);
+        }
+        satelliteMatrix.updateMatrix();
+        satelliteInstances.setMatrixAt(i, satelliteMatrix.matrix);
+        // Panel mesh uses the same transform; its geometry is a compact cross-body silhouette.
+        satellitePanelInstances.setMatrixAt(i, satelliteMatrix.matrix);
+    }
+    satelliteInstances.count = count;
+    satellitePanelInstances.count = count;
+    satelliteInstances.instanceMatrix.needsUpdate = true;
+    satellitePanelInstances.instanceMatrix.needsUpdate = true;
+
+    if (selectedSatellite?.visible && window._selectedSatelliteIndex != null) {
+        const i = window._selectedSatelliteIndex;
+        if (i < count) selectedSatellite.position.set(arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]);
+    }
+}
+
+function satelliteOwnerCountry(code) {
+    const map = {
+        US:'United States', CA:'Canada', UK:'United Kingdom', FR:'France', GER:'Germany',
+        IT:'Italy', JPN:'Japan', IND:'India', PRC:'People\'s Republic of China',
+        CIS:'Commonwealth of Independent States', SKOR:'Republic of Korea', NKOR:'North Korea',
+        RUS:'Russia', AUS:'Australia', BRAZ:'Brazil', ARG:'Argentina', ISR:'Israel',
+        ESA:'European Space Agency', NATO:'NATO', UEA:'United Arab Emirates', KEN:'Kenya',
+        UGA:'Uganda', GHA:'Ghana', ZAF:'South Africa', NETH:'Netherlands', NOR:'Norway'
+    };
+    return map[String(code || '').trim().toUpperCase()] || null;
+}
+
+function formatSatelliteAge(launchDate) {
+    if (!launchDate) return '—';
+    const start = new Date(launchDate + 'T00:00:00Z');
+    if (Number.isNaN(start.getTime())) return '—';
+    const days = Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
+    const years = Math.floor(days / 365.2425);
+    const months = Math.floor((days % 365.2425) / 30.44);
+    return years ? `${years}y ${months}m` : `${months}m`;
+}
+
+function formatSpeed(kmps) {
+    if (!Number.isFinite(kmps)) return '—';
+    return `${kmps.toFixed(3)} km/s (${Math.round(kmps * 3600)} km/h)`;
+}
+
+function createSelectedSatelliteMarker() {
+    if (selectedSatellite) return selectedSatellite;
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(
+        new THREE.BoxGeometry(0.035, 0.012, 0.012),
+        new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x4d8fd8, emissiveIntensity: 0.9 })
+    );
+    const panel = new THREE.Mesh(
+        new THREE.BoxGeometry(0.008, 0.002, 0.052),
+        new THREE.MeshPhongMaterial({ color: 0x4d8fd8, emissive: 0x163d68 })
+    );
+    const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.035, 0.003, 8, 32),
+        new THREE.MeshBasicMaterial({ color: 0x6eb6ff, transparent: true, opacity: 0.9 })
+    );
+    ring.rotation.x = Math.PI / 2;
+    group.add(body, panel, ring);
+    group.visible = false;
+    group.userData = { ring };
+    scene.add(group);
+    selectedSatellite = group;
+    return group;
+}
+
+async function trackSatelliteSelection(tracked) {
+    if (!tracked || tracked.index == null) return;
+    window._selectedSatelliteIndex = tracked.index;
+    const t = tleData[tracked.index];
+    if (!t) return;
+
+    const marker = createSelectedSatelliteMarker();
+    const arr = window._tleLatestBuffer;
+    if (arr && arr.length >= tracked.index * 3 + 3) {
+        marker.position.set(arr[tracked.index * 3], arr[tracked.index * 3 + 1], arr[tracked.index * 3 + 2]);
+        marker.visible = true;
+    }
+
+    let orbital = {};
+    try {
+        if (window.satellite && t.tle1 && t.tle2) {
+            const now = new Date();
+            const satrec = satellite.twoline2satrec(t.tle1, t.tle2);
+            const state = satellite.propagate(satrec, now);
+            if (state?.position && state?.velocity) {
+                const gmst = satellite.gstime(now);
+                const geo = satellite.eciToGeodetic(state.position, gmst);
+                const speed = Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z);
+                orbital = {
+                    latitude: `${(geo.latitude * 180 / Math.PI).toFixed(3)}°`,
+                    longitude: `${(geo.longitude * 180 / Math.PI).toFixed(3)}°`,
+                    altitude: `${geo.height.toFixed(1)} km`,
+                    speed: formatSpeed(speed),
+                    period: t.tle2 ? `${(1440 / Number(t.tle2.slice(52, 63))).toFixed(2)} min` : '—',
+                    epoch: t.tle1.slice(18, 32).trim()
+                };
+            }
+        }
+    } catch (e) {
+        console.warn('Satellite propagation failed', e);
+    }
+
+    let catalog = {};
+    try {
+        if (tracked.norad) {
+            const res = await fetch(`/api/satellites/${encodeURIComponent(tracked.norad)}`);
+            if (res.ok) catalog = await res.json();
+        }
+    } catch (e) {
+        console.warn('Satellite catalog lookup failed', e);
+    }
+
+    const launchDate = catalog.LAUNCH_DATE || catalog.launchDate;
+    const decayDate = catalog.DECAY_DATE || catalog.decayDate;
+    const display = {
+        type: 'sat',
+        name: t.name,
+        norad: tracked.norad || catalog.NORAD_CAT_ID,
+        intdes: catalog.OBJECT_ID || catalog.intdes || '—',
+        owner: catalog.OWNER || catalog.owner || '—',
+        country: satelliteOwnerCountry(catalog.OWNER || catalog.owner) || 'Catalog owner code only',
+        launchSite: catalog.LAUNCH_SITE || catalog.launchSite || '—',
+        launchDate: launchDate || '—',
+        timeInSpace: formatSatelliteAge(launchDate),
+        deployment: launchDate ? `Launch: ${launchDate}. Separate deployment date is not present in SATCAT.` : 'Not cataloged',
+        etr: decayDate ? `Decay recorded: ${decayDate}` : 'No cataloged decay date',
+        callsign: 'Not assigned / not provided by SATCAT',
+        period: catalog.PERIOD ? `${Number(catalog.PERIOD).toFixed(2)} min` : orbital.period,
+        inclination: catalog.INCLINATION != null ? `${Number(catalog.INCLINATION).toFixed(3)}°` : '—',
+        apogee: catalog.APOGEE != null ? `${Number(catalog.APOGEE).toLocaleString()} km` : '—',
+        perigee: catalog.PERIGEE != null ? `${Number(catalog.PERIGEE).toLocaleString()} km` : '—',
+        ...orbital,
+        tle1: t.tle1,
+        tle2: t.tle2
+    };
+    window.osintOpenInspector?.(display);
+}
+window.trackSatelliteSelection = trackSatelliteSelection;
+
+function getSatelliteCatalogNumber(t) {
+    const match = String(t?.tle1 || '').match(/^1\\s+(\\d{1,9})/);
+    return match ? match[1] : null;
+}
+
+window.getTrackedSatellite = function(index) {
+    const t = tleData[index];
+    if (!t) return null;
+    return { index, ...t, norad: getSatelliteCatalogNumber(t) };
+};
+
 function createISSModel() {
     issObject = new THREE.Group();
     issObject.visible = false;
@@ -654,19 +833,13 @@ function findIssTleIndex() {
 // Fetch TLE data from CelesTrak (active satellites) and parse into tleData
 async function fetchTLES() {
     try {
-        // CelesTrak active satellites TLE file (text)
-        const url = 'https://celestrak.com/NORAD/elements/active.txt';
-        const res = await fetch(url);
-        const text = await res.text();
-        const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-        tleData = [];
-        for (let i = 0; i < lines.length; i += 3) {
-            const name = lines[i];
-            const tle1 = lines[i + 1];
-            const tle2 = lines[i + 2];
-            if (!tle1 || !tle2) break;
-            tleData.push({ name, tle1, tle2 });
-        }
+        // Fetch the real active catalog through our server-side CelesTrak gateway.
+        // This avoids browser CORS/redirect problems and keeps the provider request cached.
+        const res = await fetch('/api/satellites', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Satellite gateway HTTP ${res.status}`);
+        const payload = await res.json();
+        tleData = Array.isArray(payload) ? payload : [];
+        if (!tleData.length) throw new Error('CelesTrak returned no active satellites');
 
     // allocate positions buffer
         const count = tleData.length;
@@ -701,29 +874,17 @@ async function fetchTLES() {
             sgp4Worker.postMessage({ type: 'update' });
         } else updateTLEPositions();
     } catch (e) {
-        console.warn('Failed to fetch TLEs', e);
-        // Fallback: create a few synthetic satellites so user sees something
-    console.log('Using synthetic satellite fallback');
+        console.warn('Failed to fetch real satellite catalog', e);
+        // Do not fabricate satellite positions. A failed provider means no satellite layer.
         tleData = [];
-        for (let i = 0; i < 12; i++) {
-            tleData.push({ name: 'SYNTH-' + i, tle1: '', tle2: '' });
+        tleCount = 0;
+        if (tlePoints) {
+            tlePoints.geometry.dispose();
+            tlePoints.geometry = new THREE.BufferGeometry();
+            tlePoints.count = 0;
         }
-        const count = tleData.length;
-        const positions = new Float32Array(count * 3);
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        tlePoints.geometry.dispose();
-        tlePoints.geometry = geom;
-        tlePositionsAttr = geom.getAttribute('position');
-        // populate synthetic positions
-        for (let i = 0; i < tleData.length; i++) {
-            const a = (i / tleData.length) * Math.PI * 2;
-            const r = 1.1;
-            tlePositionsAttr.array[i * 3 + 0] = r * Math.cos(a);
-            tlePositionsAttr.array[i * 3 + 1] = r * Math.sin(a) * 0.2;
-            tlePositionsAttr.array[i * 3 + 2] = r * Math.sin(a);
-        }
-        tlePositionsAttr.needsUpdate = true;
+        if (satelliteInstances) satelliteInstances.count = 0;
+        if (satellitePanelInstances) satellitePanelInstances.count = 0;
         lastTleUpdate = Date.now();
     }
 }
