@@ -190,7 +190,7 @@ test('globe startup is independent of window load and optional runtimes', () => 
 });
 
 test('real Earth assets and visual layers are initialized reliably', () => {
-    assert.ok(script.includes('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg'));
+    assert.ok(script.includes('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg'));
     assert.ok(script.includes('textureUrls.earthBump'));
     assert.ok(script.includes('textureUrls.earthSpecular'));
     assert.ok(script.includes('textureUrls.earthLights'));
@@ -202,4 +202,13 @@ test('real Earth assets and visual layers are initialized reliably', () => {
     assert.ok(script.includes('normalScale = new THREE.Vector2(0.55, 0.55)'));
     assert.ok(script.includes('earth.material.specularMap = specular'));
     assert.ok(!script.includes('const bodyGeo = new THREE.BoxGeometry(0.018, 0.007, 0.007)'));
+});
+
+test('rendering uses deterministic celestial fallbacks and valid satellite loading', () => {
+    assert.match(script, /async function fetchTLES\(\)/);
+    assert.doesNotMatch(script, /async async function fetchTLES/);
+    assert.match(script, /new THREE\.MeshPhongMaterial\(\{ color: 0xffffff, specular: 0x111111, shininess: 4 \}\)/);
+    assert.match(script, /new THREE\.PointsMaterial\(\{ size: 0\.075/);
+    assert.match(script, /new THREE\.Mesh\(new THREE\.SphereGeometry\(0\.11, 24, 24\)/);
+    assert.match(script, /@r128\/examples\/textures\/planets/);
 });
