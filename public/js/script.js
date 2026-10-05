@@ -1892,8 +1892,15 @@ function animate() {
     animateSatellites();
     // update TLE-derived satellite points periodically
     if (Date.now() - lastTleUpdate > tleUpdateInterval) {
-        if (sgp4Worker) updateTLEPositions();
-        else updateTLEPositionsFallback();
+        try {
+            if (sgp4Worker) updateTLEPositions();
+            else updateTLEPositionsFallback();
+        } catch (error) {
+            // Live satellite data is optional. Never let a provider/library failure
+            // prevent the core Earth renderer from producing a frame.
+            console.warn('[3D Earth] Satellite update skipped:', error);
+            lastTleUpdate = Date.now();
+        }
     }
     // animate synthetic satellites
     animateSyntheticSatellites();
