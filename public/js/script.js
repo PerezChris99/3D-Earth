@@ -1475,6 +1475,9 @@ function init() {
             if (el) el.dispatchEvent(new Event('change'));
         });
     }, 0);
+    } catch (error) {
+        showGlobeError(error);
+    }
 }
 
 // Debug helper: update the on-screen UI debug panel with current control / uniform values
