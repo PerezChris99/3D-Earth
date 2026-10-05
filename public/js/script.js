@@ -1848,6 +1848,21 @@ function onWindowResize() {
 }
 
 function animate() {
+    // Render the already-created Earth FIRST. Nothing in telemetry, astronomy,
+    // optional layers, or live data is allowed to block the first visible frame.
+    try {
+        renderer.render(scene, camera);
+        if (!globeFirstFrameRendered) {
+            globeFirstFrameRendered = true;
+            const loading = document.getElementById('loading');
+            if (loading) loading.classList.add('hidden');
+        }
+    } catch (error) {
+        globeRenderFailures++;
+        console.error('[3D Earth] First-frame render failure:', error);
+        return;
+    }
+
     // compute delta time
     const nowPerf = performance.now() / 1000.0;
     if (typeof animate._lastTime === 'undefined') animate._lastTime = nowPerf;
@@ -2076,34 +2091,7 @@ function animate() {
         updateComets(deltaSec);
     } catch (e) {}
 
-    try {
-        renderer.render(scene, camera);
-        if (!globeFirstFrameRendered) {
-            globeFirstFrameRendered = true;
-            const loading = document.getElementById('loading');
-            if (loading) loading.classList.add('hidden');
-        }
-    } catch (error) {
-        globeRenderFailures++;
-        console.error('[3D Earth] Render failure:', error);
-        if (globeRenderFailures === 1) {
-            try {
-                if (earthGroup) {
-                    earthGroup.traverse(obj => {
-                        if (obj.material && obj !== earth) {
-                            if (obj.material.isShaderMaterial) obj.visible = false;
-                        }
-                    });
-                }
-                if (earth && earth.material && earth.material.isMeshStandardMaterial) {
-                    earth.material = new THREE.MeshPhongMaterial({color:0x3f8edb,shininess:10});
-                }
-            } catch (fallbackError) {
-                console.error('[3D Earth] Render fallback failed:', fallbackError);
-            }
-        }
-    }
-}
+
 
 function toggleFollowISS() {
     const btn = document.getElementById('btn-follow-iss');
