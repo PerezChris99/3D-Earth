@@ -1,0 +1,65 @@
+name: 3D Earth validation
+
+on:
+  push:
+    branches: [main, perez]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        id: install
+        continue-on-error: true
+        run: |
+          set +e
+          npm install --no-audit --no-fund 2>&1 | tee /tmp/npm-install.log
+          code=${PIPESTATUS[0]}
+          echo "exit_code=${code}" >> "${GITHUB_OUTPUT}"
+          exit "${code}"
+      - name: Run tests
+        id: tests
+        if: steps.install.outputs.exit_code == '0'
+        continue-on-error: true
+        run: |
+          set +e
+          npm test 2>&1 | tee /tmp/npm-test.log
+          code=${PIPESTATUS[0]}
+          echo "exit_code=${code}" >> "${GITHUB_OUTPUT}"
+          exit "${code}"
+      - name: Syntax validation
+        if: always()
+        run: npm run check:syntax 2>&1 | tee /tmp/syntax.log
+      - name: Upload validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-logs-${{ github.run_id }}
+          path: /tmp/*.log
+          if-no-files-found: warn
+      - name: Fail if installation failed
+        if: steps.install.outputs.exit_code != '0'
+        run: exit 1
+      - name: Fail if tests failed
+        if: steps.tests.outputs.exit_code != '0'
+        run: exit 1
+      - name: Start server
+        run: node server.js > /tmp/3d-earth-server.log 2>&1 &
+      - name: Health check
+        run: |
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:3000/api/health; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/3d-earth-server.log
+          exit 1
