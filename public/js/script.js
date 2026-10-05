@@ -928,8 +928,43 @@ function updateTLEPositions() {
 }
 
 // schedule periodic TLE updates using worker or local propagation
-function startTleUpdateLoop() {
+function loadExternalScriptOnce(src, globalName) {
+    return new Promise((resolve, reject) => {
+        if (globalName && window[globalName]) return resolve(window[globalName]);
+        const existing = document.querySelector(`script[data-external-src="${src}"]`);
+        if (existing) {
+            existing.addEventListener('load', () => resolve(globalName ? window[globalName] : true), { once: true });
+            existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.dataset.externalSrc = src;
+        script.onload = () => resolve(globalName ? window[globalName] : true);
+        script.onerror = () => reject(new Error(`Failed to load ${src}`));
+        document.head.appendChild(script);
+    });
+}
+
+async function ensureSatelliteRuntime() {
+    if (window.satellite) return true;
+    try {
+        await loadExternalScriptOnce(
+            'https://unpkg.com/satellite.js@4.0.0/dist/satellite.min.js',
+            'satellite'
+        );
+        return Boolean(window.satellite);
+    } catch (error) {
+        console.warn('[3D Earth] Satellite propagation runtime unavailable; live propagation will remain paused.', error);
+        return false;
+    }
+}
+
+async function startTleUpdateLoop() {
     if (tleUpdateTimer) clearInterval(tleUpdateTimer);
+    const satelliteReady = await ensureSatelliteRuntime();
+    if (!satelliteReady) return;
     tleUpdateTimer = setInterval(() => {
     if (sgp4Worker) sgp4Worker.postMessage({ type: 'update' });
     else updateTLEPositionsFallback();
