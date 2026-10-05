@@ -1,241 +1,415 @@
-# 3D-Earth — Palantir-Style OSINT Intelligence Globe
+# 3D Earth
 
-A production-hardened, browser-based OSINT Intelligence Platform built on Three.js r128 + Node.js/Express 5. Streams live satellite positions, flights, seismic events, and thermal hotspots to a real-time 3D globe with analyst tools, alert engine, and a secure WebSocket gateway.
+**3D Earth** is a browser-based geographic visualization and situational-awareness platform built around one idea: keep the planet visible, then bring the information needed to understand a place around it.
 
----
+The project started from a personal interest in **maps, tracking, and seeing the world from above**. It is deliberately more than a visual demo. The current system combines a Three.js globe, WGS84 location handling, OpenStreetMap, weather data, geospatial feeds, a Node/Express gateway, WebSocket updates, and analyst tooling.
 
-## Development Progress
-
-### Overall Platform
-
-`████████████████████████` **~98% Complete — Production Ready**
-
-### Phase Breakdown
-
-| Phase | Feature Set | Progress |
-|-------|-------------|----------|
-| 0 | 3D Globe — WebGL, shaders, atmosphere, SGP4 | `████████████████████████` 100% |
-| 1 | Secure Gateway — Express 5, Helmet, CORS, HMAC auth | `████████████████████████` 100% |
-| 2 | OSINT Dashboard — WS stream, layer manager, inspector | `████████████████████████` 100% |
-| 3 | Alert Engine — AOI intersections, threshold alerts | `████████████████████████` 100% |
-| 4 | Analyst Tools — AOI draw, geo-pinned notes, snapshots | `████████████████████████` 100% |
-| 5 | Intelligence Overlay — threat scoring, clustering, minimap | `████████████████████████` 100% |
-| 6 | Production Hardening — structured logging, WS auth, per-client subscriptions | `████████████████████░░░░` 95% |
-
-> Remaining 5%: JWT refresh-token rotation, geofencing / WAF rules (cloud-deploy only), persistent session storage for analyst notes.
+**Built by Kweezi Perez** — https://kweeziperez.com
 
 ---
 
-## Quick Start
+## What problem is this trying to solve?
 
-### Prerequisites
-- Node.js v18+ (v23 recommended)
-- npm
+The useful problem is not “make a 3D globe.”
 
-### Install & run
+The problem is **geographic context**.
 
-```powershell
-# Clone or enter the project directory
-cd "d:\NEW PROJECTS\earth"
+A map can tell you where something is. A weather service can tell you what the atmosphere is doing. A satellite tracker can tell you where an object is. A conventional dashboard can put those things beside one another.
 
-# Install dependencies
-npm install
+3D Earth is an attempt to put those pieces into a single spatial view so a person can answer:
 
-# Copy environment template and configure secrets
-Copy-Item .env.example .env
-# Edit .env: set JWT_SECRET to a 64-char random string
+- Where is this?
+- What is around it?
+- What is happening there?
+- What does the weather look like?
+- How does the location relate to the wider Earth?
+- What external source produced the information?
 
-# Development (hot-reload via nodemon)
-npm run dev
-
-# Production
-npm start
-```
-
-Open **http://localhost:3000** in your browser.
+For Uganda and the wider East African community, the project can support **geospatial education, mapping experiments, environmental and weather awareness, aviation/geographic context, research prototypes, and community demonstrations**. It is not intended to replace an emergency-response, aviation-navigation, meteorological, surveying, or other safety-critical system.
 
 ---
 
-## Architecture
+## Why it exists
 
-```
-Browser (Three.js + vanilla JS)
-  │  HTTPS/REST ──► Express 5 API  (/api/*)
-  └─ WebSocket ───► WS Gateway     (/ws/live)
-                         │
-              ┌──────────┴──────────┐
-         Ingest layer         Alert engine
-         flights / EQ /        AOI checks /
-         TLE / thermal         threat scores
-```
+This project was built because I have a genuine interest in **tracking, maps, geographic systems and the perspective of seeing the Earth from above**.
 
-### Backend stack
-| Layer | Technology |
-|-------|-----------|
-| HTTP server | Node.js `http` + Express 5 |
-| WebSocket | `ws` library, path `/ws/live` |
-| Security | Helmet, CORS, express-rate-limit |
-| Auth | HMAC-SHA256 tokens (15 min TTL) — `src/auth.js` |
-| Logging | Structured in-process logger — `src/logger.js` |
-| Data ingest | CelesTrak TLEs, OpenSky flights, USGS earthquakes, FIRMS thermal |
+That interest became an engineering project: take the things that make maps and tracking useful, expose them through a browser, and make the geographic object itself the centre of the interface.
 
-### Frontend stack
-| Layer | Technology |
-|-------|-----------|
-| 3D engine | Three.js r128, custom GLSL shaders |
-| Globe controls | `public/js/script.js` |
-| Live data | `public/js/osint-dashboard.js` (WebSocket client) |
-| Analyst tools | `public/js/aoi-tool.js` |
-| Intel overlay | `public/js/intel-overlay.js` |
+The intended direction is to make the platform useful for African geospatial learning and practical situational awareness while being honest about source quality, licensing, latency and uncertainty.
 
 ---
 
-## API Reference
+## Current capabilities
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/api/health` | — | Basic health check |
-| GET | `/api/status` | — | Memory, uptime, environment |
-| POST | `/api/auth/token` | — | Issue HMAC viewer/analyst/admin token |
-| GET | `/api/satellites` | — | TLE satellite data |
-| GET | `/api/flights` | — | Live flight positions |
-| GET | `/api/earthquakes` | — | USGS seismic events |
-| GET | `/api/thermal` | — | FIRMS thermal hotspots |
-| GET | `/api/positions` | — | All domains in one call |
-| GET | `/api/aoi` | Bearer | List AOI polygons |
-| POST | `/api/aoi` | Bearer (analyst+) | Create AOI |
-| DELETE | `/api/aoi/:id` | Bearer (analyst+) | Delete AOI |
-| GET | `/api/notes` | Bearer | List intel notes |
-| POST | `/api/notes` | Bearer (analyst+) | Create note |
-| DELETE | `/api/notes/:id` | Bearer (analyst+) | Delete note |
+### Globe
+- Three.js r128 WebGL globe
+- Day/night illumination
+- Atmosphere and cloud layers
+- Satellite/orbital visualisation
+- Moon and Sun context
+- Optional ocean-current and magnetic-field layers
+- WGS84 coordinate conversion
+- Globe marker for the selected location
+- Animated fly-to when a location is selected
+- Location-aware globe centering that accounts for the globe's current rotation
 
-### WebSocket protocol (`/ws/live`)
+### Maps and location
+- OpenStreetMap via Leaflet
+- WGS84 latitude/longitude selection
+- Browser geolocation with explicit user permission
+- Reported device accuracy
+- Reverse geocoding through the application server
+- Map marker and accuracy circle
+- Globe ↔ map location synchronisation
+- Map remains available as a full-screen conventional map mode
 
-**Server → Client messages**
+### Weather
+- Current conditions
+- Local time
+- Sunrise/sunset and day/night state
+- Twelve-hour forecast
+- Temperature, humidity, wind and pressure
+- Model-grid and elevation metadata
+- Server-side cache and parameter validation
 
-| `type` | Description |
-|--------|-------------|
-| `connected` | Sent on connection with initial layer state |
-| `delta_update` | Live data broadcast every 5 s: `flights`, `earthquakes`, `thermal`, `intelligence`, `alerts` |
-| `cmd_ack` | Acknowledgement of a client command |
+### Live geographic context
+Depending on source availability:
+- Satellites
+- Flights
+- Earthquakes
+- Thermal hotspots
+- Intelligence/derived layers
+- Alerts and area-of-interest tools
 
-**Client → Server messages**
-
-| `type` | `action` | Fields | Description |
-|--------|----------|--------|-------------|
-| `cmd` | `set_layer` | `layer`, `enabled` | Toggle per-client data subscription |
-| `cmd` | `set_setting` | `key`, `value` | Persist visual setting (acknowledged server-side) |
-
-**Authentication**: Pass token as query param: `ws://host/ws/live?token=<token>`  
-In production (`NODE_ENV=production`) unauthenticated connections are rejected (close code 1008).
-
----
-
-## Security Overview
-
-See [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for the full threat model and implementation status.
-
-| Control | Status |
-|---------|--------|
-| HTTP security headers (Helmet) | ✅ Implemented |
-| CORS strict allowlist | ✅ Implemented |
-| API rate limiting (120 req/15 min) | ✅ Implemented |
-| Request body size limits (10 KB) | ✅ Implemented |
-| Input sanitization (XSS, prototype pollution) | ✅ Implemented |
-| HMAC-SHA256 auth tokens (15 min TTL) | ✅ Implemented |
-| Role-based access (viewer / analyst / admin) | ✅ Implemented |
-| WebSocket rate limiting | ✅ Implemented |
-| WebSocket token authentication | ✅ Implemented |
-| Structured error logging (no stack traces to client) | ✅ Implemented |
-| Uncaught exception / rejection handlers | ✅ Implemented |
-| Graceful shutdown | ✅ Implemented |
-| JWT refresh token rotation | ⬜ Planned |
-| Geofencing / WAF | ⬜ Planned (cloud deploy) |
+### Analyst functions
+- AOI drawing
+- Geo-pinned notes
+- Snapshot/export tooling
+- Layer subscriptions
+- Inspector panels
+- WebSocket live updates
+- Role-based protected analyst/admin routes
 
 ---
 
-## Roadmap
+## Location flow
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the full 6-phase development roadmap.
+~~~mermaid
+flowchart LR
+    A[User presses Locate] --> B{Browser permission}
+    B -->|Allowed| C[WGS84 latitude longitude accuracy]
+    B -->|Denied| D[Manual coordinates]
+    C --> E[Application location state]
+    D --> E
+    E --> F[Map marker]
+    E --> G[Globe marker]
+    E --> H[Globe fly-to]
+    E --> I[Reverse geocoding]
+    E --> J[Weather request]
+    I --> K[Place name]
+    J --> L[Local weather and time]
+~~~
+
+The important design decision is that **the same WGS84 coordinate is the source of truth for both the map and the globe**. The map is not a separate approximation of the globe location.
 
 ---
 
-## Project Structure
+## Globe / map relationship
 
-```
-├── index.html               # App shell — must stay at root
-├── server.js                # Express 5 gateway + WebSocket server
+~~~mermaid
+flowchart TB
+    WGS84[WGS84 coordinate] --> MAP[Leaflet + OpenStreetMap]
+    WGS84 --> GLOBE[Three.js Earth]
+    MAP --> MARKER1[Map marker + accuracy]
+    GLOBE --> MARKER2[Earth surface marker]
+    WGS84 --> WEATHER[Weather API]
+    WGS84 --> GEOCODE[Reverse geocoder]
+    WEATHER --> CONTEXT[Local weather / time]
+    GEOCODE --> CONTEXT2[Human-readable place]
+~~~
+
+Selecting a point on the map therefore updates the globe. Using device location does the same in the opposite direction.
+
+---
+
+## System architecture
+
+~~~mermaid
+flowchart LR
+    Browser[Browser: Three.js + Leaflet + vanilla JS]
+    Gateway[Node.js / Express gateway]
+    WS[WebSocket /ws/live]
+    Cache[In-memory TTL cache]
+    Browser -->|REST| Gateway
+    Browser -->|WebSocket| WS
+    Gateway --> Cache
+    Gateway --> GEO[Reverse geocoder]
+    Gateway --> WEATHER[Weather provider]
+    Gateway --> SAT[CelesTrak / satellite data]
+    Gateway --> FLIGHT[OpenSky / flight data]
+    Gateway --> EQ[USGS / seismic data]
+    Gateway --> FIRE[Thermal hotspot feed]
+    WS --> INTEL[Intelligence + alert engine]
+    INTEL --> AOI[AOI checks]
+    INTEL --> NOTES[Analyst notes]
+~~~
+
+---
+
+## Startup and performance design
+
+The globe does **not** wait for remote textures or live feeds before rendering.
+
+~~~text
+CRITICAL PATH
+renderer
+  ↓
+camera
+  ↓
+lighting
+  ↓
+lightweight local Earth
+  ↓
+animation loop
+  ↓
+FIRST FRAME
+
+ENHANCEMENT PATH
+  ↓
+Earth texture
+  ↓
+cloud texture
+  ↓
+starfield
+  ↓
+satellites
+  ↓
+Moon / Sun
+  ↓
+optional scientific layers
+  ↓
+external live data
+~~~
+
+Other startup controls include:
+- capped device pixel ratio
+- no unnecessary drawing-buffer preservation
+- reduced initial geometry
+- deferred expensive layers
+- reduced synthetic satellite count
+- isolated optional initialisation
+- server-side caching for selected APIs
+
+---
+
+## Technology
+
+| Area | Technology |
+|---|---|
+| Globe | Three.js r128 |
+| Map | Leaflet + OpenStreetMap |
+| Frontend | HTML, CSS, vanilla JavaScript |
+| Backend | Node.js + Express 5 |
+| Live transport | WebSocket (ws) |
+| Location | Browser Geolocation + WGS84 |
+| Weather | Open-Meteo gateway |
+| Reverse geocoding | Server-side provider proxy |
+| Satellite data | CelesTrak / satellite.js |
+| Flights | OpenSky |
+| Earthquakes | USGS |
+| Thermal data | FIRMS feed |
+| Security | Helmet, CORS, rate limiting, HMAC auth |
+| Testing | Node test runner + syntax checks |
+
+---
+
+## Repository structure
+
+~~~text
+3D-Earth/
+├── index.html
+├── dashboard.html
+├── about.html
+├── privacy.html
+├── terms.html
+├── data-policy.html
+├── server.js
 ├── package.json
-├── .env.example             # Environment variable template
+├── .env.example
+├── README.md
 ├── docs/
-│   ├── ROADMAP.md           # Phase-by-phase feature roadmap
-│   └── SECURITY_AUDIT.md    # Threat model and security controls
+│   ├── ROADMAP.md
+│   └── SECURITY_AUDIT.md
 ├── public/
 │   ├── css/
-│   │   ├── style.css        # Globe + controls panel styles
-│   │   └── osint.css        # OSINT dashboard panel styles
 │   └── js/
-│       ├── script.js        # Three.js globe renderer
-│       ├── osint-dashboard.js  # WS client, layer manager, inspector
-│       ├── aoi-tool.js      # Analyst tools: AOI, notes, export
-│       ├── intel-overlay.js # Threat markers, clustering, minimap
-│       └── sgp4-worker.js   # Web Worker for off-thread SGP4
-└── src/
-    ├── logger.js            # Structured in-process logger
-    ├── auth.js              # HMAC token issue/verify, middleware
-    ├── alertEngine.js       # AOI intersection + alert queue
-    ├── cache.js             # In-memory TTL cache
-    ├── intelligence.js      # Threat scoring, clustering, entity history
-    ├── aoi.js               # In-memory AOI store
-    ├── notes.js             # In-memory intel notes store
-    ├── ingest/
-    │   ├── tle.js           # CelesTrak TLE fetch + parse
-    │   ├── flights.js       # OpenSky Network flights
-    │   ├── earthquakes.js   # USGS GeoJSON earthquakes
-    │   └── thermal.js       # FIRMS thermal hotspot CSV
-    ├── routes/
-    │   ├── api.js           # Public data + auth routes
-    │   ├── aoi.js           # Protected AOI CRUD
-    │   └── notes.js         # Protected notes CRUD
-    └── middleware/
-        ├── requestLogger.js # HTTP access logging middleware
-        ├── rateLimitWS.js   # Per-IP WS rate limiter
-        └── sanitize.js      # Input sanitization middleware
-```
+├── src/
+│   ├── auth.js
+│   ├── cache.js
+│   ├── logger.js
+│   ├── alertEngine.js
+│   ├── intelligence.js
+│   ├── aoi.js
+│   ├── notes.js
+│   ├── ingest/
+│   ├── middleware/
+│   └── routes/
+└── tests/
+    ├── 3d-earth.test.js
+    └── syntax-check.js
+~~~
 
 ---
 
-## Environment Variables
+## Routes
 
-Copy `.env.example` to `.env` and configure:
-
-```env
-PORT=3000
-NODE_ENV=development
-JWT_SECRET=<64-char-random-string>
-ALLOWED_ORIGINS=http://localhost:3000
-LOG_LEVEL=INFO
-```
-
----
-
-## Logging
-
-The backend uses a structured in-process logger (`src/logger.js`):
-
-- **Development**: colorized, human-readable output to stdout
-- **Production**: JSON lines to stdout (compatible with Datadog, CloudWatch, Loki)
-
-Log levels: `DEBUG` → `HTTP` → `INFO` → `WARN` → `ERROR`
-
-Set `LOG_LEVEL` in `.env` to control verbosity. Every HTTP request is logged with method, path, status, response time, IP, and a correlation ID (`req.requestId`).
+| Route | Purpose |
+|---|---|
+| / | Project landing page |
+| /dashboard | Interactive globe |
+| /about | Project purpose and community use |
+| /privacy | Privacy policy |
+| /terms | Terms of use |
+| /data-policy | Data sources and provider notes |
 
 ---
 
-## License & Credits
+## Production-readiness assessment
 
-- **Three.js** (r128) — MIT
-- **satellite.js** — MIT
-- **ws** — MIT
-- Textures: three.js example assets or generated fallback canvases
-- Platform built by [Perez C](https://perezchris.netlify.app/)
+### Honest score: **7 / 10 for controlled production deployment**
+
+This is **not** the same as saying the system is ready to become a public, safety-critical geographic platform at national scale.
+
+### What is already solid
+- Core globe rendering has a local first-frame fallback.
+- Location handling uses WGS84.
+- Browser GPS requires user permission.
+- Map and globe share the same selected coordinate.
+- Weather requests pass through a server gateway.
+- Reverse geocoding is rate-controlled and cached.
+- API input is validated.
+- HTTP security headers are configured.
+- API rate limiting exists.
+- WebSocket authentication exists for production.
+- Analyst/admin routes are protected.
+- WebSocket messages are rate limited.
+- Structured logging exists.
+- Graceful shutdown/error guards exist.
+- Automated syntax and application tests exist.
+- The UI has a mobile navigation path rather than simply shrinking desktop controls.
+
+### What prevents a 9–10/10 rating
+
+| Area | Current reality | Needed for a higher rating |
+|---|---|---|
+| External data | Several public/third-party feeds | Licensed, contracted production providers |
+| Map tiles | Standard OSM tile service | Dedicated tile provider or self-hosted infrastructure |
+| Weather | Open-Meteo free API path | Commercial licence/provider for commercial use |
+| Persistence | Important analyst state is not durable | PostgreSQL or equivalent with backups |
+| Identity | Scoped HMAC access | Full identity/session management if multi-user |
+| Observability | Structured logs | Metrics, tracing, alerting and dashboards |
+| Scaling | Single application architecture | Horizontal scaling and shared cache/state |
+| Browser QA | Automated contract tests | Real-device/browser matrix and WebGL regression tests |
+| Disaster operation | Informational context | Validated operational data agreements and procedures |
+| Security perimeter | Application controls | WAF, deployment-level controls and stronger secrets management |
+| Data quality | Provider dependent | Provenance, freshness, confidence and validation per feed |
+
+### The actual production problem to solve
+
+The strongest production direction is **not another satellite dashboard**.
+
+> Provide an accessible geographic context layer for people who need to understand what is happening in a place, without requiring specialist GIS software.
+
+For a Ugandan/East African deployment, that can become useful in:
+
+1. **Education** — practical geography, GIS, weather and orbital-data learning.
+2. **Environmental awareness** — viewing thermal/environmental events in geographic context.
+3. **Weather awareness** — putting local forecasts and conditions against an actual geographic view.
+4. **Aviation and tracking education** — understanding aircraft/satellite movement without presenting the system as certified navigation.
+5. **Research prototypes** — testing geospatial ideas before moving to professional GIS infrastructure.
+6. **Community demonstrations** — giving non-specialists a visual way to understand location-based events.
+7. **Situational context** — combining several public feeds around a place while clearly showing their limitations.
+
+The platform becomes substantially more valuable when it develops **verified data provenance, freshness indicators, historical playback, durable storage, better African-region data coverage and professional deployment infrastructure**.
+
+---
+
+## External data and licensing
+
+3D Earth is a presentation layer; it does not own most of the geographic, weather or live-feed data it displays.
+
+Important examples:
+- OpenStreetMap data requires attribution. The standard OSM tile service has its own usage policy and is not a guaranteed commercial tile backend.
+- Open-Meteo's free API is intended for non-commercial use; commercial deployment requires the appropriate commercial arrangement.
+- Browser geolocation is supplied by the user's device and is not guaranteed to be survey-grade.
+- Public live feeds can be delayed, incomplete, rate-limited or unavailable.
+
+See **Data & Sources** at /data-policy for the current source register.
+
+---
+
+## Security
+
+The application currently includes:
+- Helmet security headers
+- CORS configuration
+- HTTP rate limiting
+- request size limits
+- input sanitisation
+- HMAC-based scoped access tokens
+- viewer / analyst / admin roles
+- WebSocket authentication
+- WebSocket rate limiting
+- structured server logging
+- uncaught exception/rejection guards
+- graceful shutdown handling
+
+See docs/SECURITY_AUDIT.md.
+
+---
+
+## Development
+
+~~~powershell
+npm install
+
+Copy-Item .env.example .env
+# Configure secrets in .env
+
+npm run dev
+~~~
+
+Validation:
+
+~~~powershell
+npm test
+npm run check:syntax
+~~~
+
+Production:
+
+~~~powershell
+npm start
+~~~
+
+---
+
+## Engineering principle
+
+**Keep the Earth visible. Make the data explain the place.**
+
+The project should become more useful by improving its data quality, provenance, geographic coverage and operational reliability — not by adding decorative dashboard features.
+
+---
+
+## Credits
+
+Built by **Kweezi Perez** — https://kweeziperez.com
+
+- Three.js — MIT
+- Leaflet — BSD-2-Clause
+- satellite.js — MIT
+- ws — MIT
+- OpenStreetMap contributors
+- Open-Meteo
+- Other external providers are identified on the Data & Sources page
