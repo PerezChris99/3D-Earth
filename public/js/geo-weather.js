@@ -20,8 +20,30 @@
   function $(id) { return document.getElementById(id); }
   function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
 
+  function loadLeafletRuntime() {
+    if (window.L) return Promise.resolve(window.L);
+    if (window.__leafletRuntimePromise) return window.__leafletRuntimePromise;
+    window.__leafletRuntimePromise = new Promise((resolve, reject) => {
+      if (!document.querySelector('link[data-leaflet-css]')) {
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        css.dataset.leafletCss = 'true';
+        document.head.appendChild(css);
+      }
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      script.onload = () => window.L ? resolve(window.L) : reject(new Error('Leaflet loaded without global L'));
+      script.onerror = () => reject(new Error('Leaflet runtime unavailable'));
+      document.head.appendChild(script);
+    });
+    return window.__leafletRuntimePromise;
+  }
+
   function initMap() {
-    if (!window.L || state.map) return;
+    if (state.map) return;
+    if (!window.L) return;
     state.map = L.map('osm-map', { zoomControl: true, worldCopyJump: true, minZoom: 2, maxZoom: 19 }).setView([0, 0], 2);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -31,7 +53,10 @@
     setTimeout(() => state.map.invalidateSize(), 250);
   }
 
-  function setMapVisible(visible) {
+  async function setMapVisible(visible) {
+    if (visible && !window.L) {
+      try { await loadLeafletRuntime(); } catch (error) { console.error('[3D Earth] Map runtime unavailable:', error); return; }
+    }
     initMap();
     const shell = $('map-shell');
     if (!shell) return;
@@ -259,8 +284,9 @@
     );
   }
 
-  function bind() {
-    initMap();
+  async function bind() {
+    // Do not make Leaflet part of the dashboard load critical path. The globe must render first.
+    try { await loadLeafletRuntime(); initMap(); } catch (error) { console.warn('[3D Earth] Map runtime deferred:', error); }
     $('btn-map-mode')?.addEventListener('click', () => {
       const visible = !$('map-shell').classList.contains('map-visible');
       setMapVisible(visible);
