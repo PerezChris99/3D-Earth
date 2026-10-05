@@ -239,6 +239,24 @@ test('rendering uses deterministic celestial fallbacks and valid satellite loadi
     assert.match(script, /\/public\/assets\/earth\/earth_atmos_2048\.jpg/);
 });
 
+test('local Earth texture loading validates same-origin bytes before GPU upload', () => {
+  assert.match(script, /const EARTH_ASSET_ROOTS = \\['\\/public\\/assets\\/earth', '\\/assets\\/earth'\\]/);
+  assert.match(script, /fetchLocalTextureBlob/);
+  assert.match(script, /response\.ok/);
+  assert.match(script, /new Blob\(\[bytes\], \{ type: assetMimeType\(filename\) \}\)/);
+  assert.match(script, /URL\.createObjectURL/);
+  assert.match(script, /loadLocalTexture\('earth_atmos_2048\.jpg'/);
+  assert.match(script, /loadLocalTexture\('earth_clouds_1024\.png'/);
+  assert.match(script, /loadLocalTexture\('earth_lights_2048\.png'/);
+  assert.match(script, /loadLocalTexture\('moon_1024\.jpg'/);
+});
+
+test('dashboard cache-busts the globe runtime and preloads the primary Earth surface', () => {
+  const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+  assert.match(dashboard, /preload.*earth_atmos_2048\.jpg/);
+  assert.match(dashboard, /script\.js\?v=20261005-529911a/);
+});
+
 test('globe visual assets are locally vendored and cannot be lost to CDN/CSP failure', () => {
   const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
   const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
