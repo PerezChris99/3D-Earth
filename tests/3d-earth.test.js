@@ -119,11 +119,10 @@ test('dashboard vendors the Three.js runtime required by the globe', () => {
     '/public/vendor/three-r128.min.js',
     '/public/vendor/OrbitControls-r128.js',
     '/public/vendor/GLTFLoader-r128.js'
-  ]) assert.match(dashboard, new RegExp(asset.replace(/[.*+?^$()|[\\]\\\\]/g, '\\\\test('globe startup does not depend on remote assets or synthetic satellite layers', () => {')));
-  assert.doesNotMatch(dashboard, /cdnjs\.cloudflare\.com\/ajax\/libs\/three\.js\/r128/);
-  assert.doesNotMatch(dashboard, /cdn\.jsdelivr\.net\/npm\/three@0\.128\.0\/examples/);
+  ]) assert.ok(dashboard.includes(asset), `missing local globe runtime asset: ${asset}`);
+  assert.doesNotMatch(dashboard, /cdnjs\\.cloudflare\\.com\\/ajax\\/libs\\/three\\.js\\/r128/);
+  assert.doesNotMatch(dashboard, /cdn\\.jsdelivr\\.net\\/npm\\/three@0\\.128\\.0\\/examples/);
 });
-
 test('globe startup does not depend on remote assets or synthetic satellite layers', () => {
   const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
   assert.match(globe, /preserveDrawingBuffer: false/);
