@@ -146,6 +146,13 @@ app.use('/api/aoi',   aoiRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api',       apiRoutes);
 
+// Clean public routes
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
+app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'about.html')));
+app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'privacy.html')));
+app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'terms.html')));
+app.get('/data-policy', (req, res) => res.sendFile(path.join(__dirname, 'data-policy.html')));
+
 // SPA fallback
 app.use((req, res, next) => {
     if (!req.path.startsWith('/api') && !req.path.includes('.')) {
