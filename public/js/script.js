@@ -2125,8 +2125,7 @@ function animate() {
         // advance comets
         updateComets(deltaSec);
     } catch (e) {}
-
-
+}
 
 function toggleFollowISS() {
     const btn = document.getElementById('btn-follow-iss');
