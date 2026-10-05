@@ -87,6 +87,14 @@ let satInterpStart = 0;
 let prevSatBuffer = null; // Float32Array
 let nextSatBuffer = null; // Float32Array
 let tleCount = 0;
+let satelliteInstances = null;
+let satellitePanelInstances = null;
+let selectedSatellite = null;
+const MAX_REAL_SATELLITE_VISUALS = 5000;
+const satelliteMatrix = new THREE.Object3D();
+const satelliteQuaternion = new THREE.Quaternion();
+const satelliteForward = new THREE.Vector3(0, 0, 1);
+
 
 // atmosphere slider pending value
 // atmosphere slider pending value (raw slider value 0..1.2)
@@ -235,6 +243,7 @@ function setupSgp4Worker() {
             const msg = ev.data;
             if (msg.type === 'positions' && tlePositionsAttr && msg.positions) {
                 const arr = msg.positions;
+                updateSatelliteModels(arr);
                 // copy into attribute buffer safely
                 const len = arr.length;
                 // keep a separate copy for interpolation / ISS lookups
@@ -573,8 +582,26 @@ function createSatellites() {
             u_pointSize: { value: 6.0 }
         }
     }));
+    // Keep the legacy interpolation buffer for propagation, but do not present satellites as dots.
+    tlePoints.visible = false;
     satellitesGroup.add(tlePoints);
-    tlePoints.frustumCulled = false;
+
+    // Real tracked objects are rendered as lightweight 3D spacecraft silhouettes.
+    // The orbital state remains sourced from CelesTrak + SGP4; the geometry is a visual marker,
+    // not a claim that every spacecraft has an identical physical design.
+    const maxVisuals = MAX_REAL_SATELLITE_VISUALS;
+    const bodyGeo = new THREE.BoxGeometry(0.018, 0.007, 0.007);
+    const panelGeo = new THREE.BoxGeometry(0.006, 0.0012, 0.026);
+    const bodyMat = new THREE.MeshPhongMaterial({ color: 0xe8edf2, emissive: 0x17202a, shininess: 45 });
+    const panelMat = new THREE.MeshPhongMaterial({ color: 0x315f91, emissive: 0x0b1623, shininess: 25 });
+    satelliteInstances = new THREE.InstancedMesh(bodyGeo, bodyMat, maxVisuals);
+    satellitePanelInstances = new THREE.InstancedMesh(panelGeo, panelMat, maxVisuals);
+    satelliteInstances.frustumCulled = false;
+    satellitePanelInstances.frustumCulled = false;
+    satelliteInstances.userData.domain = 'satellite';
+    satellitePanelInstances.userData.domain = 'satellite-panel';
+    satellitesGroup.add(satelliteInstances);
+    satellitesGroup.add(satellitePanelInstances);
 
     // ISS removed: no per-satellite highlight mesh created
 
@@ -608,6 +635,45 @@ function createSatellites() {
 }
 
 // Load a small ISS GLTF model (fallback to a simple box if loader unavailable)
+function updateSatelliteModels(arr) {
+    if (!satelliteInstances || !satellitePanelInstances || !arr) return;
+    const count = Math.min(tleData.length, MAX_REAL_SATELLITE_VISUALS, Math.floor(arr.length / 3));
+    for (let i = 0; i < count; i++) {
+        const x = arr[i * 3], y = arr[i * 3 + 1], z = arr[i * 3 + 2];
+        if (![x,y,z].every(Number.isFinite) || (x === 0 && y === 0 && z === 0)) {
+            satelliteMatrix.position.set(0, 0, 0);
+            satelliteMatrix.scale.setScalar(0);
+        } else {
+            satelliteMatrix.position.set(x, y, z);
+            satelliteMatrix.scale.setScalar(1);
+            const prevX = i > 0 ? arr[i * 3] : x;
+            // Use the orbit radial direction as a stable spacecraft attitude fallback.
+            const radial = new THREE.Vector3(x, y, z).normalize();
+            satelliteQuaternion.setFromUnitVectors(satelliteForward, radial);
+            satelliteMatrix.quaternion.copy(satelliteQuaternion);
+        }
+        satelliteMatrix.updateMatrix();
+        satelliteInstances.setMatrixAt(i, satelliteMatrix.matrix);
+        // Panel mesh uses the same transform; its geometry is a compact cross-body silhouette.
+        satellitePanelInstances.setMatrixAt(i, satelliteMatrix.matrix);
+    }
+    satelliteInstances.count = count;
+    satellitePanelInstances.count = count;
+    satelliteInstances.instanceMatrix.needsUpdate = true;
+    satellitePanelInstances.instanceMatrix.needsUpdate = true;
+}
+
+function getSatelliteCatalogNumber(t) {
+    const match = String(t?.tle1 || '').match(/^1\\s+(\\d{1,9})/);
+    return match ? match[1] : null;
+}
+
+window.getTrackedSatellite = function(index) {
+    const t = tleData[index];
+    if (!t) return null;
+    return { index, ...t, norad: getSatelliteCatalogNumber(t) };
+};
+
 function createISSModel() {
     issObject = new THREE.Group();
     issObject.visible = false;
