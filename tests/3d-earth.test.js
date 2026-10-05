@@ -113,13 +113,29 @@ test('legal and source pages use the formal information layout', () => {
   assert.match(data, /non-commercial/i);
 });
 
-test('globe startup does not depend on remote assets or heavy optional layers', () => {
+test('globe startup does not depend on remote assets or synthetic satellite layers', () => {
   const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
   assert.match(globe, /preserveDrawingBuffer: false/);
-  assert.match(globe, /SYNTHETIC_SAT_COUNT = 500/);
-  assert.match(globe, /Start the renderer immediately/);
   assert.match(globe, /safeInitStep\('starfield', createStarfield\)/);
   assert.match(globe, /safeInitStep\('earth textures', enhanceEarthAppearance\)/);
+  assert.match(globe, /fetch\('\/api\/satellites'/);
+  assert.doesNotMatch(globe, /Using synthetic satellite fallback/);
+  assert.match(globe, /InstancedMesh/);
+  assert.match(globe, /MAX_REAL_SATELLITE_VISUALS/);
+});
+
+test('satellite tracking exposes real catalog identity and live inspection', () => {
+  const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
+  const inspector = fs.readFileSync(path.join(root, 'public/js/osint-dashboard.js'), 'utf8');
+  const api = fs.readFileSync(path.join(root, 'src/routes/api.js'), 'utf8');
+  assert.match(globe, /getSatelliteCatalogNumber/);
+  assert.match(globe, /trackSatelliteSelection/);
+  assert.match(globe, /propagate/);
+  assert.match(inspector, /instanceId/);
+  assert.match(inspector, /Current speed/);
+  assert.match(inspector, /Time in space/);
+  assert.match(inspector, /Launch date/);
+  assert.match(api, /\/satellites\/:norad/);
 });
 
 test('location integration keeps one WGS84 coordinate synchronized across map and globe', () => {
