@@ -1103,10 +1103,12 @@ function init() {
     // Renderer setup
     renderer = new THREE.WebGLRenderer({
         antialias: true,
-        alpha: true
+        alpha: true,
+        preserveDrawingBuffer: true,
+        powerPreference: 'high-performance'
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     // ensure the canvas is transparent so the page background (space gradient) shows through
@@ -1231,23 +1233,10 @@ function updateUiDebug() {
 }
 
 function setupLighting() {
-    // Ambient light (lower so night side is noticeably darker)
-    ambientLight = new THREE.AmbientLight(0x404040, 0.15);
+    // Keep non-solar fill extremely low. The computed Sun directional light is the
+    // authoritative illumination source so the night hemisphere can remain dark.
+    ambientLight = new THREE.AmbientLight(0x182235, 0.055);
     scene.add(ambientLight);
-
-    // Directional light (sun)
-    // Note: createSun() will add a primary sun directional light (sunLight) used to illuminate the globe.
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    directionalLight.position.set(5, 3, 5);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    scene.add(directionalLight);
-
-    // Point light for rim lighting
-    const pointLight = new THREE.PointLight(0x4fc3f7, 0.5, 100);
-    pointLight.position.set(-5, 0, 5);
-    scene.add(pointLight);
 }
 
 // Move the sun around the scene to create day/night on the globe
