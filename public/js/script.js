@@ -659,12 +659,12 @@ function formatSatelliteAge(launchDate) {
     const days = Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
     const years = Math.floor(days / 365.2425);
     const months = Math.floor((days % 365.2425) / 30.44);
-    return years ? \`\${years}y \${months}m\` : \`\${months}m\`;
+    return years ? `${years}y ${months}m` : `${months}m`;
 }
 
 function formatSpeed(kmps) {
     if (!Number.isFinite(kmps)) return '—';
-    return \`\${kmps.toFixed(3)} km/s (\${Math.round(kmps * 3600)} km/h)\`;
+    return `${kmps.toFixed(3)} km/s (${Math.round(kmps * 3600)} km/h)`;
 }
 
 function createSelectedSatelliteMarker() {
@@ -715,11 +715,11 @@ async function trackSatelliteSelection(tracked) {
                 const geo = satellite.eciToGeodetic(state.position, gmst);
                 const speed = Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z);
                 orbital = {
-                    latitude: \`\${(geo.latitude * 180 / Math.PI).toFixed(3)}°\`,
-                    longitude: \`\${(geo.longitude * 180 / Math.PI).toFixed(3)}°\`,
-                    altitude: \`\${geo.height.toFixed(1)} km\`,
+                    latitude: `${(geo.latitude * 180 / Math.PI).toFixed(3)}°`,
+                    longitude: `${(geo.longitude * 180 / Math.PI).toFixed(3)}°`,
+                    altitude: `${geo.height.toFixed(1)} km`,
                     speed: formatSpeed(speed),
-                    period: t.tle2 ? \`\${(1440 / Number(t.tle2.slice(52, 63))).toFixed(2)} min\` : '—',
+                    period: t.tle2 ? `${(1440 / Number(t.tle2.slice(52, 63))).toFixed(2)} min` : '—',
                     epoch: t.tle1.slice(18, 32).trim()
                 };
             }
@@ -731,7 +731,7 @@ async function trackSatelliteSelection(tracked) {
     let catalog = {};
     try {
         if (tracked.norad) {
-            const res = await fetch(\`/api/satellites/\${encodeURIComponent(tracked.norad)}\`);
+            const res = await fetch(`/api/satellites/${encodeURIComponent(tracked.norad)}`);
             if (res.ok) catalog = await res.json();
         }
     } catch (e) {
@@ -749,13 +749,13 @@ async function trackSatelliteSelection(tracked) {
         launchSite: catalog.LAUNCH_SITE || catalog.launchSite || '—',
         launchDate: launchDate || '—',
         timeInSpace: formatSatelliteAge(launchDate),
-        deployment: launchDate ? \`Launch: \${launchDate}. Separate deployment date is not present in SATCAT.\` : 'Not cataloged',
-        etr: decayDate ? \`Decay recorded: \${decayDate}\` : 'No cataloged decay date',
+        deployment: launchDate ? `Launch: ${launchDate}. Separate deployment date is not present in SATCAT.` : 'Not cataloged',
+        etr: decayDate ? `Decay recorded: ${decayDate}` : 'No cataloged decay date',
         callsign: 'Not assigned / not provided by SATCAT',
-        period: catalog.PERIOD ? \`\${Number(catalog.PERIOD).toFixed(2)} min\` : orbital.period,
-        inclination: catalog.INCLINATION != null ? \`\${Number(catalog.INCLINATION).toFixed(3)}°\` : '—',
-        apogee: catalog.APOGEE != null ? \`\${Number(catalog.APOGEE).toLocaleString()} km\` : '—',
-        perigee: catalog.PERIGEE != null ? \`\${Number(catalog.PERIGEE).toLocaleString()} km\` : '—',
+        period: catalog.PERIOD ? `${Number(catalog.PERIOD).toFixed(2)} min` : orbital.period,
+        inclination: catalog.INCLINATION != null ? `${Number(catalog.INCLINATION).toFixed(3)}°` : '—',
+        apogee: catalog.APOGEE != null ? `${Number(catalog.APOGEE).toLocaleString()} km` : '—',
+        perigee: catalog.PERIGEE != null ? `${Number(catalog.PERIGEE).toLocaleString()} km` : '—',
         ...orbital,
         tle1: t.tle1,
         tle2: t.tle2
@@ -824,7 +824,7 @@ async function fetchTLES() {
         // Fetch the real active catalog through our server-side CelesTrak gateway.
         // This avoids browser CORS/redirect problems and keeps the provider request cached.
         const res = await fetch('/api/satellites', { cache: 'no-store' });
-        if (!res.ok) throw new Error(\`Satellite gateway HTTP \${res.status}\`);
+        if (!res.ok) throw new Error(`Satellite gateway HTTP ${res.status}`);
         const payload = await res.json();
         tleData = Array.isArray(payload) ? payload : [];
         if (!tleData.length) throw new Error('CelesTrak returned no active satellites');
