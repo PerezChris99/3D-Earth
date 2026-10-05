@@ -1,0 +1,30 @@
+name: 3D Earth validation
+
+on:
+  push:
+    branches: [main, perez]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run check:syntax
+      - name: Start server
+        run: node server.js > /tmp/3d-earth.log 2>&1 &
+      - name: Health check
+        run: |
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:3000/api/health; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/3d-earth.log
+          exit 1
