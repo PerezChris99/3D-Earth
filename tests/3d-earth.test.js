@@ -23,12 +23,17 @@ test('all application JavaScript parses', () => {
   }
 });
 
-test('index exposes the core geospatial application surfaces', () => {
+test('landing and dashboard expose the public application surfaces', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(html, /dashboard\.html/);
+  assert.match(html, /landing\.js/);
+  const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
   for (const required of [
     'leaflet.js', 'public/js/geo-weather.js', 'locate-me-btn',
     'geo-consent', 'osm-map', 'weather-forecast', 'weather-local-time'
-  ]) assert.ok(html.includes(required), `missing ${required}`);
+  ]) assert.ok(dashboard.includes(required), `missing ${required}`);
+  for (const legal of ['about.html','privacy.html','terms.html','data-policy.html'])
+    assert.ok(html.includes(legal), `missing legal link ${legal}`);
 });
 
 test('geospatial module uses high-accuracy browser positioning', () => {
@@ -50,6 +55,13 @@ test('weather uses automatic timezone resolution and current conditions', () => 
   assert.match(source, /timezone:\s*'auto'/);
   assert.match(source, /temperature_2m/);
   assert.match(source, /sunrise,sunset/);
+});
+
+test('dashboard rendering has a first-frame fallback path', () => {
+  const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
+  assert.match(globe, /createFallbackEarth/);
+  assert.match(globe, /setAnimationLoop/);
+  assert.match(globe, /globeFirstFrameRendered/);
 });
 
 test('server exposes the reverse geocoding route', () => {
