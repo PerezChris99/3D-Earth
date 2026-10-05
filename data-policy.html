@@ -1,1 +1,39 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5f5f5"><title>Data & Sources — 3D Earth</title><link rel="stylesheet" href="public/css/info.css"></head><body><header><a class="logo" href="/">3D <span>EARTH</span></a><nav><a href="/about.html">About</a><a href="/dashboard.html">Dashboard</a><a href="/data-policy.html">Data & Sources</a></nav></header><main><p class="eyebrow">DATA, MAPS & ATTRIBUTION</p><h1>Data & Sources</h1><p class="lead">3D Earth combines multiple technical and public data sources. Their accuracy, licensing and availability are not identical.</p><h2>OpenStreetMap</h2><p>Interactive map tiles and geospatial data may be provided by OpenStreetMap contributors. Attribution is displayed on the map. OpenStreetMap's standard tile service is best-effort and has usage restrictions, so production deployments should use an appropriate provider or self-hosted infrastructure at scale.</p><h2>Weather</h2><p>Weather information is obtained through the configured weather gateway/provider. Forecast resolution and accuracy vary by region and model. Commercial deployments must use a provider/license appropriate to their use.</p><h2>Location & geocoding</h2><p>Browser geolocation supplies WGS84 coordinates and an accuracy estimate. Reverse geocoding may use a configured geocoding service and should be treated as contextual rather than authoritative address verification.</p><h2>Satellite & intelligence feeds</h2><p>Satellite, flight, earthquake and other feeds may come from third-party public services. Availability, latency and completeness vary. Always verify important information against authoritative sources.</p></main><footer><a href="/">3D Earth</a><nav><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/data-policy.html">Data & Sources</a></nav></footer></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Data sources, attribution and provider notes for 3D Earth.">
+<title>Data & Sources — 3D Earth</title><link rel="stylesheet" href="public/css/info.css">
+</head>
+<body>
+<header class="info-header"><a class="logo" href="/">3D <span>EARTH</span></a><nav><a href="/about.html">About</a><a href="/dashboard.html">Globe</a><a href="/data-policy.html" aria-current="page">Sources</a></nav></header>
+<main class="info-layout">
+<aside class="info-rail"><p>DATA REGISTER</p><a href="#register">Source register</a><a href="#location-data">Location</a><a href="#weather-data">Weather</a><a href="#live-data">Live feeds</a><a href="#operational">Operational notes</a></aside>
+<article class="info-article">
+<div class="article-meta"><span>DATA & SOURCES</span><span>Reviewed 05 October 2026</span></div>
+<h1>Data & Sources</h1>
+<p class="lead">3D Earth is a presentation layer. The following services and datasets provide the underlying map, weather, location and live-feed information shown in the application.</p>
+
+<section id="register"><h2>1. Source register</h2>
+<div class="source-table">
+<div class="source-row source-head"><span>Source</span><span>Use in 3D Earth</span><span>Notes</span></div>
+<div class="source-row"><strong>OpenStreetMap</strong><span>Map tiles and geographic map context.</span><span>© OpenStreetMap contributors. Tile-service availability is best effort and subject to the OSMF Tile Usage Policy.</span></div>
+<div class="source-row"><strong>Open-Meteo</strong><span>Current weather, forecast, timezone and related model metadata.</span><span>The free API is for non-commercial use. Commercial deployments require an appropriate Open-Meteo licence or another weather provider.</span></div>
+<div class="source-row"><strong>Browser Geolocation</strong><span>Device latitude, longitude and reported accuracy.</span><span>Only available after browser permission. Accuracy is device- and environment-dependent.</span></div>
+<div class="source-row"><strong>Reverse geocoding</strong><span>Human-readable place names for selected coordinates.</span><span>Requests are proxied by the application server and subject to the provider's usage policy.</span></div>
+<div class="source-row"><strong>Live geospatial feeds</strong><span>Satellite, flight, seismic and thermal layers where enabled.</span><span>Feeds can change, be delayed, rate-limited or become unavailable without notice.</span></div>
+</div></section>
+
+<section id="location-data"><h2>2. Location data</h2><p>When location is enabled, the browser supplies WGS84 latitude and longitude together with an accuracy estimate. The application uses these coordinates to position the globe, map and location-aware requests. Manual coordinate entry provides an alternative when browser positioning is unavailable or not desired.</p></section>
+
+<section id="weather-data"><h2>3. Weather data</h2><p>Weather requests are routed through the application's weather endpoint. The current implementation uses Open-Meteo with automatic timezone resolution and model selection. Open-Meteo's free API is restricted to non-commercial use; production or commercial use should be moved to a licensed endpoint or another provider before launch.</p></section>
+
+<section id="live-data"><h2>4. Live and derived layers</h2><p>Some visual layers are calculated locally from astronomical or orbital formulas rather than fetched as a single authoritative dataset. Other layers depend on external feeds. A rendered point, orbit or overlay should therefore be interpreted as a visualization of the available inputs, not as a guarantee of real-world position at a specific instant.</p></section>
+
+<section id="operational"><h2>5. Operational notes</h2><p>Provider policies can change independently of this application. In particular, OpenStreetMap's standard tile service is intended for normal interactive viewing and requires visible attribution, appropriate identification and caching; it is not a general-purpose commercial tile backend.</p><p>For sustained commercial traffic, use a suitable licensed map and weather provider or operate infrastructure appropriate to the expected volume.</p></section>
+
+<div class="source-links"><strong>Provider policies</strong><a href="https://operations.osmfoundation.org/policies/tiles/" target="_blank" rel="noreferrer">OpenStreetMap Tile Usage Policy</a><a href="https://open-meteo.com/en/terms" target="_blank" rel="noreferrer">Open-Meteo Terms & Privacy</a><a href="https://open-meteo.com/en/pricing" target="_blank" rel="noreferrer">Open-Meteo commercial licensing</a></div>
+</article>
+</main>
+<footer class="info-footer"><a href="/">3D Earth</a><nav><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/data-policy.html" aria-current="page">Sources</a></nav></footer>
+</body></html>

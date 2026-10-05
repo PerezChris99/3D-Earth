@@ -88,3 +88,36 @@ test('privileged authentication requires a configured secret', () => {
   assert.match(api, /timingSafeEqual/);
   assert.match(authUi, /a-secret/);
 });
+
+test('landing presentation avoids common generic AI-template markers', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'public/css/landing.css'), 'utf8');
+  for (const generic of ['READY WHEN YOU ARE', 'Explore the Globe', 'Learn More', 'repeat(3,1fr)'])
+    assert.doesNotMatch(html + css, new RegExp(generic.replace(/[.*+?^$()|[\]\\]/g, '\\$&'), 'i'));
+  assert.match(html, /A working view/);
+  assert.match(css, /Georgia/);
+  assert.doesNotMatch(css, /backdrop-filter/);
+  assert.doesNotMatch(css, /border-radius:9999px/);
+});
+
+test('legal and source pages use the formal information layout', () => {
+  for (const file of ['about.html','privacy.html','terms.html','data-policy.html']) {
+    const html = fs.readFileSync(path.join(root, file), 'utf8');
+    assert.match(html, /class="info-layout"/);
+    assert.match(html, /article-meta/);
+    assert.match(html, /Updated|Effective|Reviewed/);
+  }
+  const data = fs.readFileSync(path.join(root, 'data-policy.html'), 'utf8');
+  assert.match(data, /OpenStreetMap/);
+  assert.match(data, /Open-Meteo/);
+  assert.match(data, /non-commercial/i);
+});
+
+test('globe startup does not depend on remote assets or heavy optional layers', () => {
+  const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
+  assert.match(globe, /preserveDrawingBuffer: false/);
+  assert.match(globe, /SYNTHETIC_SAT_COUNT = 500/);
+  assert.match(globe, /Start the renderer immediately/);
+  assert.match(globe, /safeInitStep\('starfield', createStarfield\)/);
+  assert.match(globe, /safeInitStep\('earth textures', enhanceEarthAppearance\)/);
+});

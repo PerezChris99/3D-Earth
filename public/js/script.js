@@ -121,7 +121,7 @@ let lastTleUpdate = 0;
 let syntheticPoints = null;
 let syntheticPositionsAttr = null;
 let syntheticParams = [];
-const SYNTHETIC_SAT_COUNT = 2000; // adjust for performance
+const SYNTHETIC_SAT_COUNT = 500; // adjust for performance
 
 // Simple helper: fetch JSON
 async function fetchJson(url) {
@@ -1156,7 +1156,7 @@ function init() {
         renderer = new THREE.WebGLRenderer({
             antialias: true,
             alpha: true,
-            preserveDrawingBuffer: true,
+            preserveDrawingBuffer: false,
             powerPreference: 'high-performance',
             failIfMajorPerformanceCaveat: false
         });
@@ -1165,9 +1165,8 @@ function init() {
         return;
     }
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.shadowMap.enabled = false;
     // ensure the canvas is transparent so the page background (space gradient) shows through
     try {
         renderer.setClearColor(0x000000, 0); // fully transparent
@@ -1206,9 +1205,7 @@ function init() {
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
 
-    // Lighting, starfield and Earth are independently protected.
-    safeInitStep('lighting', setupLighting);
-    safeInitStep('starfield', createStarfield);
+    // Only the lighting and core Earth are startup-critical. Starfield is deferred.
 
     const earthCreated = safeInitStep('Earth', createEarth);
     if (!earthCreated || !earthGroup) {
@@ -1222,31 +1219,13 @@ function init() {
     // Wire UI toggles. A control failure must never prevent the core globe from rendering.
     safeInitStep('UI controls', wireUiToggles);
 
-    // Optional systems are isolated so a failed feed/model/shader cannot blank the globe.
-    safeInitStep('satellite layer', createSatellites);
-    safeInitStep('ocean-current layer', createCurrents);
-    safeInitStep('moon layer', createMoon);
-    safeInitStep('sun layer', createSun);
-    safeInitStep('tide layer', createTides);
-    safeInitStep('magnetic-field layer', createMagneticField);
-    safeInitStep('night-lights layer', createNightLights);
-    // comets removed
-    // ISS removed
-
-    // Apply initial visibility from checkboxes
-    ['satellites','currents','moon','magnetic'].forEach((id) => {
-        const el = document.getElementById('chk-' + id);
-        if (el) el.dispatchEvent(new Event('change'));
-    });
+    // Optional layers are started after the first rendered frame.
 
     // Event listeners
     window.addEventListener('resize', onWindowResize);
     renderer.domElement.addEventListener('click', onMouseClick);
 
     publishGlobeBridge();
-
-    // Hide loading message
-    document.getElementById('loading').style.display = 'none';
 
     // initialize simTime and UI datetime input
     simTime = new Date();
@@ -1255,9 +1234,7 @@ function init() {
     if (dtInput) dtInput.value = toLocalDatetimeInputValue(simTime);
     if (realtime) realtime.checked = true;
 
-    // apply initial PBR and atmosphere slider state
-    const pbrChk = document.getElementById('chk-pbr');
-    if (pbrChk) setEarthMaterial(pbrChk.checked);
+    // The local globe is already visible. Upgrade its textures after the first frame.
     const atRange = document.getElementById('range-atmo');
     if (atRange) {
         atmoPendingValue = parseFloat(atRange.value || atmoPendingValue);
@@ -1276,14 +1253,28 @@ function init() {
         atmosphere.material.uniforms.u_fadeHeight.value = parseFloat(fadeRange.value || 4.0);
     }
 
-    // start tle update loop
-    startTleUpdateLoop();
-
-    // Start animation only after the scene is ready.
+    // Start the renderer immediately. Do not wait for any external resource. The globe does not wait for remote textures or feeds.
     if (renderer.setAnimationLoop) renderer.setAnimationLoop(animate);
     else requestAnimationFrame(animate);
-    // initial debug update
     updateUiDebug();
+
+    // Everything below this point is enhancement work, not startup-critical rendering.
+    setTimeout(() => {
+        safeInitStep('starfield', createStarfield);
+        safeInitStep('earth textures', enhanceEarthAppearance);
+        safeInitStep('satellite layer', createSatellites);
+        safeInitStep('ocean-current layer', createCurrents);
+        safeInitStep('moon layer', createMoon);
+        safeInitStep('sun layer', createSun);
+        safeInitStep('tide layer', createTides);
+        safeInitStep('magnetic-field layer', createMagneticField);
+        safeInitStep('night-lights layer', createNightLights);
+        startTleUpdateLoop();
+        ['satellites','currents','moon','magnetic'].forEach((id) => {
+            const el = document.getElementById('chk-' + id);
+            if (el) el.dispatchEvent(new Event('change'));
+        });
+    }, 0);
 }
 
 // Debug helper: update the on-screen UI debug panel with current control / uniform values
@@ -1563,156 +1554,70 @@ function updateComets(deltaSec) {
 function createEarth() {
     earthGroup = new THREE.Group();
 
-    // Earth geometry
-    const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
-
-    // Earth material with textures - use a matte PBR-style material to reduce shininess
-    const earthMaterial = new THREE.MeshStandardMaterial({
-        map: loadTexture(textureUrls.earth, backupUrls.earth),
-        // subtle normal map for surface detail
-        normalMap: loadTexture(textureUrls.earthBump, backupUrls.earth),
-        // minimize specular highlights
-        metalness: 0.0,
-        roughness: 1.0,
-        // ensure no strong shininess from specular map
-        envMapIntensity: 0.0
+    // Core globe: no network dependency. This is deliberately ready for the first frame.
+    const earthGeometry = new THREE.SphereGeometry(1, 48, 48);
+    const earthMaterial = new THREE.MeshPhongMaterial({
+        color: 0x3f8edb,
+        emissive: 0x071b31,
+        shininess: 8
     });
-
     earth = new THREE.Mesh(earthGeometry, earthMaterial);
-    earth.castShadow = true;
-    earth.receiveShadow = true;
+    earth.castShadow = false;
+    earth.receiveShadow = false;
     earthGroup.add(earth);
 
-    // Cloud layer
-    const cloudGeometry = new THREE.SphereGeometry(1.01, 64, 64);
-    const cloudMaterial = new THREE.MeshPhongMaterial({
-        map: loadTexture(textureUrls.clouds, backupUrls.clouds),
+    const cloudGeometry = new THREE.SphereGeometry(1.012, 48, 48);
+    const cloudMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
         transparent: true,
-        opacity: 0.4,
+        opacity: 0.18,
         depthWrite: false
     });
-
     clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+    clouds.visible = false;
     earthGroup.add(clouds);
 
-    // Atmosphere: smoother gradient blending into space for a seamless look
-    const atmosphereGeometry = new THREE.SphereGeometry(1.1, 64, 64);
-    const atmosphereMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-            u_sunDir: { value: new THREE.Vector3(0.0, 1.0, 0.0) },
-            u_cameraPos: { value: new THREE.Vector3() },
-            u_exposure: { value: atmoPendingValue },
-            u_betaR: { value: new THREE.Vector3(3.0e-6, 7.0e-6, 18.0e-6) },
-            u_betaM: { value: new THREE.Vector3(6e-6, 6e-6, 6e-6) },
-            u_g: { value: 0.72 },
-            u_camHeight: { value: 0.0 },
-            u_fadeHeight: { value: 4.0 },
-            u_skyColor: { value: new THREE.Vector3(0.53, 0.78, 0.92) },
-            u_spaceColor: { value: new THREE.Vector3(0.015, 0.03, 0.08) },
-            u_horizonTint: { value: new THREE.Vector3(0.98, 0.6, 0.25) },
-            u_nightGlow: { value: 0.18 }
-        },
-        vertexShader: `
-            varying vec3 vWorldPos;
-            varying vec3 vNormal;
-            void main() {
-                vNormal = normalize(normalMatrix * normal);
-                vec4 worldPos = modelMatrix * vec4(position, 1.0);
-                vWorldPos = worldPos.xyz;
-                gl_Position = projectionMatrix * viewMatrix * worldPos;
-            }
-        `,
-        fragmentShader: `
-            precision highp float;
-            varying vec3 vWorldPos;
-            varying vec3 vNormal;
-            uniform vec3 u_sunDir;
-            uniform vec3 u_cameraPos;
-            uniform float u_exposure;
-            uniform vec3 u_betaR;
-            uniform vec3 u_betaM;
-            uniform float u_g;
-            uniform float u_camHeight;
-            uniform float u_fadeHeight;
-            uniform vec3 u_skyColor;
-            uniform vec3 u_spaceColor;
-            uniform vec3 u_horizonTint;
-            uniform float u_nightGlow;
-
-            const float PI = 3.141592653589793;
-
-            float phaseHG(float cosTheta, float g) {
-                float denom = 1.0 + g * g - 2.0 * g * cosTheta;
-                return (1.0 - g * g) / (4.0 * PI * pow(denom, 1.5));
-            }
-
-            float phaseRayleigh(float cosTheta) {
-                return (3.0 / (16.0 * PI)) * (1.0 + pow(cosTheta, 2.0));
-            }
-
-            void main() {
-                vec3 viewDir = normalize(u_cameraPos - vWorldPos);
-                vec3 normal = normalize(vNormal);
-                float cosViewSun = dot(viewDir, normalize(u_sunDir));
-                float cosSunNorm = dot(normalize(u_sunDir), normal);
-                float height = length(vWorldPos) - 1.0;
-
-                // scattering falloff with height (softened)
-                float hr = 8.0;
-                float hm = 1.2;
-                float rayleighAmount = exp(-height / hr);
-                float mieAmount = exp(-height / hm);
-
-                float pr = phaseRayleigh(cosViewSun);
-                float pm = phaseHG(cosViewSun, u_g);
-                vec3 rayleigh = u_betaR * pr * rayleighAmount;
-                vec3 mie = u_betaM * pm * mieAmount;
-
-                // base scattering color (tempered intensity)
-                vec3 scatter = (rayleigh + mie) * max(0.0, cosSunNorm) * u_exposure * 0.65;
-
-                // horizon accent (warmer near sunset)
-                float viewUp = clamp(dot(normal, vec3(0.0,1.0,0.0)), -1.0, 1.0);
-                float horizonFactor = pow(1.0 - smoothstep(0.0, 0.9, viewUp), 1.6);
-                vec3 horizon = mix(u_horizonTint, u_skyColor, 0.5);
-                scatter += horizon * horizonFactor * 0.25 * u_exposure * rayleighAmount;
-
-                // night softening
-                float nightFac = smoothstep(-0.25, 0.05, -dot(normalize(u_sunDir), normal));
-                vec3 night = u_spaceColor * 0.4 * nightFac * (1.0 - rayleighAmount);
-                scatter = scatter + night;
-
-                // choose final tint between skyColor and spaceColor based on camera altitude and view
-                float camFade = clamp(1.0 - (u_camHeight / max(0.0001, u_fadeHeight)), 0.0, 1.0);
-                float spaceMix = smoothstep(0.0, 1.0, (u_camHeight / (u_fadeHeight * 0.8)));
-                vec3 baseTint = mix(u_skyColor, u_spaceColor, spaceMix);
-
-                vec3 color = baseTint * (1.0 - exp(-scatter));
-                // subtle gamma
-                color = pow(color, vec3(1.0 / 2.2));
-
-                // alpha fades with camera altitude and view (so atmosphere smoothly disappears when high)
-                float alpha = clamp(camFade * (1.0 - spaceMix) + 0.02, 0.0, 0.9);
-                // reduce alpha near grazing angles so limb is soft
-                float limb = pow(1.0 - max(0.0, dot(viewDir, normal)), 2.0);
-                alpha *= mix(0.7, 1.0, limb);
-
-                gl_FragColor = vec4(color, alpha);
-            }
-        `,
-        side: THREE.BackSide,
+    // Keep the atmosphere lightweight until the core globe is already on screen.
+    const atmosphereGeometry = new THREE.SphereGeometry(1.07, 32, 32);
+    const atmosphereMaterial = new THREE.MeshBasicMaterial({
+        color: 0x74b8f2,
         transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
+        opacity: 0.10,
+        side: THREE.BackSide,
+        depthWrite: false
     });
-
     atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
     earthGroup.add(atmosphere);
-
     scene.add(earthGroup);
 }
 
-// createTimezoneLines removed
+function enhanceEarthAppearance() {
+    if (!earth || !clouds) return;
+    const loader = new THREE.TextureLoader();
+
+    loader.load(textureUrls.earth, (texture) => {
+        if (!earth) return;
+        const old = earth.material;
+        const material = new THREE.MeshPhongMaterial({
+            map: texture,
+            color: 0xffffff,
+            shininess: 5
+        });
+        earth.material = material;
+        if (old && old.dispose) old.dispose();
+    }, undefined, () => {
+        console.warn('[3D Earth] Earth texture unavailable; keeping local globe.');
+    });
+
+    loader.load(textureUrls.clouds, (texture) => {
+        if (!clouds) return;
+        clouds.material.map = texture;
+        clouds.material.needsUpdate = true;
+        clouds.visible = showClouds;
+    }, undefined, () => {
+        console.warn('[3D Earth] Cloud texture unavailable; keeping clouds off.');
+    });
+}
 
 function loadTexture(url, fallback) {
     const textureLoader = new THREE.TextureLoader();

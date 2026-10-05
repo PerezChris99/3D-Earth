@@ -22,8 +22,8 @@
   <span class="top-stat">EQ <b id="eq-count">—</b></span>
   <span class="top-location" id="location-status">LOCATION OFF</span>
   <span class="clock" id="osint-clock"></span>
-  <button class="topbar-toggle" id="btn-toggle-left" aria-label="Toggle layers">☰</button>
-  <button class="map-mode-btn" id="btn-map-mode" aria-label="Toggle OpenStreetMap">MAP</button><button class="topbar-toggle" id="btn-toggle-right" aria-label="Toggle tools">⊞</button>
+  <button class="topbar-toggle" id="btn-toggle-left" aria-label="Toggle layers">Layers</button>
+  <button class="map-mode-btn" id="btn-map-mode" aria-label="Toggle OpenStreetMap">MAP</button><button class="topbar-toggle" id="btn-toggle-right" aria-label="Toggle tools">Tools</button>
 </header>
 
 <aside id="osint-left-panel" aria-label="Layers and controls">
@@ -39,27 +39,27 @@
 
   <div class="compact-section">
     <div class="section-title">LOCATION</div>
-    <button id="locate-me-btn" class="primary-btn">⌖ USE MY GPS LOCATION</button>
+    <button id="locate-me-btn" class="primary-btn">USE DEVICE LOCATION</button>
     <div class="coord-grid">
       <input id="geo-lat" class="search-input" placeholder="Latitude" inputmode="decimal">
       <input id="geo-lon" class="search-input" placeholder="Longitude" inputmode="decimal">
     </div>
-    <button id="show-coordinates-btn" class="secondary-btn">SHOW COORDINATES</button>
+    <button id="show-coordinates-btn" class="secondary-btn">SET COORDINATES</button>
   </div>
 
   <div class="compact-section">
-    <div class="section-title">SEARCH</div>
-    <input id="search-input" placeholder="callsign / location / country…" class="search-input" autocomplete="off">
+    <div class="section-title">FIND</div>
+    <input id="search-input" placeholder="callsign / place / country" class="search-input" autocomplete="off">
     <div id="search-results" class="search-results"></div>
   </div>
 
   <div class="compact-section">
-    <div class="section-title">GLOBE</div>
+    <div class="section-title">VIEW</div>
     <div class="ctrl-btn-grid">
-      <button class="ctrl-btn" id="btn-rotate">↻ ROTATE</button>
-      <button class="ctrl-btn" id="btn-reset">⌂ RESET</button>
-      <button class="ctrl-btn" id="btn-clouds">☁ CLOUDS</button>
-      <button class="ctrl-btn" id="btn-follow-iss">◎ CENTER</button>
+      <button class="ctrl-btn" id="btn-rotate">ROTATE</button>
+      <button class="ctrl-btn" id="btn-reset">RESET</button>
+      <button class="ctrl-btn" id="btn-clouds">CLOUDS</button>
+      <button class="ctrl-btn" id="btn-follow-iss">CENTER</button>
     </div>
     <button class="advanced-toggle" id="globe-ctrl-hdr">ADVANCED GLOBE SETTINGS <span>▾</span></button>
     <div id="globe-ctrl-body" class="advanced-body">
@@ -85,13 +85,13 @@
   <nav id="rpanel-tabs" role="tablist">
     <button class="rpanel-tab active" data-tab="inspector" role="tab">INSPECTOR</button>
     <button class="rpanel-tab" data-tab="weather" role="tab">WEATHER</button>
-    <button class="rpanel-tab" data-tab="analyst" role="tab">ANALYST</button>
+    <button class="rpanel-tab" data-tab="analyst" role="tab">NOTES</button>
   </nav>
 
   <div class="rpanel-content active" id="rpanel-tab-inspector" role="tabpanel">
     <div id="rpanel-inspector-empty"><div class="empty-icon">◎</div><p>Click a tracked object to inspect it.</p></div>
     <div id="osint-inspector">
-      <div id="inspector-header"><div><span id="inspector-type-badge" class="sat">OBJECT</span><div class="inspector-title" id="inspector-object-title">—</div></div><button id="inspector-close">✕</button></div>
+      <div id="inspector-header"><div><span id="inspector-type-badge" class="sat">OBJECT</span><div class="inspector-title" id="inspector-object-title">—</div></div><button id="inspector-close">CLOSE</button></div>
       <div id="inspector-body"></div>
     </div>
     <div class="location-card" id="location-card">
@@ -122,16 +122,16 @@
 
   <div class="rpanel-content" id="rpanel-tab-analyst" role="tabpanel">
     <div id="analyst-panel">
-      <div class="analyst-section"><div class="section-label">AUTHENTICATION</div><input id="a-userid" placeholder="User ID" class="a-input" value="analyst1"><select id="a-role" class="a-input"><option value="viewer">Viewer</option><option value="analyst" selected>Analyst</option><option value="admin">Admin</option></select><input id="a-secret" type="password" class="a-input" placeholder="Privileged secret (analyst/admin)"><button id="a-login-btn" class="a-btn">▶ Get Token</button></div>
-      <div class="analyst-section analyst-only hidden"><div class="section-label">AOI</div><input id="aoi-name-input" placeholder="AOI name" class="a-input"><div class="a-btn-row"><button id="aoi-draw-btn" class="a-btn">◈ Draw</button><button id="aoi-save-btn" class="a-btn">⊕ Save</button></div><div id="aoi-list" class="items-list"></div></div>
-      <div class="analyst-section analyst-only hidden"><div class="section-label">INTEL NOTES</div><input id="note-title" placeholder="Title" class="a-input"><textarea id="note-body" placeholder="Analysis notes…" class="a-textarea"></textarea><button id="note-save-btn" class="a-btn">⊕ Save Note</button><div id="notes-list" class="items-list"></div></div>
-      <div class="analyst-section"><button id="snapshot-btn" class="a-btn a-btn--full">⬡ EXPORT SNAPSHOT</button></div>
+      <div class="analyst-section"><div class="section-label">ACCESS</div><input id="a-userid" placeholder="User ID" class="a-input" value="analyst1"><select id="a-role" class="a-input"><option value="viewer">Viewer</option><option value="analyst" selected>Analyst</option><option value="admin">Admin</option></select><input id="a-secret" type="password" class="a-input" placeholder="Privileged secret (analyst/admin)"><button id="a-login-btn" class="a-btn">GET TOKEN</button></div>
+      <div class="analyst-section analyst-only hidden"><div class="section-label">AREA</div><input id="aoi-name-input" placeholder="AOI name" class="a-input"><div class="a-btn-row"><button id="aoi-draw-btn" class="a-btn">DRAW</button><button id="aoi-save-btn" class="a-btn">SAVE</button></div><div id="aoi-list" class="items-list"></div></div>
+      <div class="analyst-section analyst-only hidden"><div class="section-label">NOTES</div><input id="note-title" placeholder="Title" class="a-input"><textarea id="note-body" placeholder="Analysis notes…" class="a-textarea"></textarea><button id="note-save-btn" class="a-btn">SAVE Note</button><div id="notes-list" class="items-list"></div></div>
+      <div class="analyst-section"><button id="snapshot-btn" class="a-btn a-btn--full">EXPORT SNAPSHOT</button></div>
     </div>
   </div>
   <div id="osint-minimap"><span class="minimap-label">OVERVIEW</span><canvas id="minimap-canvas" width="280" height="80"></canvas></div>
 </aside>
 
-<div id="osint-alerts" role="log" aria-live="polite"><div class="panel-title"><span>⚠ ALERTS</span><span id="alert-count" class="alert-counter">0</span></div><div id="alerts-list"></div></div>
+<div id="osint-alerts" role="log" aria-live="polite"><div class="panel-title"><span>ALERTS</span><span id="alert-count" class="alert-counter">0</span></div><div id="alerts-list"></div></div>
 
 <div id="geo-consent" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="geo-title">
   <div class="modal-card">

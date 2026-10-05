@@ -1,1 +1,24 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5f5f5"><title>About 3D Earth — 3D Earth</title><link rel="stylesheet" href="public/css/info.css"></head><body><header><a class="logo" href="/">3D <span>EARTH</span></a><nav><a href="/about.html">About</a><a href="/dashboard.html">Dashboard</a><a href="/data-policy.html">Data & Sources</a></nav></header><main><p class="eyebrow">ABOUT THE PROJECT</p><h1>About 3D Earth</h1><p class="lead">3D Earth is an interactive geospatial visualization project designed to make Earth, location, weather and map context easier to explore from one calm workspace.</p><h2>What it does</h2><p>The dashboard combines a Three.js globe with optional atmosphere, clouds, day/night illumination, satellites and other intelligence layers. Location tools can use browser positioning or manually selected WGS84 coordinates, while map and weather services provide additional context.</p><h2>Design principle</h2><p>The experience is intentionally globe-first: the planet should remain the primary visual object while controls stay available without consuming most of the viewport.</p><h2>Important limitation</h2><p>This is a visualization and information tool. It does not guarantee centimeter-level positioning, perfect weather forecasts, or authoritative real-time intelligence. Accuracy depends on the device, source, model and network service used.</p><a class="button" href="/dashboard.html">Open the Dashboard →</a></main><footer><a href="/">3D Earth</a><nav><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/data-policy.html">Data & Sources</a></nav></footer></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="About the 3D Earth project, its purpose, interface and technical limitations.">
+<title>About — 3D Earth</title><link rel="stylesheet" href="public/css/info.css">
+</head>
+<body>
+<header class="info-header"><a class="logo" href="/">3D <span>EARTH</span></a><nav><a href="/about.html" aria-current="page">About</a><a href="/dashboard.html">Globe</a><a href="/data-policy.html">Sources</a></nav></header>
+<main class="info-layout">
+<aside class="info-rail"><p>PROJECT NOTE</p><a href="#purpose">Purpose</a><a href="#interface">Interface</a><a href="#limitations">Limitations</a></aside>
+<article class="info-article">
+<div class="article-meta"><span>ABOUT</span><span>Updated 05 October 2026</span></div>
+<h1>About 3D Earth</h1>
+<p class="lead">3D Earth is a browser-based geospatial visualization project. It brings a navigable globe, location tools, map context and weather information into one interface.</p>
+<section id="purpose"><h2>Purpose</h2><p>The project is intended for geographic exploration and situational context. It is designed around a simple principle: the Earth should remain the primary object on screen, while supporting information appears when it is relevant.</p></section>
+<section id="interface"><h2>Interface</h2><p>The globe is rendered with Three.js. Location can come from the browser's positioning service or from coordinates selected on the map. Weather is requested for the selected coordinates, and OpenStreetMap provides the conventional map view. Additional layers may include satellites, flights, seismic activity and other feeds where available.</p></section>
+<section id="limitations"><h2>Limitations</h2><p>3D Earth does not create the underlying geographic, weather or satellite data. Each source has its own accuracy, update cycle, licensing terms and availability. A visual layer should therefore be treated as context rather than as a definitive operational record.</p><p>Device positioning can be affected by hardware, signal conditions and browser settings. Weather forecasts are model output. Live feeds can be delayed, incomplete or temporarily unavailable.</p></section>
+<div class="article-note"><strong>Project scope</strong><span>Visualization, geographic context and exploration. Not a navigation, emergency-response or safety-critical system.</span></div>
+<a class="button" href="/dashboard.html">Open the globe</a>
+</article>
+</main>
+<footer class="info-footer"><a href="/">3D Earth</a><nav><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/data-policy.html">Sources</a></nav></footer>
+</body></html>
