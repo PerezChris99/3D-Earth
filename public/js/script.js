@@ -16,12 +16,12 @@ let rotationOffsetStart = 0.0; // initial offset between current rotation and GM
 
 // Texture URLs (using reliable sources)
 const textureUrls = {
-    earth: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg',
-    earthBump: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_normal_2048.jpg',
-    earthSpecular: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_specular_2048.jpg',
-    clouds: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_clouds_1024.png',
-    earthLights: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_lights_2048.png',
-    moon: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/moon_1024.jpg',
+    earth: '/public/assets/earth/earth_atmos_2048.jpg',
+    earthBump: '/public/assets/earth/earth_normal_2048.jpg',
+    earthSpecular: '/public/assets/earth/earth_specular_2048.jpg',
+    clouds: '/public/assets/earth/earth_clouds_1024.png',
+    earthLights: '/public/assets/earth/earth_lights_2048.png',
+    moon: '/public/assets/earth/moon_1024.jpg',
     starfield: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/cube/MilkyWay/dark_s_px.jpg'
 };
 
