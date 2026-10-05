@@ -56,7 +56,7 @@ test('data envelopes carry provenance and freshness metadata', () => {
     });
 
     assert.equal(isDataEnvelope(envelope), true);
-    assert.equal(envelope.provenance.provider, undefined);
+    assert.equal(envelope.provider, 'test-provider');
     assert.equal(envelope.provenance.license, 'test');
     assert.equal(envelope.confidence, 0.75);
     assert.ok(envelope.freshness.ageMs >= 0);
