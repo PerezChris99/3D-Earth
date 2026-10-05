@@ -151,9 +151,10 @@
         daily: 'sunrise,sunset',
         timezone: 'auto',
         forecast_days: '2',
-        cell_selection: 'nearest'
+        cell_selection: 'nearest',
+        models: 'best_match'
       });
-      const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+      const response = await fetch(`/api/weather?${params}`);
       if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
       const data = await response.json();
       state.weather = data;
