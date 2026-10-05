@@ -191,7 +191,7 @@ test('globe startup is independent of window load and optional runtimes', () => 
 });
 
 test('real Earth assets and visual layers are initialized reliably', () => {
-    assert.ok(script.includes('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg'));
+    assert.ok(script.includes("'/public/assets/earth/earth_atmos_2048.jpg'"));
     assert.ok(script.includes('textureUrls.earthBump'));
     assert.ok(script.includes('textureUrls.earthSpecular'));
     assert.ok(script.includes('textureUrls.earthLights'));
@@ -209,11 +209,11 @@ test('real Earth assets and visual layers are initialized reliably', () => {
 
 test('celestial asset security contract permits every remote texture origin', () => {
   const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-  assert.match(server, /"img-src":\s*\[[^\]]*https:\\/\\/cdn\\.jsdelivr\\.net/);
+  assert.match(server, /"img-src":\s*\[[^\]]*'self'/);
   for (const asset of [
     'earth_atmos_2048.jpg', 'earth_normal_2048.jpg', 'earth_specular_2048.jpg',
     'earth_clouds_1024.png', 'earth_lights_2048.png', 'moon_1024.jpg'
-  ]) assert.match(script, new RegExp('cdn\\\\.jsdelivr\\\\.net[^\\n]*' + asset));
+  ]) assert.match(script, new RegExp('/public/assets/earth/' + asset));
 });
 
 test('celestial asset failures remain observable instead of silently becoming production-ready', () => {
@@ -234,7 +234,25 @@ test('rendering uses deterministic celestial fallbacks and valid satellite loadi
     assert.match(script, /async function fetchTLES\(\)/);
     assert.doesNotMatch(script, /async async function fetchTLES/);
     assert.match(script, /new THREE\.MeshPhongMaterial\(\{ color: 0xffffff, specular: 0x111111, shininess: 4 \}\)/);
-    assert.match(script, /new THREE\.PointsMaterial\(\{ size: 0\.075/);
+    assert.match(script, /new THREE\.PointsMaterial\(\{ size: 0\.12/);
     assert.match(script, /new THREE\.Mesh\(new THREE\.SphereGeometry\(0\.11, 24, 24\)/);
-    assert.match(script, /@r128\/examples\/textures\/planets/);
+    assert.match(script, /\/public\/assets\/earth\/earth_atmos_2048\.jpg/);
+});
+
+test('globe visual assets are locally vendored and cannot be lost to CDN/CSP failure', () => {
+  const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+  const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
+  for (const asset of [
+    'earth_atmos_2048.jpg',
+    'earth_normal_2048.jpg',
+    'earth_specular_2048.jpg',
+    'earth_clouds_1024.png',
+    'earth_lights_2048.png',
+    'moon_1024.jpg'
+  ]) {
+    assert.match(globe, new RegExp('/public/assets/earth/' + asset.replace('.', '\\\\.')));
+    assert.ok(fs.existsSync(path.join(root, 'public/assets/earth', asset)), 'missing vendored globe asset: ' + asset);
+  }
+  assert.doesNotMatch(globe, /cdn\.jsdelivr\.net\/gh\/mrdoob\/three\.js@r128\/examples\/textures\/planets/);
+  assert.match(dashboard, /three-r128\.min\.js/);
 });
