@@ -58,3 +58,13 @@ test('server exposes the reverse geocoding route', () => {
   assert.match(server, /app\.use\('\/api\/geocode'/);
   assert.match(server, /app\.use\('\/api\/weather'/);
 });
+
+test('dashboard control contracts match the compact UI', () => {
+  const dashboard = fs.readFileSync(path.join(root, 'public/js/osint-dashboard.js'), 'utf8');
+  const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
+  assert.match(dashboard, /row\.classList\.toggle\('active'/);
+  assert.match(dashboard, /document\.body\.classList\.toggle\('left-open'/);
+  assert.match(dashboard, /document\.body\.classList\.toggle\('right-open'/);
+  assert.match(globe, /btn-follow-iss.*resetView/);
+  assert.match(globe, /globeCtrlBody\.classList\.toggle\('open'/);
+});
