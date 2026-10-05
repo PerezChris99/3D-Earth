@@ -76,13 +76,34 @@
     const camera = api.getCamera();
     const controls = api.getControls();
     if (!group || !camera || !controls) return;
+
+    api.pauseRotation?.();
+
     const local = wgs84ToUnitVector(lat, lon);
+    group.updateMatrixWorld(true);
     const world = local.clone();
     group.localToWorld(world);
     world.normalize();
-    camera.position.copy(world.multiplyScalar(2.8));
-    controls.target.set(0, 0, 0);
-    controls.update();
+
+    const destination = world.multiplyScalar(2.05);
+    const startPosition = camera.position.clone();
+    const startTarget = controls.target.clone();
+    const started = performance.now();
+    const duration = 850;
+
+    function ease(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function fly(now) {
+      const t = Math.min(1, (now - started) / duration);
+      const e = ease(t);
+      camera.position.lerpVectors(startPosition, destination, e);
+      controls.target.lerpVectors(startTarget, new THREE.Vector3(0, 0, 0), e);
+      controls.update();
+      if (t < 1) requestAnimationFrame(fly);
+    }
+    requestAnimationFrame(fly);
   }
 
   function placeMapMarker(lat, lon, accuracy) {
