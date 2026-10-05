@@ -139,7 +139,7 @@
             rows.push(row('Callsign', d.callsign || 'Not assigned / not cataloged'));
             rows.push(row('NORAD ID', d.norad));
             rows.push(row('International Designator', d.intdes));
-            rows.push(row('Owner / operator', d.owner));
+            rows.push(row('Country / owner code', d.owner));
             rows.push(row('Launch / origin', d.launchSite || '—'));
             rows.push(row('Launch date', d.launchDate || '—'));
             rows.push(row('Time in space', d.timeInSpace || '—'));
