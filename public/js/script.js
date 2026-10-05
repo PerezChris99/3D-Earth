@@ -1205,6 +1205,10 @@ function init() {
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
 
+    // Lighting must exist before the first render. The startup globe uses MeshPhongMaterial.
+    // Without an initial light, the fallback/core Earth is black until deferred layers finish.
+    safeInitStep('lighting', setupLighting);
+
     // Only the lighting and core Earth are startup-critical. Starfield is deferred.
 
     const earthCreated = safeInitStep('Earth', createEarth);
