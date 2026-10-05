@@ -652,6 +652,18 @@ function updateSatelliteModels(arr) {
     }
 }
 
+function satelliteOwnerCountry(code) {
+    const map = {
+        US:'United States', CA:'Canada', UK:'United Kingdom', FR:'France', GER:'Germany',
+        IT:'Italy', JPN:'Japan', IND:'India', PRC:'People\'s Republic of China',
+        CIS:'Commonwealth of Independent States', SKOR:'Republic of Korea', NKOR:'North Korea',
+        RUS:'Russia', AUS:'Australia', BRAZ:'Brazil', ARG:'Argentina', ISR:'Israel',
+        ESA:'European Space Agency', NATO:'NATO', UEA:'United Arab Emirates', KEN:'Kenya',
+        UGA:'Uganda', GHA:'Ghana', ZAF:'South Africa', NETH:'Netherlands', NOR:'Norway'
+    };
+    return map[String(code || '').trim().toUpperCase()] || null;
+}
+
 function formatSatelliteAge(launchDate) {
     if (!launchDate) return '—';
     const start = new Date(launchDate + 'T00:00:00Z');
@@ -746,6 +758,7 @@ async function trackSatelliteSelection(tracked) {
         norad: tracked.norad || catalog.NORAD_CAT_ID,
         intdes: catalog.OBJECT_ID || catalog.intdes || '—',
         owner: catalog.OWNER || catalog.owner || '—',
+        country: satelliteOwnerCountry(catalog.OWNER || catalog.owner) || 'Catalog owner code only',
         launchSite: catalog.LAUNCH_SITE || catalog.launchSite || '—',
         launchDate: launchDate || '—',
         timeInSpace: formatSatelliteAge(launchDate),
