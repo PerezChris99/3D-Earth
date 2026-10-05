@@ -134,8 +134,17 @@ app.use((req, res, next) => {
 // ==========================================
 // STATIC FILES
 // ==========================================
-app.use(express.static(path.join(__dirname)));
-app.use('/public', express.static(path.join(__dirname, 'public')));
+// Keep HTML revalidatable while allowing static assets to be reused between page navigations.
+app.use((req, res, next) => {
+    if (req.method === 'GET' && /\.(?:css|js|png|jpg|jpeg|webp|svg|ico|woff2?)$/i.test(req.path)) {
+        res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+    } else if (req.method === 'GET' && !req.path.startsWith('/api/')) {
+        res.setHeader('Cache-Control', 'no-cache');
+    }
+    next();
+});
+app.use(express.static(path.join(__dirname), { etag: true }));
+app.use('/public', express.static(path.join(__dirname, 'public'), { etag: true }));
 
 // ==========================================
 // API ROUTES
