@@ -264,12 +264,13 @@ test('Earth visual assets have an explicit same-origin delivery path', () => {
     assert.match(server, new RegExp(asset.replace('.', '\\\\.')));
 });
 
-test('hero critical path contains no external image dependency', () => {
+test('hero critical path is fully local and cinematic', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.doesNotMatch(html, /images\.unsplash\.com/);
-  assert.match(html, /background-image:url\('\/assets\/earth\/earth_atmos_2048\.jpg'\)/);
-  assert.match(html, /background-image:url\('\/assets\/earth\/earth_lights_2048\.png'\)/);
-  assert.match(html, /background-image:url\('\/assets\/earth\/moon_1024\.jpg'\)/);
+  for (const asset of ['earth-horizon.svg','earth-night-aurora.svg','moon-deep-space.svg']) {
+    assert.match(html, new RegExp('/assets/hero/' + asset));
+    assert.ok(fs.existsSync(path.join(root, 'public/assets/hero', asset)), 'missing hero asset: ' + asset);
+  }
 });
 test('hero slideshow is independent of remote image loading', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
