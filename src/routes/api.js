@@ -81,13 +81,13 @@ router.get('/positions', async (req, res) => {
 });
 
 router.get('/satellites', async (req, res) => {
-    try { res.json(await getTLEs()); }
+    try { const requestedGroup = String(req.query.group || 'stations').toLowerCase(); const allowed = new Set(['stations','weather','gps-ops','science','starlink','active']); const group = allowed.has(requestedGroup) ? requestedGroup : 'stations'; const items = await getTLEs(group); res.json({ ts: Date.now(), source: 'CelesTrak GP', group, items }); }
     catch (err) { logger.error('API', '/satellites error', { message: err.message }); res.status(500).json({ error: 'Satellite data unavailable' }); }
 });
 
 router.get('/satellites/:norad', async (req, res) => {
     try {
-        const norad = String(req.params.norad || '').replace(/\\D/g, '');
+        const norad = String(req.params.norad || '').replace(/\D/g, '');
         if (!norad || norad.length > 9) return res.status(400).json({ error: 'Invalid satellite catalog number' });
         res.json(await getSatelliteCatalog(norad));
     } catch (err) {
