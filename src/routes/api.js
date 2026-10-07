@@ -67,13 +67,23 @@ router.get('/thermal', async (req, res) => { try { res.json(await getThermalHots
 router.get('/observatory/summary', async (req, res) => {
     try {
         if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });
-        const [satellites, observations, samples, events] = await Promise.all([
+        const [satellites, observations, samples, events, sources, sectorRows] = await Promise.all([
             supabaseQuery('satellites', 'select=id,norad_id,name,object_type,owner_country,operator&order=name.asc&limit=20'),
             supabaseQuery('satellite_observations', 'select=id,satellite_id,observed_at,latitude,longitude,altitude_km,speed_km_s&order=observed_at.desc&limit=20'),
             supabaseQuery('seed_telemetry_samples', 'select=sample_id,sampled_at,latitude,longitude,altitude_km,speed_km_s&order=sample_id.asc&limit=20'),
             supabaseQuery('earth_events', 'select=id,event_type,occurred_at,latitude,longitude,magnitude,title&order=occurred_at.desc&limit=20'),
+            supabaseQuery('observatory_sources', 'select=slug,sector,name,provider,authority_level,expected_refresh_seconds,coverage,active&order=sector.asc'),
+            supabaseQuery('observatory_observations', 'select=sector,observed_at,source_id,quality_status&order=observed_at.desc&limit=1000'),
         ]);
-        res.json({ ts: Date.now(), source: 'Supabase', satellites, observations, samples, events });
+        const freshness = {};
+        for (const row of sectorRows) {
+            if (!freshness[row.sector]) {
+                const ageSeconds = Math.max(0, (Date.now() - new Date(row.observed_at).getTime()) / 1000);
+                const source = sources.find(item => item.slug === row.source_id) || null;
+                freshness[row.sector] = { latest_observed_at: row.observed_at, age_seconds: Math.round(ageSeconds), status: source?.expected_refresh_seconds && ageSeconds <= source.expected_refresh_seconds ? 'LIVE' : ageSeconds < 86400 ? 'RECENT' : 'STALE', quality_status: row.quality_status };
+            }
+        }
+        res.json({ ts: Date.now(), source: 'Supabase', satellites, observations, samples, events, observatory: { sources, freshness } });
     } catch (err) {
         logger.error('API', '/observatory/summary error', { message: err.message });
         res.status(502).json({ error: 'Supabase observatory data unavailable' });
