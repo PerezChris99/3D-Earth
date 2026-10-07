@@ -17,5 +17,11 @@ jobs:
           node-version: 24.x
           cache: npm
       - run: npm ci
-      - run: npm test
-      - run: npm run check:syntax
+      - name: test 3D Earth contracts
+        run: node --test tests/3d-earth.test.js
+      - name: test core architecture
+        run: node --test tests/core-architecture.test.js
+      - name: test data engine
+        run: node --test tests/data-engine.test.js
+      - name: syntax check
+        run: npm run check:syntax
