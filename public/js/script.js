@@ -1616,8 +1616,9 @@ function updateComets(deltaSec) {
 function createEarth() {
     earthGroup = new THREE.Group();
 
-    // Core globe: no network dependency. This is deliberately ready for the first frame.
-    const earthGeometry = new THREE.SphereGeometry(1, 48, 48);
+    // The real repository-local Earth texture is part of the globe's visual path.
+    // A plain sphere is retained only as a short-lived/error fallback.
+    const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
     const earthMaterial = new THREE.MeshPhongMaterial({
         color: 0xffffff,
         specular: 0x222222,
@@ -1628,19 +1629,18 @@ function createEarth() {
     earth.receiveShadow = false;
     earthGroup.add(earth);
 
-    const cloudGeometry = new THREE.SphereGeometry(1.012, 48, 48);
+    const cloudGeometry = new THREE.SphereGeometry(1.012, 64, 64);
     const cloudMaterial = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.18,
+        opacity: 0.72,
         depthWrite: false
     });
     clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
     clouds.visible = false;
     earthGroup.add(clouds);
 
-    // Keep the atmosphere lightweight until the core globe is already on screen.
-    const atmosphereGeometry = new THREE.SphereGeometry(1.07, 32, 32);
+    const atmosphereGeometry = new THREE.SphereGeometry(1.07, 48, 48);
     const atmosphereMaterial = new THREE.MeshBasicMaterial({
         color: 0x74b8f2,
         transparent: true,
@@ -1651,8 +1651,30 @@ function createEarth() {
     atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
     earthGroup.add(atmosphere);
     scene.add(earthGroup);
-}
 
+    // Start the local visual asset load immediately; do not wait for the deferred
+    // enhancement timer. This is what turns the startup sphere into a real Earth.
+    loadLocalTexture('earth_atmos_2048.jpg', (texture) => {
+        texture.encoding = THREE.sRGBEncoding;
+        texture.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 1);
+        const old = earth.material;
+        earth.material = new THREE.MeshPhongMaterial({
+            map: texture,
+            color: 0xffffff,
+            specular: 0x333333,
+            shininess: 14
+        });
+        if (old?.dispose) old.dispose();
+    }, (error) => console.error('[3D Earth] Critical Earth texture failed:', error));
+
+    loadLocalTexture('earth_clouds_1024.png', (texture) => {
+        texture.encoding = THREE.sRGBEncoding;
+        texture.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 1);
+        clouds.material.map = texture;
+        clouds.material.needsUpdate = true;
+        clouds.visible = showClouds;
+    }, (error) => console.warn('[3D Earth] Cloud texture unavailable:', error));
+}
 function assetMimeType(filename) {
     if (/\\.png$/i.test(filename)) return 'image/png';
     if (/\\.webp$/i.test(filename)) return 'image/webp';
