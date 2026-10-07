@@ -1,55 +1,44 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#02060d">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#02060d"><meta name="description" content="Interactive 3D Earth planetary observatory with real-time solar lighting, satellite propagation and private device location.">
 <title>3D Earth — Planetary Observatory</title>
 <link rel="preload" as="image" href="/assets/earth/earth_atmos_2048.jpg" fetchpriority="high">
-<link rel="stylesheet" href="/css/globe-dashboard.css">
+<link rel="stylesheet" href="/css/globe-dashboard.css"><link rel="stylesheet" href="/css/mobile-nav.css">
 </head>
 <body class="globe-dashboard">
 <main id="globe-app" aria-label="3D Earth planetary observatory">
-  <div id="globe-stage"></div>
-  <div id="boot-screen">
-    <div class="boot-mark">3D EARTH</div>
-    <div class="boot-title">INITIALIZING PLANETARY VIEW</div>
-    <div class="boot-bar"><span id="boot-progress"></span></div>
-    <div id="boot-status">Loading Earth assets…</div>
-  </div>
-
-  <header class="hud-header">
-    <a href="/" class="brand">3D <span>EARTH</span></a>
-    <div class="hud-readout"><span class="live-dot"></span><span id="system-state">PLANETARY VIEW</span></div>
-    <a href="/about.html" class="hud-link">ABOUT</a>
-  </header>
-
-  <aside class="layer-panel">
-    <div class="panel-kicker">PLANET</div>
-    <h1>Earth</h1>
-    <p class="panel-copy">A focused planetary rendering core. Optional intelligence layers can be added without blocking the Earth.</p>
-    <div class="layer-list">
-      <button class="layer active" data-layer="clouds"><span></span>Clouds</button>
-      <button class="layer active" data-layer="night"><span></span>Night lights</button>
-      <button class="layer active" data-layer="atmosphere"><span></span>Atmosphere</button>
-      <button class="layer active" data-layer="moon"><span></span>Moon</button>
-      <button class="layer active" data-layer="stars"><span></span>Stars</button>
-    </div>
-    <div class="panel-divider"></div>
-    <button id="auto-rotate" class="control active">AUTO ROTATE <b>ON</b></button>
-    <button id="reset-view" class="control">RESET VIEW</button>
-  </aside>
-
-  <section class="planet-meta">
-    <div class="meta-label">PLANETARY RENDERER</div>
-    <div class="meta-value">EARTH / REAL-TIME LIGHTING</div>
-    <div class="meta-line"><span id="camera-state">ORBITAL CAMERA</span><span id="fps-state">— FPS</span></div>
-  </section>
-
-  <div class="hint">DRAG TO ORBIT · SCROLL TO ZOOM · RIGHT-DRAG TO PAN</div>
+<div id="globe-stage"></div>
+<div id="boot-screen"><div class="boot-mark">3D EARTH</div><div class="boot-title">INITIALIZING PLANETARY VIEW</div><div class="boot-bar"><span id="boot-progress"></span></div><div id="boot-status">Loading Earth assets…</div></div>
+<header class="hud-header"><a href="/" class="brand">3D <span>EARTH</span></a><div class="hud-readout"><span class="live-dot"></span><span id="system-state">PLANETARY VIEW</span></div><a href="/about.html" class="hud-link">ABOUT</a></header>
+<aside class="layer-panel" id="planet-panel">
+<div class="panel-kicker">PLANET</div><h1>Earth</h1>
+<p class="panel-copy">A real planetary renderer. Solar illumination, atmosphere, clouds, lunar position and live orbital objects are driven by data or deterministic astronomy.</p>
+<div class="location-card"><div><span class="panel-kicker">OBSERVER</span><strong id="observer-label">No device location</strong><small id="observer-accuracy">Location stays in this browser session.</small></div><button id="locate-globe" class="small-action">LOCATE</button></div>
+<div class="layer-list">
+<button class="layer active" data-layer="clouds"><span></span>Clouds</button><button class="layer active" data-layer="night"><span></span>Night lights</button><button class="layer active" data-layer="atmosphere"><span></span>Atmosphere</button><button class="layer active" data-layer="moon"><span></span>Moon</button><button class="layer active" data-layer="stars"><span></span>Stars</button><button class="layer active" data-layer="satellites"><span></span>Satellites</button>
+</div>
+<div class="panel-divider"></div><button id="auto-rotate" class="control active">AUTO ROTATE <b>ON</b></button><button id="reset-view" class="control">RESET VIEW</button>
+</aside>
+<section class="observatory-card" id="observatory-card">
+<div class="panel-kicker">ASTRONOMICAL CLOCK</div><strong id="utc-clock">UTC —</strong><span id="local-clock">Local time unavailable</span>
+<div class="astro-grid"><div><small>TIMEZONE</small><b id="timezone-name">Awaiting observer</b></div><div><small>SOLAR STATE</small><b id="solar-state">Calculating</b></div><div><small>SUN ALT.</small><b id="sun-altitude">—</b></div><div><small>DAYLIGHT</small><b id="daylight-window">—</b></div></div>
+</section>
+<section class="satellite-drawer" id="satellite-drawer" aria-hidden="true">
+<div class="drawer-head"><div><span class="panel-kicker">ORBITAL CATALOG</span><h2>Live satellites</h2></div><button id="close-satellites" aria-label="Close satellite panel">×</button></div>
+<div class="sat-toolbar"><select id="sat-group" aria-label="Satellite group"><option value="stations">Stations</option><option value="weather">Weather</option><option value="gps-ops">GPS</option><option value="science">Science</option><option value="starlink">Starlink</option></select><button id="reload-satellites">REFRESH</button></div>
+<div id="sat-source" class="source-note">Loading current orbital elements…</div><div id="sat-list" class="sat-list"></div>
+</section>
+<section class="planet-meta"><div class="meta-label">PLANETARY RENDERER</div><div class="meta-value">EARTH / DYNAMIC SOLAR GEOMETRY</div><div class="meta-line"><span id="camera-state">ORBITAL CAMERA</span><span id="fps-state">— FPS</span></div></section>
+<div class="hint">DRAG TO ORBIT · PINCH/SCROLL TO ZOOM · DOUBLE-TAP TO RESET</div>
 </main>
-<script src="/vendor/three-r128.min.js"></script>
-<script src="/vendor/OrbitControls-r128.js"></script>
-<script src="/js/globe.js"></script>
-</body>
-</html>
+<nav class="mobile-bottom-nav" aria-label="Primary navigation">
+<a href="/" data-nav="home"><svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
+<a href="/dashboard.html" data-nav="globe"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.7 9h16.6M3.7 15h16.6M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5s-1.1 6.2-3.3 8.5c-2.2-2.3-3.3-5.1-3.3-8.5S9.8 5.8 12 3.5z"/></svg><span>Globe</span></a>
+<a href="/map.html" data-nav="map"><svg viewBox="0 0 24 24"><path d="m4 6 6-2 4 2 6-2v14l-6 2-4-2-6 2z"/><path d="M10 4v14M14 6v14"/></svg><span>Map</span></a>
+<a href="/dashboard.html#satellites" data-nav="satellites"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></svg><span>Satellites</span></a>
+<a href="/about.html" data-nav="about"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5.5 20c.7-3.4 2.9-5 6.5-5s5.8 1.6 6.5 5"/></svg><span>About</span></a>
+</nav>
+<script src="/vendor/three-r128.min.js"></script><script src="/vendor/OrbitControls-r128.js"></script><script src="/vendor/satellite.min.js"></script><script src="/js/globe.js"></script><script src="/js/navigation.js" defer></script>
+</body></html>
