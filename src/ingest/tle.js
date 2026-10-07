@@ -10,7 +10,8 @@ const cache = require('../cache');
 
 const TLE_CACHE_KEY = 'tle:active';
 const TLE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
-const TLE_URL = 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle';
+const GROUPS = new Set(['stations','weather','gps-ops','science','starlink','active']);
+const TLE_URL = 'https://celestrak.org/NORAD/elements/gp.php';
 
 function httpsGet(url) {
     return new Promise((resolve, reject) => {
@@ -45,10 +46,11 @@ async function getTLEs() {
     const cached = cache.get(TLE_CACHE_KEY);
     if (cached) return cached;
     try {
-        const raw = await httpsGet(TLE_URL);
+        const url = `${TLE_URL}?GROUP=${encodeURIComponent(group.toUpperCase())}&FORMAT=tle`;
+        const raw = await httpsGet(url);
         const parsed = parseTLE(raw);
         if (parsed.length > 0) {
-            cache.set(TLE_CACHE_KEY, parsed, TLE_TTL_MS);
+            cache.set(cacheKey, parsed, TLE_TTL_MS);
         }
         return parsed;
     } catch (err) {

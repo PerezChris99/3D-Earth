@@ -62,7 +62,7 @@ router.post('/auth/token', (req, res) => {
 router.get('/positions', async (req, res) => {
     try {
         const [satellites, flights, earthquakes, thermal] = await Promise.allSettled([
-            getTLEs(),
+            getTLEs('stations'),
             getFlights(),
             getEarthquakes(),
             getThermalHotspots()

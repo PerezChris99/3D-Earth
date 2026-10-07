@@ -1,415 +1,174 @@
 # 3D Earth
 
-**3D Earth** is a browser-based geographic visualization and situational-awareness platform built around one idea: keep the planet visible, then bring the information needed to understand a place around it.
+**3D Earth** is a browser-based planetary observatory built around a simple rule: **the Earth stays visible, while data explains the place.**
 
-The project started from a personal interest in **maps, tracking, and seeing the world from above**. It is deliberately more than a visual demo. The current system combines a Three.js globe, WGS84 location handling, OpenStreetMap, weather data, geospatial feeds, a Node/Express gateway, WebSocket updates, and analyst tooling.
+The project is intentionally being rebuilt as a real functional system rather than a decorative globe. The current foundation combines a deterministic Three.js Earth renderer, astronomical solar geometry, live orbital elements propagated with SGP4, an OpenStreetMap view, device geolocation, geographic timezone data, and a mobile-first navigation system.
 
 **Built by Kweezi Perez** — https://kweeziperez.com
 
----
+## Current implemented foundation
 
-## What problem is this trying to solve?
+### Planetary renderer
+- Three.js r128 WebGL renderer.
+- Real local Earth day texture, normal map, specular map, night-light texture and cloud texture.
+- Atmospheric rim, Moon and star field.
+- Deterministic solar geometry updates Earth lighting and the day/night terminator.
+- Orbit controls work with mouse, touch and trackpad gestures.
+- Mandatory local Earth assets are loaded before the first meaningful frame.
+- Satellite failure is isolated from planetary rendering.
 
-The useful problem is not “make a 3D globe.”
+### Astronomy and time
+- Solar altitude and azimuth are calculated from UTC time and WGS84 latitude/longitude.
+- Day/night state is derived from calculated solar altitude.
+- Geographic timezone is requested for the selected observer coordinate and displayed as an IANA timezone where supplied.
+- Local time uses the browser timezone-aware Intl.DateTimeFormat.
+- No longitude-only timezone approximation is used.
 
-The problem is **geographic context**.
+### Real satellite tracking
+Orbital objects are sourced from **CelesTrak GP element sets** and propagated with satellite.js.
 
-A map can tell you where something is. A weather service can tell you what the atmosphere is doing. A satellite tracker can tell you where an object is. A conventional dashboard can put those things beside one another.
+Supported live groups:
+- Stations
+- Weather
+- GPS
+- Science
+- Starlink
+- Active catalogue
 
-3D Earth is an attempt to put those pieces into a single spatial view so a person can answer:
+For rendered objects the application calculates:
+- current geodetic position,
+- altitude,
+- velocity magnitude,
+- trajectory over the surrounding 90-minute window,
+- NORAD catalogue number.
 
-- Where is this?
-- What is around it?
-- What is happening there?
-- What does the weather look like?
-- How does the location relate to the wider Earth?
-- What external source produced the information?
+Selecting an object requests its CelesTrak SATCAT record for catalogue metadata such as ownership, launch date, orbital period, inclination, apogee and perigee when available.
 
-For Uganda and the wider East African community, the project can support **geospatial education, mapping experiments, environmental and weather awareness, aviation/geographic context, research prototypes, and community demonstrations**. It is not intended to replace an emergency-response, aviation-navigation, meteorological, surveying, or other safety-critical system.
+The interface records source and fetch time. It does **not** claim NASA is the live orbital-elements authority for every satellite. NASA mission information can provide mission context; current orbital propagation requires current orbital elements from an orbital catalogue/provider.
 
----
+### OpenStreetMap map
+/map.html opens at a world view by default.
 
-## Why it exists
+The map uses the standard OpenStreetMap tile endpoint with visible attribution. It does not prefetch or bulk-download tiles.
 
-This project was built because I have a genuine interest in **tracking, maps, geographic systems and the perspective of seeing the Earth from above**.
+The **Locate Me** flow:
+1. Requests browser high-accuracy geolocation.
+2. Uses the device's reported latitude, longitude, timestamp and accuracy.
+3. Zooms to the reported position.
+4. Displays a private marker and accuracy circle.
+5. Keeps the location in sessionStorage for the current browser session.
+6. Shares the same location state with the globe.
 
-That interest became an engineering project: take the things that make maps and tracking useful, expose them through a browser, and make the geographic object itself the centre of the interface.
+**Accuracy is never fabricated.** A browser/device may report 3 m, 20 m, 100 m or worse. The UI displays the actual reported accuracy. Ordinary browser geolocation cannot honestly guarantee 1-metre survey accuracy; 1-metre-grade positioning generally requires suitable GNSS/RTK hardware and correction services.
 
-The intended direction is to make the platform useful for African geospatial learning and practical situational awareness while being honest about source quality, licensing, latency and uncertainty.
+### Mobile-first experience
+The site uses an iPhone-style, thumb-reachable bottom navigation on small screens with safe-area handling.
 
----
-
-## Current capabilities
-
-### Globe
-- Three.js r128 WebGL globe
-- Day/night illumination
-- Atmosphere and cloud layers
-- Satellite/orbital visualisation
-- Moon and Sun context
-- Optional ocean-current and magnetic-field layers
-- WGS84 coordinate conversion
-- Globe marker for the selected location
-- Animated fly-to when a location is selected
-- Location-aware globe centering that accounts for the globe's current rotation
-
-### Maps and location
-- OpenStreetMap via Leaflet
-- WGS84 latitude/longitude selection
-- Browser geolocation with explicit user permission
-- Reported device accuracy
-- Reverse geocoding through the application server
-- Map marker and accuracy circle
-- Globe ↔ map location synchronisation
-- Map remains available as a full-screen conventional map mode
-
-### Weather
-- Current conditions
-- Local time
-- Sunrise/sunset and day/night state
-- Twelve-hour forecast
-- Temperature, humidity, wind and pressure
-- Model-grid and elevation metadata
-- Server-side cache and parameter validation
-
-### Live geographic context
-Depending on source availability:
+Primary mobile destinations:
+- Home
+- Globe
+- Map
 - Satellites
-- Flights
-- Earthquakes
-- Thermal hotspots
-- Intelligence/derived layers
-- Alerts and area-of-interest tools
+- About
 
-### Analyst functions
-- AOI drawing
-- Geo-pinned notes
-- Snapshot/export tooling
-- Layer subscriptions
-- Inspector panels
-- WebSocket live updates
-- Role-based protected analyst/admin routes
+## Privacy model for exact location
 
----
+Exact device location is sensitive.
 
-## Location flow
+3D Earth therefore:
+- requests location only after user action,
+- uses the browser permission model,
+- keeps the exact coordinate in the browser session,
+- does not create a public location URL,
+- does not publish the marker to other users,
+- displays device-reported accuracy instead of inventing precision,
+- allows the user to clear local location state.
 
-~~~mermaid
-flowchart LR
-    A[User presses Locate] --> B{Browser permission}
-    B -->|Allowed| C[WGS84 latitude longitude accuracy]
-    B -->|Denied| D[Manual coordinates]
-    C --> E[Application location state]
-    D --> E
-    E --> F[Map marker]
-    E --> G[Globe marker]
-    E --> H[Globe fly-to]
-    E --> I[Reverse geocoding]
-    E --> J[Weather request]
-    I --> K[Place name]
-    J --> L[Local weather and time]
-~~~
+Some location-dependent services necessarily receive coordinates when their functionality is used. Those third-party providers have their own policies. See /privacy.html and /data-policy.html.
 
-The important design decision is that **the same WGS84 coordinate is the source of truth for both the map and the globe**. The map is not a separate approximation of the globe location.
-
----
-
-## Globe / map relationship
-
-~~~mermaid
-flowchart TB
-    WGS84[WGS84 coordinate] --> MAP[Leaflet + OpenStreetMap]
-    WGS84 --> GLOBE[Three.js Earth]
-    MAP --> MARKER1[Map marker + accuracy]
-    GLOBE --> MARKER2[Earth surface marker]
-    WGS84 --> WEATHER[Weather API]
-    WGS84 --> GEOCODE[Reverse geocoder]
-    WEATHER --> CONTEXT[Local weather / time]
-    GEOCODE --> CONTEXT2[Human-readable place]
-~~~
-
-Selecting a point on the map therefore updates the globe. Using device location does the same in the opposite direction.
-
----
-
-## System architecture
-
-~~~mermaid
-flowchart LR
-    Browser[Browser: Three.js + Leaflet + vanilla JS]
-    Gateway[Node.js / Express gateway]
-    WS[WebSocket /ws/live]
-    Cache[In-memory TTL cache]
-    Browser -->|REST| Gateway
-    Browser -->|WebSocket| WS
-    Gateway --> Cache
-    Gateway --> GEO[Reverse geocoder]
-    Gateway --> WEATHER[Weather provider]
-    Gateway --> SAT[CelesTrak / satellite data]
-    Gateway --> FLIGHT[OpenSky / flight data]
-    Gateway --> EQ[USGS / seismic data]
-    Gateway --> FIRE[Thermal hotspot feed]
-    WS --> INTEL[Intelligence + alert engine]
-    INTEL --> AOI[AOI checks]
-    INTEL --> NOTES[Analyst notes]
-~~~
-
----
-
-## Startup and performance design
-
-The globe does **not** wait for remote textures or live feeds before rendering.
+## Architecture
 
 ~~~text
-CRITICAL PATH
-renderer
-  ↓
-camera
-  ↓
-lighting
-  ↓
-lightweight local Earth
-  ↓
-animation loop
-  ↓
-FIRST FRAME
-
-ENHANCEMENT PATH
-  ↓
-Earth texture
-  ↓
-cloud texture
-  ↓
-starfield
-  ↓
-satellites
-  ↓
-Moon / Sun
-  ↓
-optional scientific layers
-  ↓
-external live data
+Browser
+  │
+  ├── Three.js planetary renderer
+  │    ├── local Earth assets
+  │    ├── solar geometry
+  │    ├── Moon / atmosphere / clouds / stars
+  │    └── SGP4 satellite propagation
+  │
+  ├── OpenStreetMap + Leaflet
+  │    └── private device-location state
+  │
+  └── REST gateway
+       ├── CelesTrak GP orbital elements
+       ├── CelesTrak SATCAT metadata
+       ├── Open-Meteo geographic timezone/weather response
+       └── Nominatim reverse geocoding where explicitly used
 ~~~
 
-Other startup controls include:
-- capped device pixel ratio
-- no unnecessary drawing-buffer preservation
-- reduced initial geometry
-- deferred expensive layers
-- reduced synthetic satellite count
-- isolated optional initialisation
-- server-side caching for selected APIs
-
----
-
-## Technology
-
-| Area | Technology |
-|---|---|
-| Globe | Three.js r128 |
-| Map | Leaflet + OpenStreetMap |
-| Frontend | HTML, CSS, vanilla JavaScript |
-| Backend | Node.js + Express 5 |
-| Live transport | WebSocket (ws) |
-| Location | Browser Geolocation + WGS84 |
-| Weather | Open-Meteo gateway |
-| Reverse geocoding | Server-side provider proxy |
-| Satellite data | CelesTrak / satellite.js |
-| Flights | OpenSky |
-| Earthquakes | USGS |
-| Thermal data | FIRMS feed |
-| Security | Helmet, CORS, rate limiting, HMAC auth |
-| Testing | Node test runner + syntax checks |
-
----
-
-## Repository structure
-
-~~~text
-3D-Earth/
-├── index.html
-├── dashboard.html
-├── about.html
-├── privacy.html
-├── terms.html
-├── data-policy.html
-├── server.js
-├── package.json
-├── .env.example
-├── README.md
-├── docs/
-│   ├── ROADMAP.md
-│   └── SECURITY_AUDIT.md
-├── public/
-│   ├── css/
-│   └── js/
-├── src/
-│   ├── auth.js
-│   ├── cache.js
-│   ├── logger.js
-│   ├── alertEngine.js
-│   ├── intelligence.js
-│   ├── aoi.js
-│   ├── notes.js
-│   ├── ingest/
-│   ├── middleware/
-│   └── routes/
-└── tests/
-    ├── 3d-earth.test.js
-    └── syntax-check.js
-~~~
-
----
+The repository also contains existing server-side ingestion and analyst infrastructure. Those features are being reconnected only when their data contracts are compatible with the new planetary core.
 
 ## Routes
 
 | Route | Purpose |
 |---|---|
-| / | Project landing page |
-| /dashboard | Interactive globe |
-| /about | Project purpose and community use |
+| / | Landing page and cinematic Earth hero |
+| /dashboard | Interactive planetary observatory |
+| /map | OpenStreetMap world view and private device location |
+| /about | Project purpose and limitations |
 | /privacy | Privacy policy |
 | /terms | Terms of use |
-| /data-policy | Data sources and provider notes |
+| /data-policy | External source and licensing notes |
 
----
+## Data provenance and limitations
 
-## Production-readiness assessment
+3D Earth is a visualization layer. Public feeds can be delayed, rate-limited, incomplete or unavailable.
 
-### Honest score: **7 / 10 for controlled production deployment**
+Important boundaries:
 
-This is **not** the same as saying the system is ready to become a public, safety-critical geographic platform at national scale.
+- **OpenStreetMap:** map data is © OpenStreetMap contributors. The standard tile service is best-effort and subject to its usage policy; production scale may require a dedicated OSM-derived tile provider or self-hosting.
+- **Nominatim:** reverse geocoding is throttled and cached server-side. It is not an autocomplete or bulk-geocoding service.
+- **CelesTrak:** current GP orbital elements and SATCAT catalogue metadata are used for orbital tracking.
+- **satellite.js:** performs SGP4/SDP4 propagation and coordinate transforms in the browser.
+- **Open-Meteo:** supplies the geographic timezone response used for observer time context and may supply weather data elsewhere in the application.
+- **Browser Geolocation:** device-provided and permission-controlled; it is not survey-grade by default.
+- **NASA:** useful for mission and scientific context, but not treated as the universal live orbital-catalogue authority.
 
-### What is already solid
-- Core globe rendering has a local first-frame fallback.
-- Location handling uses WGS84.
-- Browser GPS requires user permission.
-- Map and globe share the same selected coordinate.
-- Weather requests pass through a server gateway.
-- Reverse geocoding is rate-controlled and cached.
-- API input is validated.
-- HTTP security headers are configured.
-- API rate limiting exists.
-- WebSocket authentication exists for production.
-- Analyst/admin routes are protected.
-- WebSocket messages are rate limited.
-- Structured logging exists.
-- Graceful shutdown/error guards exist.
-- Automated syntax and application tests exist.
-- The UI has a mobile navigation path rather than simply shrinking desktop controls.
-
-### What prevents a 9–10/10 rating
-
-| Area | Current reality | Needed for a higher rating |
-|---|---|---|
-| External data | Several public/third-party feeds | Licensed, contracted production providers |
-| Map tiles | Standard OSM tile service | Dedicated tile provider or self-hosted infrastructure |
-| Weather | Open-Meteo free API path | Commercial licence/provider for commercial use |
-| Persistence | Important analyst state is not durable | PostgreSQL or equivalent with backups |
-| Identity | Scoped HMAC access | Full identity/session management if multi-user |
-| Observability | Structured logs | Metrics, tracing, alerting and dashboards |
-| Scaling | Single application architecture | Horizontal scaling and shared cache/state |
-| Browser QA | Automated contract tests | Real-device/browser matrix and WebGL regression tests |
-| Disaster operation | Informational context | Validated operational data agreements and procedures |
-| Security perimeter | Application controls | WAF, deployment-level controls and stronger secrets management |
-| Data quality | Provider dependent | Provenance, freshness, confidence and validation per feed |
-
-### The actual production problem to solve
-
-The strongest production direction is **not another satellite dashboard**.
-
-> Provide an accessible geographic context layer for people who need to understand what is happening in a place, without requiring specialist GIS software.
-
-For a Ugandan/East African deployment, that can become useful in:
-
-1. **Education** — practical geography, GIS, weather and orbital-data learning.
-2. **Environmental awareness** — viewing thermal/environmental events in geographic context.
-3. **Weather awareness** — putting local forecasts and conditions against an actual geographic view.
-4. **Aviation and tracking education** — understanding aircraft/satellite movement without presenting the system as certified navigation.
-5. **Research prototypes** — testing geospatial ideas before moving to professional GIS infrastructure.
-6. **Community demonstrations** — giving non-specialists a visual way to understand location-based events.
-7. **Situational context** — combining several public feeds around a place while clearly showing their limitations.
-
-The platform becomes substantially more valuable when it develops **verified data provenance, freshness indicators, historical playback, durable storage, better African-region data coverage and professional deployment infrastructure**.
-
----
-
-## External data and licensing
-
-3D Earth is a presentation layer; it does not own most of the geographic, weather or live-feed data it displays.
-
-Important examples:
-- OpenStreetMap data requires attribution. The standard OSM tile service has its own usage policy and is not a guaranteed commercial tile backend.
-- Open-Meteo's free API is intended for non-commercial use; commercial deployment requires the appropriate commercial arrangement.
-- Browser geolocation is supplied by the user's device and is not guaranteed to be survey-grade.
-- Public live feeds can be delayed, incomplete, rate-limited or unavailable.
-
-See **Data & Sources** at /data-policy for the current source register.
-
----
-
-## Security
-
-The application currently includes:
-- Helmet security headers
-- CORS configuration
-- HTTP rate limiting
-- request size limits
-- input sanitisation
-- HMAC-based scoped access tokens
-- viewer / analyst / admin roles
-- WebSocket authentication
-- WebSocket rate limiting
-- structured server logging
-- uncaught exception/rejection guards
-- graceful shutdown handling
-
-See docs/SECURITY_AUDIT.md.
-
----
+No visual layer should be interpreted as certified navigation, surveying, emergency response, aviation control, meteorological warning, military intelligence, or another safety-critical service.
 
 ## Development
 
 ~~~powershell
 npm install
-
-Copy-Item .env.example .env
-# Configure secrets in .env
-
-npm run dev
-~~~
-
-Validation:
-
-~~~powershell
 npm test
 npm run check:syntax
-~~~
-
-Production:
-
-~~~powershell
 npm start
 ~~~
 
----
+The CI workflow runs both the application tests and JavaScript syntax checks on pushes and pull requests.
 
-## Engineering principle
+## Engineering principles
 
-**Keep the Earth visible. Make the data explain the place.**
-
-The project should become more useful by improving its data quality, provenance, geographic coverage and operational reliability — not by adding decorative dashboard features.
-
----
+1. **Real data over decorative animation.**
+2. **Deterministic calculations over hardcoded visual states.**
+3. **Source and timestamp visibility for live data.**
+4. **Private-by-default handling of exact observer location.**
+5. **Honest uncertainty: never claim precision the device or source does not provide.**
+6. **The Earth renderer must remain functional when optional feeds fail.**
+7. **Mobile is a primary interface, not a shrunken desktop layout.**
 
 ## Credits
 
 Built by **Kweezi Perez** — https://kweeziperez.com
 
-- Three.js — MIT
-- Leaflet — BSD-2-Clause
-- satellite.js — MIT
-- ws — MIT
+Core open-source technologies include:
+- Three.js
+- Leaflet
+- satellite.js
+- Node.js / Express
 - OpenStreetMap contributors
+- CelesTrak
 - Open-Meteo
-- Other external providers are identified on the Data & Sources page
+
+External datasets and services remain subject to their own licences and usage policies.

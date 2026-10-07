@@ -17,7 +17,6 @@ const path       = require('path');
 const helmet     = require('helmet');
 const cors       = require('cors');
 const rateLimit  = require('express-rate-limit');
-const satelliteClientPath = require.resolve('satellite.js/dist/satellite.min.js');
 
 const logger        = require('./src/logger');
 const requestLogger = require('./src/middleware/requestLogger');
@@ -80,7 +79,7 @@ app.use(helmet({
             "img-src":       ["'self'", "data:", "blob:", "https://threejs.org", "https://cdn.jsdelivr.net", "https://raw.githubusercontent.com", "https://unpkg.com", "https://tile.openstreetmap.org", "https://assets.science.nasa.gov", "https://www3.nasa.gov", "https://esrs.jsc.nasa.gov", "https://images.unsplash.com", "https://commons.wikimedia.org", "https://upload.wikimedia.org"],
             "connect-src":   ["'self'", "ws:", "wss:", "https://celestrak.org", "https://celestrak.com",
                               "https://opensky-network.org", "https://earthquake.usgs.gov",
-                              "https://unpkg.com", "https://cdn.jsdelivr.net", "https://tile.openstreetmap.org", "https://api.open-meteo.com"],
+                              "https://unpkg.com", "https://cdn.jsdelivr.net", "https://tile.openstreetmap.org", "https://api.open-meteo.com", "https://nominatim.openstreetmap.org", "https://unpkg.com"],
             "worker-src":    ["'self'", "blob:"],
             "frame-src":     ["'none'"],
             "object-src":    ["'none'"],
@@ -148,7 +147,6 @@ app.use((req, res, next) => {
 });
 const publicDir = path.join(__dirname, 'public');
 // Expose public/ at both legacy /public/* paths and Vercel-style root asset paths.
-app.get('/vendor/satellite.min.js', (req, res) => res.sendFile(satelliteClientPath));
 app.use(express.static(publicDir, { etag: true }));
 app.use('/public', express.static(publicDir, { etag: true }));
 app.use(express.static(path.join(__dirname), { etag: true }));
@@ -186,6 +184,7 @@ app.use('/api',       apiRoutes);
 
 // Clean public routes
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
+app.get('/map', (req, res) => res.sendFile(path.join(__dirname, 'map.html')));
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'about.html')));
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'privacy.html')));
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'terms.html')));
