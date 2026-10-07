@@ -15,11 +15,18 @@ function walk(dir) {
   }
 }
 walk(root);
-for (const file of files) {
+let failed = 0;
+for (const file of files.sort()) {
   const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
   if (result.status !== 0) {
-    process.stderr.write(result.stderr);
-    process.exit(result.status || 1);
+    failed += 1;
+    const relative = path.relative(root, file);
+    process.stderr.write("\nSyntax error in " + relative + "\n");
+    process.stderr.write((result.stderr || result.stdout || "node --check failed") + "\n");
   }
+}
+if (failed) {
+  process.stderr.write(`\nSyntax check failed: ${failed} file(s).\n`);
+  process.exit(1);
 }
 console.log(`Syntax OK: ${files.length} JavaScript files`);
