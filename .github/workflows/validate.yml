@@ -7,20 +7,9 @@ on:
 permissions:
   contents: read
 jobs:
-  contracts:
-    strategy:
-      fail-fast: false
-      matrix:
-        pattern:
-          - mobile-first
-          - dashboard is a real
-          - renderer uses
-          - astronomy module
-          - map is world
-          - satellite gateway
-          - legacy globe
-          - hero contains
+  validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,34 +17,5 @@ jobs:
           node-version: 24.x
           cache: npm
       - run: npm ci
-      - run: node --test --test-name-pattern="${{ matrix.pattern }}" tests/3d-earth.test.js
-  core:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.x
-          cache: npm
-      - run: npm ci
-      - run: node --test tests/core-architecture.test.js
-  data-engine:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.x
-          cache: npm
-      - run: npm ci
-      - run: node --test tests/data-engine.test.js
-  syntax:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.x
-          cache: npm
-      - run: npm ci
+      - run: npm test
       - run: npm run check:syntax
