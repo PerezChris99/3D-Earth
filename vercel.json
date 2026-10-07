@@ -32,5 +32,10 @@
     "server.js": {
       "maxDuration": 300
     }
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
   }
 }
