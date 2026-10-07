@@ -28,7 +28,6 @@ REVOKE ALL ON TABLE public.ingestion_runs FROM anon,authenticated;
 REVOKE ALL ON TABLE public.observatory_ingestion_runs FROM anon,authenticated;
 
 CREATE INDEX IF NOT EXISTS observatory_observations_source_external_observed_idx ON public.observatory_observations(source_id,external_id,observed_at);
-CREATE INDEX IF NOT EXISTS observatory_observations_sector_observed_idx ON public.observatory_observations(sector,observed_at DESC);
 CREATE INDEX IF NOT EXISTS observatory_observations_observed_idx ON public.observatory_observations(observed_at DESC);
 CREATE INDEX IF NOT EXISTS environment_observations_source_observed_idx ON public.environment_observations(source_id,observed_at DESC);
 CREATE INDEX IF NOT EXISTS volcano_observations_source_observed_idx ON public.volcano_observations(source_id,observed_at DESC);
@@ -36,6 +35,7 @@ CREATE INDEX IF NOT EXISTS space_weather_observations_source_observed_idx ON pub
 CREATE INDEX IF NOT EXISTS earth_observation_products_source_acquired_idx ON public.earth_observation_products(source_id,acquired_at DESC);
 CREATE INDEX IF NOT EXISTS ingestion_runs_source_started_idx ON public.ingestion_runs(source_id,started_at DESC);
 CREATE INDEX IF NOT EXISTS data_layer_configs_sector_idx ON public.data_layer_configs(sector);
+CREATE INDEX IF NOT EXISTS data_layer_configs_source_idx ON public.data_layer_configs(source_id);
 CREATE INDEX IF NOT EXISTS satellite_observations_source_observed_idx ON public.satellite_observations(source_id,observed_at DESC);
 CREATE INDEX IF NOT EXISTS satellite_passes_source_aos_idx ON public.satellite_passes(source_id,aos_at DESC);
 CREATE INDEX IF NOT EXISTS earth_events_source_occurred_idx ON public.earth_events(source_id,occurred_at DESC);
