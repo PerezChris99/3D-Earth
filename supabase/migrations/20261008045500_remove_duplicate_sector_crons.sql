@@ -1,0 +1,1 @@
+do $$ declare n text; begin foreach n in array array['observatory-eo-catalog-hourly','observatory-wildfires'] loop if exists(select 1 from cron.job where jobname=n) then perform cron.unschedule(n); end if; end loop; end $$;
