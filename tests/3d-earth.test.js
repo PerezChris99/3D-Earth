@@ -264,22 +264,22 @@ test('Earth visual assets have an explicit same-origin delivery path', () => {
     assert.match(server, new RegExp(asset.replace('.', '\\\\.')));
 });
 
-test('hero critical path is fully local and cinematic', () => {
+test('hero uses five HD NASA Earth frames with no superseded shape assets', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.doesNotMatch(html, /images\.unsplash\.com/);
-  for (const asset of ['earth-horizon.svg','earth-night-aurora.svg','moon-deep-space.svg']) {
-    assert.match(html, new RegExp('/assets/hero/' + asset));
-    assert.ok(fs.existsSync(path.join(root, 'public/assets/hero', asset)), 'missing hero asset: ' + asset);
-  }
+  assert.match(html, /assets\.science\.nasa\.gov/);
+  assert.equal((html.match(/class="hero-slide/g) || []).length, 5);
+  assert.doesNotMatch(html, /earth-horizon\.svg|earth-night-aurora\.svg|moon-deep-space\.svg/);
+  assert.match(html, /width="1920" height="1200"/);
 });
-test('hero slideshow is independent of remote image loading', () => {
+test('hero slideshow cycles deterministically over image elements', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const landing = fs.readFileSync(path.join(root, 'public/js/landing.js'), 'utf8');
-  assert.doesNotMatch(html, /images\\.unsplash\\.com/);
   assert.match(html, /hero-slide active/);
+  assert.match(html, /fetchpriority="high"/);
   assert.match(landing, /setInterval/);
-  assert.doesNotMatch(landing, /new Image\\(\\)/);
-  assert.doesNotMatch(landing, /onerror/);
+  assert.match(landing, /querySelector\\('img'\\)/);
+  assert.match(landing, /image-unavailable/);
 });
 test('real Earth texture loading begins during core globe creation', () => {
   const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
@@ -318,13 +318,10 @@ test('Vercel satellite runtime is served locally instead of relying on a browser
   assert.match(worker, /importScripts\('\/vendor\/satellite\.min\.js'\)/);
 });
 
-test('landing hero loads progressively instead of downloading every slide immediately', () => {
+test('hero image delivery is explicitly optimized for the 1920x1200 web frames', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const landing = fs.readFileSync(path.join(root, 'public/js/landing.js'), 'utf8');
-  assert.match(html, /preconnect.*images\.unsplash\.com/);
-  assert.match(html, /preload.*images\.unsplash\.com/);
-  assert.match(html, /data-bg=/);
-  assert.doesNotMatch(html, /hero-slide[^>]*style="[^"]*background-image/);
-  assert.match(landing, /new Image\(\)/);
-  assert.match(landing, /img\.decoding='async'/);
+  assert.match(html, /rel="preload" as="image"/);
+  assert.equal((html.match(/width="1920" height="1200"/g) || []).length, 5);
+  assert.equal((html.match(/decoding="async"/g) || []).length, 5);
+  assert.equal((html.match(/loading="eager"/g) || []).length, 5);
 });
