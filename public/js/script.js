@@ -22,7 +22,7 @@ const textureUrls = {
     clouds: '/assets/earth/earth_clouds_1024.png',
     earthLights: '/assets/earth/earth_lights_2048.png',
     moon: '/assets/earth/moon_1024.jpg',
-    starfield: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/cube/MilkyWay/dark_s_px.jpg'
+    starfield: '/assets/earth/earth_atmos_2048.jpg'
 };
 
 // Backup texture URLs
@@ -1681,7 +1681,7 @@ function assetMimeType(filename) {
     return 'image/jpeg';
 }
 
-const EARTH_ASSET_ROOTS = ['/assets/earth', '/public/assets/earth'];
+const EARTH_ASSET_ROOTS = ['/assets/earth'];
 
 function loadLocalTexture(filename, onLoad, onError) {
     const loader = new THREE.TextureLoader();
