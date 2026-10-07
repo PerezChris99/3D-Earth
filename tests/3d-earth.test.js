@@ -271,14 +271,15 @@ test('hero critical path contains no external image dependency', () => {
   assert.match(html, /background-image:url\('\/assets\/earth\/earth_lights_2048\.png'\)/);
   assert.match(html, /background-image:url\('\/assets\/earth\/moon_1024\.jpg'\)/);
 });
-test('hero slideshow has a same-origin image fallback', () => {
+test('hero slideshow is independent of remote image loading', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const landing = fs.readFileSync(path.join(root, 'public/js/landing.js'), 'utf8');
-  assert.match(html, /data-fallback="\/assets\/earth\/earth_atmos_2048\.jpg"/);
-  assert.match(landing, /img\.onerror/);
-  assert.match(landing, /\/assets\/earth\/earth_atmos_2048\.jpg/);
+  assert.doesNotMatch(html, /images\\.unsplash\\.com/);
+  assert.match(html, /hero-slide active/);
+  assert.match(landing, /setInterval/);
+  assert.doesNotMatch(landing, /new Image\\(\\)/);
+  assert.doesNotMatch(landing, /onerror/);
 });
-
 test('real Earth texture loading begins during core globe creation', () => {
   const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
   const createStart = globe.indexOf('function createEarth()');
