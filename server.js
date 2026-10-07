@@ -77,7 +77,7 @@ app.use(helmet({
                               "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net",
                               "https://threejs.org", "https://unpkg.com", "https://raw.githubusercontent.com"],
             "style-src":     ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
-            "img-src":       ["'self'", "data:", "blob:", "https://threejs.org", "https://cdn.jsdelivr.net", "https://raw.githubusercontent.com", "https://unpkg.com", "https://tile.openstreetmap.org", "https://assets.science.nasa.gov", "https://www3.nasa.gov", "https://esrs.jsc.nasa.gov"],
+            "img-src":       ["'self'", "data:", "blob:", "https://threejs.org", "https://cdn.jsdelivr.net", "https://raw.githubusercontent.com", "https://unpkg.com", "https://tile.openstreetmap.org", "https://assets.science.nasa.gov", "https://www3.nasa.gov", "https://esrs.jsc.nasa.gov", "https://images.unsplash.com", "https://commons.wikimedia.org"],
             "connect-src":   ["'self'", "ws:", "wss:", "https://celestrak.org", "https://celestrak.com",
                               "https://opensky-network.org", "https://earthquake.usgs.gov",
                               "https://unpkg.com", "https://cdn.jsdelivr.net", "https://tile.openstreetmap.org", "https://api.open-meteo.com"],
