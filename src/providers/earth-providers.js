@@ -16,7 +16,7 @@ function validateRecords(records) {
 
 function normalizeSatellites(raw) {
     return validateRecords(raw.map((s, i) => {
-        const match = String(s.tle1).match(/^1\\s+(\\d{1,6})/);
+        const match = String(s.tle1).match(/^1\s+(\d{1,9})/);
         return { id: match ? `norad-${match[1]}` : `tle-${i}`, type: 'object', domain: 'satellite', name: s.name, noradId: match ? Number(match[1]) : null, tle1: s.tle1, tle2: s.tle2, timestamp: null, source: 'celestrak-tle' };
     }));
 }
