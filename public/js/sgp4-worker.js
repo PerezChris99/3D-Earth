@@ -1,6 +1,6 @@
 let satlibLoaded = false;
 try {
-    importScripts('/vendor/satellite.min.js');
+    importScripts('https://cdn.jsdelivr.net/npm/satellite.js@4.1.4/dist/satellite.min.js');
     satlibLoaded = typeof satellite !== 'undefined';
 } catch (e) {
     satlibLoaded = false;
