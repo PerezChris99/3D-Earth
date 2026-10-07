@@ -97,7 +97,7 @@ Browser
   │    ├── Moon / atmosphere / clouds / stars
   │    └── SGP4 satellite propagation
   │
-  ├── OpenStreetMap + Leaflet
+  ├── OpenStreetMap + OpenLayers
   │    └── private device-location state
   │
   └── REST gateway
@@ -164,7 +164,7 @@ Built by **Kweezi Perez** — https://kweeziperez.com
 
 Core open-source technologies include:
 - Three.js
-- Leaflet
+- OpenLayers
 - satellite.js
 - Node.js / Express
 - OpenStreetMap contributors
