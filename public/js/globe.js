@@ -33,11 +33,12 @@ async function init(){
 }
 async function loadObservatorySummary(){try{const response=await fetch('/api/observatory/summary');if(!response.ok)throw new Error('database unavailable');const data=await response.json();const sampleCount=Array.isArray(data.samples)?data.samples.length:0;const satelliteCount=Array.isArray(data.satellites)?data.satellites.length:0;$('system-state').textContent='SUPABASE · '+satelliteCount+' CATALOG · '+sampleCount+' SAMPLE WINDOW';$('system-state').title='Planetary observatory database connected';}catch(_){$('system-state').textContent='PLANETARY VIEW · DATABASE OFFLINE';}}
 function wire(){
- document.querySelectorAll('.layer').forEach(button=>button.onclick=()=>{const key=button.dataset.layer;S[key]=!S[key];button.classList.toggle('active',S[key]);const object={clouds,night,atmosphere,moon,stars,satellites:satGroup}[key];if(object)object.visible=S[key]});
- $('auto-rotate').onclick=()=>{S.autoRotate=!S.autoRotate;$('auto-rotate').classList.toggle('active',S.autoRotate);$('auto-rotate').querySelector('b').textContent=S.autoRotate?'ON':'OFF'};
- $('reset-view').onclick=resetView;$('locate-globe').onclick=requestLocation;$('close-satellites').onclick=()=>{location.hash='';$('satellite-drawer').classList.remove('open')};
- $('reload-satellites').onclick=()=>loadSatellites($('sat-group').value);$('sat-group').onchange=e=>loadSatellites(e.target.value);
- renderer.domElement.addEventListener('dblclick',resetView);document.addEventListener('click',event=>{const row=event.target.closest('.sat-row');if(row)selectSatellite(row.dataset.norad)});
+ $('locate-globe').onclick=requestLocation;
+ $('close-satellites').onclick=()=>{location.hash='';$('satellite-drawer').classList.remove('open')};
+ $('reload-satellites').onclick=()=>loadSatellites($('sat-group').value);
+ $('sat-group').onchange=e=>loadSatellites(e.target.value);
+ renderer.domElement.addEventListener('dblclick',resetView);
+ document.addEventListener('click',event=>{const row=event.target.closest('.sat-row');if(row)selectSatellite(row.dataset.norad)});
 }
 function hashView(){const open=location.hash==='#satellites';$('satellite-drawer').classList.toggle('open',open);$('satellite-drawer').setAttribute('aria-hidden',String(!open));if(open)loadSatellites($('sat-group').value)}
 function resetView(){camera.position.set(0,.35,3.15);controls.target.set(0,0,0);controls.update()}
