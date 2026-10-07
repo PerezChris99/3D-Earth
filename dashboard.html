@@ -11,7 +11,7 @@
 <main id="globe-app" aria-label="3D Earth planetary observatory">
 <div id="globe-stage"></div>
 <div id="boot-screen"><div class="boot-mark">3D EARTH</div><div class="boot-title">INITIALIZING PLANETARY VIEW</div><div class="boot-bar"><span id="boot-progress"></span></div><div id="boot-status">Loading Earth assets…</div></div>
-<header class="hud-header"><a href="/" class="brand">3D EARTH <span>BY PEREZ</span></a><div class="hud-readout"><span class="live-dot"></span><span id="system-state">PLANETARY VIEW</span></div><nav class="globe-page-nav"><a href="/">HOME</a><a href="/map.html">MAP</a><a href="/dashboard.html#satellites">SATELLITES</a><a href="/about.html">ABOUT</a><a href="/data-policy.html">SOURCES</a></nav></header>
+<header class="hud-header"><a href="/" class="brand">3D EARTH <span>BY PEREZ</span></a><div class="hud-readout"><span class="live-dot"></span><span id="system-state">PLANETARY VIEW</span></div><nav class="global-site-nav" aria-label="Primary navigation"><a href="/">HOME</a><a href="/dashboard.html">GLOBE</a><a href="/satellites.html">SATELLITES</a><a href="/map.html">MAP</a><a href="/about.html">ABOUT</a><a href="/data-policy.html">SOURCES</a><a href="/privacy.html">PRIVACY</a><a href="/terms.html">TERMS</a></nav></header>
 <aside class="layer-panel" id="planet-panel">
 <div class="panel-kicker">OBSERVER</div><h1 id="observer-label">No device location</h1>
 <p class="panel-copy">Your location stays in this browser session. Device accuracy is reported by the browser and is not presented as survey-grade precision.</p>
@@ -29,12 +29,6 @@
 <section class="planet-meta"><div class="meta-label">PLANETARY RENDERER</div><div class="meta-value">EARTH / DYNAMIC SOLAR GEOMETRY</div><div class="meta-line"><span id="camera-state">ORBITAL CAMERA</span><span id="fps-state">— FPS</span></div></section>
 <div class="hint">DRAG TO ORBIT · PINCH/SCROLL TO ZOOM · DOUBLE-TAP TO RESET</div>
 </main>
-<nav class="mobile-bottom-nav" aria-label="Primary navigation">
-<a href="/" data-nav="home"><svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
-<a href="/dashboard.html" data-nav="globe"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.7 9h16.6M3.7 15h16.6M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5s-1.1 6.2-3.3 8.5c-2.2-2.3-3.3-5.1-3.3-8.5S9.8 5.8 12 3.5z"/></svg><span>Globe</span></a>
-<a href="/map.html" data-nav="map"><svg viewBox="0 0 24 24"><path d="m4 6 6-2 4 2 6-2v14l-6 2-4-2-6 2z"/><path d="M10 4v14M14 6v14"/></svg><span>Map</span></a>
-<a href="/dashboard.html#satellites" data-nav="satellites"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></svg><span>Satellites</span></a>
-<a href="/about.html" data-nav="about"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5.5 20c.7-3.4 2.9-5 6.5-5s5.8 1.6 6.5 5"/></svg><span>About</span></a>
-</nav>
+
 <script src="/vendor/three-r128.min.js"></script><script src="/vendor/OrbitControls-r128.js"></script><script src="https://cdn.jsdelivr.net/npm/satellite.js@4.1.4/dist/satellite.min.js"></script><script src="/js/astronomy.js"></script><script src="/js/globe.js"></script><script src="/js/navigation.js" defer></script>
 </body></html>
