@@ -264,12 +264,9 @@ test('Earth visual assets have an explicit same-origin delivery path', () => {
     assert.match(server, new RegExp(asset.replace('.', '\\\\.')));
 });
 
-test('hero critical path starts with local cinematic fallbacks and restores remote imagery progressively', () => {
+test('hero critical path contains no external image dependency', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert.match(html, /images\.unsplash\.com/);
-  assert.match(html, /data-bg="https:\/\/images\.unsplash\.com\/photo-1446776811953-b23d57bd21aa/);
-  assert.match(html, /data-bg="https:\/\/images\.unsplash\.com\/photo-1451187580459-43490279c0fa/);
-  assert.match(html, /data-bg="https:\/\/images\.unsplash\.com\/photo-1462331940025-496dfbfc7564/);
+  assert.doesNotMatch(html, /images\.unsplash\.com/);
   assert.match(html, /background-image:url\('\/assets\/earth\/earth_atmos_2048\.jpg'\)/);
   assert.match(html, /background-image:url\('\/assets\/earth\/earth_lights_2048\.png'\)/);
   assert.match(html, /background-image:url\('\/assets\/earth\/moon_1024\.jpg'\)/);
@@ -319,17 +316,13 @@ test('Vercel satellite runtime is served locally instead of relying on a browser
   assert.match(worker, /importScripts\('\/vendor\/satellite\.min\.js'\)/);
 });
 
-test('landing hero loads cinematic imagery progressively with a same-origin fallback', () => {
+test('landing hero loads progressively instead of downloading every slide immediately', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const landing = fs.readFileSync(path.join(root, 'public/js/landing.js'), 'utf8');
   assert.match(html, /preconnect.*images\.unsplash\.com/);
   assert.match(html, /preload.*images\.unsplash\.com/);
   assert.match(html, /data-bg=/);
-  assert.match(html, /data-fallback="\/assets\/earth\/earth_atmos_2048\.jpg"/);
-  assert.match(html, /data-fallback="\/assets\/earth\/earth_lights_2048\.png"/);
-  assert.match(html, /data-fallback="\/assets\/earth\/moon_1024\.jpg"/);
-  assert.match(html, /hero-slide[^>]*style="[^"]*background-image/);
+  assert.doesNotMatch(html, /hero-slide[^>]*style="[^"]*background-image/);
   assert.match(landing, /new Image\(\)/);
   assert.match(landing, /img\.decoding='async'/);
-  assert.match(landing, /img\.onerror/);
 });
