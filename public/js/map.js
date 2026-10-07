@@ -24,7 +24,7 @@ const map = new ol.Map({
     minZoom: 2,
     maxZoom: 19
   }),
-  controls: ol.control.defaults.defaults({
+  controls: ol.control.defaults({
     attribution: true,
     zoom: true,
     rotate: false
