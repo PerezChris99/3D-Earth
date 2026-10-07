@@ -154,6 +154,27 @@ app.use('/public', express.static(publicDir, { etag: true }));
 app.use(express.static(path.join(__dirname), { etag: true }));
 
 // ==========================================
+// EARTH VISUAL ASSET ROUTES
+// Serve the repository's real globe textures explicitly so the visual
+// critical path remains deterministic on Node/Express and Vercel functions.
+const EARTH_TEXTURE_FILES = new Set([
+    'earth_atmos_2048.jpg',
+    'earth_normal_2048.jpg',
+    'earth_specular_2048.jpg',
+    'earth_clouds_1024.png',
+    'earth_lights_2048.png',
+    'moon_1024.jpg',
+]);
+app.get('/assets/earth/:filename', (req, res, next) => {
+    const filename = path.basename(req.params.filename || '');
+    if (!EARTH_TEXTURE_FILES.has(filename)) return res.sendStatus(404);
+    const filePath = path.join(publicDir, 'assets', 'earth', filename);
+    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+    res.type(path.extname(filename));
+    res.sendFile(filePath, (err) => {
+        if (err && !res.headersSent) next(err);
+    });
+});
 // API ROUTES
 // ==========================================
 app.use('/api/geocode', geocodeRoutes);

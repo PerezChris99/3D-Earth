@@ -7,10 +7,17 @@ const loaded=new Set();
 function loadSlide(i, highPriority=false){
   const slide=slides[i]; if(!slide || loaded.has(i)) return;
   const src=slide.dataset.bg; if(!src) return;
+  const fallback=slide.dataset.fallback || '/assets/earth/earth_atmos_2048.jpg';
   const img=new Image();
   if(highPriority) img.fetchPriority='high';
   img.decoding='async';
+  img.referrerPolicy='no-referrer';
   img.onload=()=>{slide.style.backgroundImage=`url("${src}")`; loaded.add(i);};
+  img.onerror=()=>{
+    console.warn('[3D Earth] Hero image unavailable; using local fallback:', src);
+    slide.style.backgroundImage=`url("${fallback}")`;
+    loaded.add(i);
+  };
   img.src=src;
 }
 function showSlide(i){

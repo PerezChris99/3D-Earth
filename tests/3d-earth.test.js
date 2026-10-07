@@ -256,6 +256,30 @@ test('dashboard cache-busts the globe runtime and preloads the primary Earth sur
   assert.match(dashboard, /script\.js\?v=20261005-529911a/);
 });
 
+
+test('Earth visual assets have an explicit same-origin delivery path', () => {
+  const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
+  assert.match(server, /app\.get\('\/assets\/earth\/:filename'/);
+  for (const asset of ['earth_atmos_2048.jpg','earth_normal_2048.jpg','earth_specular_2048.jpg','earth_clouds_1024.png','earth_lights_2048.png','moon_1024.jpg'])
+    assert.match(server, new RegExp(asset.replace('.', '\\\\.')));
+});
+
+test('hero slideshow has a same-origin image fallback', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const landing = fs.readFileSync(path.join(root, 'public/js/landing.js'), 'utf8');
+  assert.match(html, /data-fallback="\/assets\/earth\/earth_atmos_2048\.jpg"/);
+  assert.match(landing, /img\.onerror/);
+  assert.match(landing, /\/assets\/earth\/earth_atmos_2048\.jpg/);
+});
+
+test('real Earth texture loading begins during core globe creation', () => {
+  const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
+  const createStart = globe.indexOf('function createEarth()');
+  const enhanceStart = globe.indexOf('function enhanceEarthAppearance()');
+  const createBlock = globe.slice(createStart, enhanceStart);
+  assert.match(createBlock, /loadLocalTexture\('earth_atmos_2048\.jpg'/);
+  assert.match(createBlock, /loadLocalTexture\('earth_clouds_1024\.png'/);
+});
 test('globe visual assets are locally vendored and cannot be lost to CDN/CSP failure', () => {
   const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
   const globe = fs.readFileSync(path.join(root, 'public/js/script.js'), 'utf8');
