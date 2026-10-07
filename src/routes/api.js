@@ -76,11 +76,20 @@ router.get('/observatory/summary', async (req, res) => {
             supabaseQuery('observatory_observations', 'select=sector,observed_at,source_id,quality_status&order=observed_at.desc&limit=1000'),
         ]);
         const freshness = {};
+        const now = Date.now();
+        for (const source of sources) {
+            freshness[source.sector] ??= { latest_observed_at: null, age_seconds: null, status: source.active ? 'OFFLINE' : 'DISABLED', quality_status: 'unknown' };
+        }
         for (const row of sectorRows) {
-            if (!freshness[row.sector]) {
-                const ageSeconds = Math.max(0, (Date.now() - new Date(row.observed_at).getTime()) / 1000);
-                const source = sources.find(item => item.id === row.source_id) || null;
-                freshness[row.sector] = { latest_observed_at: row.observed_at, age_seconds: Math.round(ageSeconds), status: source?.expected_refresh_seconds && ageSeconds <= source.expected_refresh_seconds ? 'LIVE' : ageSeconds < 86400 ? 'RECENT' : 'STALE', quality_status: row.quality_status };
+            if (!freshness[row.sector]) continue;
+            const current = freshness[row.sector];
+            const ageSeconds = Math.max(0, (now - new Date(row.observed_at).getTime()) / 1000);
+            const source = sources.find(item => item.id === row.source_id) || null;
+            if (!current.latest_observed_at || new Date(row.observed_at) > new Date(current.latest_observed_at)) {
+                current.latest_observed_at = row.observed_at;
+                current.age_seconds = Math.round(ageSeconds);
+                current.status = source?.expected_refresh_seconds && ageSeconds <= source.expected_refresh_seconds ? 'LIVE' : ageSeconds < 86400 ? 'RECENT' : 'STALE';
+                current.quality_status = row.quality_status || 'unknown';
             }
         }
         res.json({ ts: Date.now(), source: 'Supabase', satellites, observations, samples, events, observatory: { sources, freshness } });
