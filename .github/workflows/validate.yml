@@ -17,5 +17,8 @@ jobs:
           node-version: 24.x
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: node --test tests/3d-earth.test.js
+      - run: node --test tests/core-architecture.test.js
+      - name: data engine suite
+        run: node --test tests/data-engine.test.js
       - run: npm run check:syntax
