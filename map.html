@@ -1,1 +1,25 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071019"><meta name="description" content="OpenStreetMap world view with private browser location."><title>Map — 3D Earth by Perez</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><link rel="stylesheet" href="/css/map.css"><link rel="stylesheet" href="/css/mobile-nav.css"></head><body class="map-page"><header class="map-header"><a href="/" class="map-brand">3D EARTH <span>BY PEREZ</span></a><nav class="map-page-links"><a href="/">HOME</a><a href="/dashboard.html">GLOBE</a><a href="/dashboard.html#satellites">SATELLITES</a><a href="/about.html">ABOUT</a><a href="/data-policy.html">SOURCES</a></nav><div><strong>OPENSTREETMAP</strong><small>WORLD VIEW</small></div><button id="locate-me">LOCATE ME</button><nav class="global-site-nav" aria-label="Primary navigation"><a href="/">HOME</a><a href="/dashboard.html">GLOBE</a><a href="/satellites.html">SATELLITES</a><a href="/map.html">MAP</a><a href="/about.html">ABOUT</a><a href="/data-policy.html">SOURCES</a><a href="/privacy.html">PRIVACY</a><a href="/terms.html">TERMS</a></nav></header><main id="map"></main><aside class="map-card" id="location-card" aria-live="polite"><div class="panel-kicker">PRIVATE OBSERVER</div><h1 id="location-title">No location selected</h1><p id="location-detail">Start from the world view, then use Locate Me. Your exact coordinates remain in this browser session and are not published.</p><dl><div><dt>LATITUDE</dt><dd id="loc-lat">—</dd></div><div><dt>LONGITUDE</dt><dd id="loc-lon">—</dd></div><div><dt>ACCURACY</dt><dd id="loc-accuracy">—</dd></div><div><dt>TIME</dt><dd id="loc-time">—</dd></div></dl><button id="clear-location" class="secondary">CLEAR LOCAL LOCATION</button></aside><div class="map-attribution-note">Map data © OpenStreetMap contributors · Location is device-reported, not guaranteed survey-grade.</div><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="/js/map.js"></script><script src="/js/navigation.js" defer></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071019">
+<meta name="description" content="OpenStreetMap world view with private high-accuracy browser location.">
+<title>Map — 3D Earth by Perez</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.11.0/ol.css">
+<link rel="stylesheet" href="/css/map.css">
+<link rel="stylesheet" href="/css/mobile-nav.css">
+</head>
+<body class="map-page">
+<header class="map-header">
+  <a href="/" class="map-brand">3D EARTH <span>BY PEREZ</span></a>
+  <div class="map-source"><strong>OPENSTREETMAP</strong><small>WORLD VIEW</small></div>
+  <button id="locate-me" type="button">LOCATE ME</button>
+</header>
+<main id="map" aria-label="OpenStreetMap map"></main>
+<div id="location-status" class="location-status" role="status" aria-live="polite">Location is off. Select Locate Me to use device positioning.</div>
+<script src="https://cdn.jsdelivr.net/npm/ol@10.11.0/dist/ol.js"></script>
+<script src="/js/map.js"></script>
+<script src="/js/navigation.js" defer></script>
+</body>
+</html>
