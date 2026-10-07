@@ -149,3 +149,8 @@ where not exists (select 1 from cron.job where jobname='earthquake-ingestion-hou
 
 select cron.schedule('world-bank-refresh-daily','31 2 * * *',$$select public.ingest_world_bank_indicators(ARRAY['SP.POP.TOTL','NY.GDP.MKTP.CD','NY.GDP.PCAP.CD','SP.DYN.LE00.IN','SP.URB.TOTL.IN.ZS','IT.NET.USER.ZS','EG.ELC.ACCS.ZS','SL.UEM.TOTL.ZS','SH.DYN.MORT','SH.XPD.CHEX.GD.ZS'],2020,2024);$$)
 where not exists (select 1 from cron.job where jobname='world-bank-refresh-daily');
+
+
+revoke all on function public.ingest_usgs_earthquakes(integer,numeric) from public, anon, authenticated;
+revoke all on function public.ingest_world_bank_indicators(text[],integer,integer) from public, anon, authenticated;
+revoke all on function public.ingest_celestrak_group(text) from public, anon, authenticated;
