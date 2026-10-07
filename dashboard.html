@@ -13,13 +13,9 @@
 <div id="boot-screen"><div class="boot-mark">3D EARTH</div><div class="boot-title">INITIALIZING PLANETARY VIEW</div><div class="boot-bar"><span id="boot-progress"></span></div><div id="boot-status">Loading Earth assets…</div></div>
 <header class="hud-header"><a href="/" class="brand">3D EARTH <span>BY PEREZ</span></a><div class="hud-readout"><span class="live-dot"></span><span id="system-state">PLANETARY VIEW</span></div><nav class="globe-page-nav"><a href="/">HOME</a><a href="/map.html">MAP</a><a href="/dashboard.html#satellites">SATELLITES</a><a href="/about.html">ABOUT</a><a href="/data-policy.html">SOURCES</a></nav></header>
 <aside class="layer-panel" id="planet-panel">
-<div class="panel-kicker">PLANET</div><h1>Earth</h1>
-<p class="panel-copy">A real planetary renderer. Solar illumination, atmosphere, clouds, lunar position and live orbital objects are driven by data or deterministic astronomy.</p>
-<div class="location-card"><div><span class="panel-kicker">OBSERVER</span><strong id="observer-label">No device location</strong><small id="observer-accuracy">Location stays in this browser session.</small></div><button id="locate-globe" class="small-action">LOCATE</button></div>
-<div class="layer-list">
-<button class="layer active" data-layer="clouds"><span></span>Clouds</button><button class="layer active" data-layer="night"><span></span>Night lights</button><button class="layer active" data-layer="atmosphere"><span></span>Atmosphere</button><button class="layer active" data-layer="moon"><span></span>Moon</button><button class="layer active" data-layer="stars"><span></span>Stars</button><button class="layer active" data-layer="satellites"><span></span>Satellites</button>
-</div>
-<div class="panel-divider"></div><button id="auto-rotate" class="control active">AUTO ROTATE <b>ON</b></button><button id="reset-view" class="control">RESET VIEW</button>
+<div class="panel-kicker">OBSERVER</div><h1 id="observer-label">No device location</h1>
+<p class="panel-copy">Your location stays in this browser session. Device accuracy is reported by the browser and is not presented as survey-grade precision.</p>
+<div class="location-card"><div><span class="panel-kicker">LOCATION</span><strong id="observer-coordinates">Not set</strong><small id="observer-accuracy">Private browser-session location</small></div><button id="locate-globe" class="small-action">LOCATE</button></div>
 </aside>
 <section class="observatory-card" id="observatory-card">
 <div class="panel-kicker">ASTRONOMICAL CLOCK</div><strong id="utc-clock">UTC —</strong><span id="local-clock">Local time unavailable</span>
@@ -27,7 +23,7 @@
 </section>
 <section class="satellite-drawer" id="satellite-drawer" aria-hidden="true">
 <div class="drawer-head"><div><span class="panel-kicker">ORBITAL CATALOG</span><h2>Live satellites</h2></div><button id="close-satellites" aria-label="Close satellite panel">×</button></div>
-<div class="sat-toolbar"><select id="sat-group" aria-label="Satellite group"><option value="stations">Stations</option><option value="weather">Weather</option><option value="gps-ops">GPS</option><option value="science">Science</option><option value="starlink">Starlink</option></select><button id="reload-satellites">REFRESH</button></div>
+<div class="sat-toolbar"><select id="sat-group" aria-label="Satellite group"><option value="all">All catalog groups</option><option value="stations">Stations</option><option value="weather">Weather</option><option value="gps-ops">GPS</option><option value="science">Science</option><option value="starlink">Starlink</option></select><button id="reload-satellites">REFRESH</button></div>
 <div id="sat-source" class="source-note">Loading current orbital elements…</div><div id="sat-list" class="sat-list"></div>
 </section>
 <section class="planet-meta"><div class="meta-label">PLANETARY RENDERER</div><div class="meta-value">EARTH / DYNAMIC SOLAR GEOMETRY</div><div class="meta-line"><span id="camera-state">ORBITAL CAMERA</span><span id="fps-state">— FPS</span></div></section>
