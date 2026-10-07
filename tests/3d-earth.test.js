@@ -264,6 +264,13 @@ test('Earth visual assets have an explicit same-origin delivery path', () => {
     assert.match(server, new RegExp(asset.replace('.', '\\\\.')));
 });
 
+test('hero critical path contains no external image dependency', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /images\.unsplash\.com/);
+  assert.match(html, /background-image:url\('\/assets\/earth\/earth_atmos_2048\.jpg'\)/);
+  assert.match(html, /background-image:url\('\/assets\/earth\/earth_lights_2048\.png'\)/);
+  assert.match(html, /background-image:url\('\/assets\/earth\/moon_1024\.jpg'\)/);
+});
 test('hero slideshow has a same-origin image fallback', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const landing = fs.readFileSync(path.join(root, 'public/js/landing.js'), 'utf8');
