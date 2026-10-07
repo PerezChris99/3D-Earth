@@ -11,6 +11,13 @@ test('no tracked environment file exists in the working tree', () => {
   }
 });
 
+test('Edge ingestion authentication has no embedded token', () => {
+  const source = fs.readFileSync(path.join(root, 'supabase', 'functions', 'observatory-external-ingest', 'index.ts'), 'utf8');
+  assert.match(source, /observatory_ingest_credentials/);
+  assert.match(source, /SHA-256/);
+  assert.doesNotMatch(source, /const\s+TOKEN\s*=\s*['\"]/);
+});
+
 test('JWT authentication has no production fallback secret', () => {
   const source = fs.readFileSync(path.join(root, 'src', 'auth.js'), 'utf8');
   assert.match(source, /process\.env\.JWT_SECRET/);
