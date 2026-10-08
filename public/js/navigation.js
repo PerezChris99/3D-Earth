@@ -7,9 +7,7 @@ const PAGES = [
   ['satellites','SATELLITES','/satellites.html'],
   ['map','MAP','/map.html'],
   ['about','ABOUT','/about.html'],
-  ['sources','SOURCES','/data-policy.html'],
-  ['privacy','PRIVACY','/privacy.html'],
-  ['terms','TERMS','/terms.html']
+  ['sources','SOURCES','/data-policy.html']
 ];
 
 const ICONS = {
@@ -18,9 +16,7 @@ const ICONS = {
   satellites:'<circle cx="12" cy="12" r="2.5"/><path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/>',
   map:'<path d="m4 6 6-2 4 2 6-2v14l-6 2-4-2-6 2z"/><path d="M10 4v14M14 6v14"/>',
   about:'<circle cx="12" cy="7" r="3"/><path d="M5.5 20c.7-3.4 2.9-5 6.5-5s5.8 1.6 6.5 5"/>',
-  sources:'<path d="M5 4.5h14v15H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
-  privacy:'<path d="M12 3.5 19 6v5.5c0 4.5-2.7 7.4-7 9-4.3-1.6-7-4.5-7-9V6z"/><path d="m9.2 12 1.9 1.9 3.8-4"/>',
-  terms:'<path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>'
+  sources:'<path d="M5 4.5h14v15H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>'
 };
 
 const path = location.pathname.replace(/\/$/,'') || '/';
