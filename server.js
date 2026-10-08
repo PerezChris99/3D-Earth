@@ -160,7 +160,6 @@ const EARTH_TEXTURE_FILES = new Set([
     'earth_normal_2048.jpg',
     'earth_specular_2048.jpg',
     'earth_clouds_1024.png',
-    'earth_lights_2048.png',
     'moon_1024.jpg',
 ]);
 app.get('/assets/earth/:filename', (req, res, next) => {
