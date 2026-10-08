@@ -97,3 +97,14 @@ analyze public.world_development_observations;
 analyze public.earth_events;
 analyze public.satellite_observations;
 analyze public.satellites;
+-- Remove redundant prefix indexes after workload analysis.
+drop index if exists public.earth_events_time_idx;
+drop index if exists public.earth_events_source_idx;
+drop index if exists public.satellite_observations_source_idx;
+drop index if exists public.sat_obs_satellite_time_idx;
+drop index if exists public.satellite_passes_source_idx;
+drop index if exists public.sat_pass_satellite_aos_idx;
+drop index if exists public.satellites_source_idx;
+drop index if exists public.world_development_source_period_idx;
+drop index if exists public.volcano_observations_time_idx;
+drop index if exists public.data_layer_configs_sector_idx;
