@@ -41,7 +41,7 @@ create policy observer_session_read on public.observer_locations
 for select to authenticated
 using (
  (select private.has_role('viewer'))
- and session_id = nullif(current_setting('request.jwt.claim.session_id',true),'')::uuid
+ and session_id = nullif((select current_setting('request.jwt.claim.session_id',true)),'')::uuid
 );
 
 -- No anonymous/authenticated writes to authoritative datasets.
