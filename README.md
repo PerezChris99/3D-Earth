@@ -10,7 +10,7 @@ The project is intentionally being rebuilt as a real functional system rather th
 
 ### Planetary renderer
 - Three.js r128 WebGL renderer.
-- Real local Earth day texture, normal map, specular map, night-light texture and cloud texture.
+- Real local Earth day texture, normal map, specular map and cloud texture. The separate night-light overlay is intentionally disabled because its static continent imagery can appear to drift independently of the rotating Earth and create a false geographic duplicate.
 - Atmospheric rim, Moon and star field.
 - Deterministic solar geometry updates Earth lighting and the day/night terminator.
 - Orbit controls work with mouse, touch and trackpad gestures.
