@@ -4,7 +4,7 @@
   .mobile-bottom-nav{
     position:fixed;z-index:10000;left:0;right:0;bottom:0;width:100vw;
     height:calc(68px + env(safe-area-inset-bottom));
-    display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:0;
+    display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;
     padding:4px 0 env(safe-area-inset-bottom);
     border-top:1px solid var(--nav-line);border-radius:18px 18px 0 0;
     background:var(--nav-bg);backdrop-filter:blur(24px) saturate(150%);
