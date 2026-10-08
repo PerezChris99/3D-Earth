@@ -16,6 +16,10 @@ const { getEarthquakes } = require('../ingest/earthquakes');
 const { getThermalHotspots } = require('../ingest/thermal');
 const { issueToken } = require('../auth');
 const { sanitizeRequest } = require('../middleware/sanitize');
+const cache = require('../cache');
+
+const RESPONSE_TTL_MS = 5_000;
+function cacheable(res) { res.set('Cache-Control', 'public, max-age=0, s-maxage=5, stale-while-revalidate=30'); }
 
 router.use(sanitizeRequest);
 
@@ -42,8 +46,11 @@ router.post('/auth/token', (req, res) => {
 
 router.get('/positions', async (req, res) => {
     try {
-        const [satellites, flights, earthquakes, thermal] = await Promise.allSettled([getTLEs('stations'), getFlights(), getEarthquakes(), getThermalHotspots()]);
-        res.json({ ts: Date.now(), satellites: satellites.status === 'fulfilled' ? satellites.value : [], flights: flights.status === 'fulfilled' ? flights.value : [], earthquakes: earthquakes.status === 'fulfilled' ? earthquakes.value : [], thermal: thermal.status === 'fulfilled' ? thermal.value : [] });
+        const payload = await cache.getOrSet('api:positions', async () => {
+            const [satellites, flights, earthquakes, thermal] = await Promise.allSettled([getTLEs('stations'), getFlights(), getEarthquakes(), getThermalHotspots()]);
+            return { ts: Date.now(), satellites: satellites.status === 'fulfilled' ? satellites.value : [], flights: flights.status === 'fulfilled' ? flights.value : [], earthquakes: earthquakes.status === 'fulfilled' ? earthquakes.value : [], thermal: thermal.status === 'fulfilled' ? thermal.value : [] };
+        }, RESPONSE_TTL_MS);
+        cacheable(res); res.json(payload);
     } catch (err) {
         logger.error('API', '/positions error', { message: err.message, id: req.requestId });
         res.status(500).json({ error: 'Data gateway failure' });
@@ -51,7 +58,7 @@ router.get('/positions', async (req, res) => {
 });
 
 router.get('/satellites', async (req, res) => {
-    try { const requestedGroup = String(req.query.group || 'stations').toLowerCase(); const allowed = new Set(['stations','weather','gps-ops','science','starlink','active']); const group = allowed.has(requestedGroup) ? requestedGroup : 'stations'; const items = await getTLEs(group); res.json({ ts: Date.now(), source: 'CelesTrak GP', group, items }); }
+    try { const requestedGroup = String(req.query.group || 'stations').toLowerCase(); const allowed = new Set(['stations','weather','gps-ops','science','starlink','active']); const group = allowed.has(requestedGroup) ? requestedGroup : 'stations'; const payload = await cache.getOrSet('api:satellites:'+group, async () => ({ ts: Date.now(), source: 'CelesTrak GP', group, items: await getTLEs(group) }), 15_000); cacheable(res); res.json(payload); }
     catch (err) { logger.error('API', '/satellites error', { message: err.message }); res.status(500).json({ error: 'Satellite data unavailable' }); }
 });
 
@@ -87,7 +94,7 @@ router.get('/observatory/summary', async (req, res) => {
                 freshness[row.sector] = { latest_observed_at: row.observed_at, age_seconds: Math.round(ageSeconds), status: source?.expected_refresh_seconds && ageSeconds <= source.expected_refresh_seconds ? 'LIVE' : ageSeconds < 86400 ? 'RECENT' : 'STALE', quality_status: row.quality_status };
             }
         }
-        res.json({ ts: Date.now(), source: 'Supabase', satellites, observations, samples, events, observatory: { sources, freshness } });
+        cacheable(res); res.json({ ts: Date.now(), source: 'Supabase', satellites, observations, samples, events, observatory: { sources, freshness } });
     } catch (err) {
         logger.error('API', '/observatory/summary error', { message: err.message });
         res.status(502).json({ error: 'Supabase observatory data unavailable' });
