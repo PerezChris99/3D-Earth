@@ -1,8 +1,8 @@
 (() => {
 'use strict';
-const A={earth:'/assets/earth/earth_atmos_2048.jpg',normal:'/assets/earth/earth_normal_2048.jpg',specular:'/assets/earth/earth_specular_2048.jpg',lights:'/assets/earth/earth_lights_2048.png',clouds:'/assets/earth/earth_clouds_1024.png',moon:'/assets/earth/moon_1024.jpg'};
-const S={clouds:true,night:true,atmosphere:true,moon:true,stars:true,satellites:true,autoRotate:true};
-let scene,camera,renderer,controls,earth,night,clouds,atmosphere,moon,stars,sunLight,sunMesh,satGroup,trajectory,selectedMarker,locationState=null,satellites=[],selectedNorad=null,gltfLoader=null;
+const A={earth:'/assets/earth/earth_atmos_2048.jpg',normal:'/assets/earth/earth_normal_2048.jpg',specular:'/assets/earth/earth_specular_2048.jpg',clouds:'/assets/earth/earth_clouds_1024.png',moon:'/assets/earth/moon_1024.jpg'};
+const S={clouds:true,atmosphere:true,moon:true,stars:true,satellites:true,autoRotate:true};
+let scene,camera,renderer,controls,earth,clouds,atmosphere,moon,stars,sunLight,sunMesh,satGroup,trajectory,selectedMarker,locationState=null,satellites=[],selectedNorad=null,gltfLoader=null;
 const $=id=>document.getElementById(id);
 const status=(t,p)=>{$('boot-status').textContent=t;$('boot-progress').style.width=p+'%'};
 const loadTexture=(loader,url)=>new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
@@ -16,12 +16,11 @@ async function init(){
  $('globe-stage').appendChild(renderer.domElement);
  controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.055;controls.minDistance=1.35;controls.maxDistance=7;controls.enablePan=false;
  const L=new THREE.TextureLoader();status('Loading mandatory Earth assets…',25);
- const [map,norm,spec,lights,cloudMap,moonMap]=await Promise.all(Object.values(A).map(url=>loadTexture(L,url)));
- [map,lights,cloudMap,moonMap].forEach(srgb);[map,norm,spec,lights,cloudMap,moonMap].forEach(t=>t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8));
+ const [map,norm,spec,cloudMap,moonMap]=await Promise.all(Object.values(A).map(url=>loadTexture(L,url)));
+ [map,cloudMap,moonMap].forEach(srgb);[map,norm,spec,cloudMap,moonMap].forEach(t=>t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8));
  status('Constructing real Earth…',58);
  const g=new THREE.Group();scene.add(g);
  earth=new THREE.Mesh(new THREE.SphereGeometry(1,96,96),new THREE.MeshPhongMaterial({map,normalMap:norm,normalScale:new THREE.Vector2(.55,.55),specularMap:spec,specular:new THREE.Color(0x315b77),shininess:18}));g.add(earth);
- night=new THREE.Mesh(new THREE.SphereGeometry(1.003,96,96),new THREE.ShaderMaterial({uniforms:{map:{value:lights},sun:{value:new THREE.Vector3(1,0,0)}},vertexShader:'varying vec3 vWorldNormal;varying vec2 vUv;void main(){vUv=uv;vWorldNormal=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'uniform sampler2D map;uniform vec3 sun;varying vec3 vWorldNormal;varying vec2 vUv;void main(){float d=dot(normalize(vWorldNormal),normalize(sun));float night=smoothstep(0.08,-0.12,d);vec4 c=texture2D(map,vUv);gl_FragColor=vec4(c.rgb*night*1.35,c.a*night*.9);}',transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));g.add(night);
  clouds=new THREE.Mesh(new THREE.SphereGeometry(1.012,96,96),new THREE.MeshPhongMaterial({map:cloudMap,transparent:true,opacity:.68,depthWrite:false,side:THREE.DoubleSide}));g.add(clouds);
  atmosphere=new THREE.Mesh(new THREE.SphereGeometry(1.075,96,96),new THREE.ShaderMaterial({uniforms:{sun:{value:new THREE.Vector3(1,0,0)},cameraPos:{value:new THREE.Vector3()}},vertexShader:'varying vec3 vWorldNormal;varying vec3 vWorldPos;void main(){vWorldNormal=normalize(mat3(modelMatrix)*normal);vec4 wp=modelMatrix*vec4(position,1.0);vWorldPos=wp.xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'uniform vec3 sun;uniform vec3 cameraPos;varying vec3 vWorldNormal;varying vec3 vWorldPos;void main(){vec3 view=normalize(cameraPos-vWorldPos);float rim=pow(1.0-max(dot(normalize(vWorldNormal),view),0.0),3.2);float day=max(dot(normalize(vWorldNormal),normalize(sun)),0.0);float glow=rim*(0.35+0.65*day);gl_FragColor=vec4(vec3(0.22,0.55,1.0)*glow,glow*.42);}',transparent:true,side:THREE.BackSide,depthWrite:false,blending:THREE.AdditiveBlending}));g.add(atmosphere);
  moon=new THREE.Mesh(new THREE.SphereGeometry(.12,48,48),new THREE.MeshPhongMaterial({map:moonMap,shininess:2}));scene.add(moon);
@@ -52,7 +51,7 @@ async function applyLocation(loc){
 }
 function updateClock(timezone){const now=new Date();$('utc-clock').textContent='UTC '+now.toISOString().slice(11,19);try{$('local-clock').textContent=new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'medium',timeZone:timezone||'UTC'}).format(now)}catch(_){$('local-clock').textContent='UTC time'}}
 function updateAstronomy(now){
- const sun=PlanetAstronomy.sunDirection(now);night.material.uniforms.sun.value.copy(sun);if(atmosphere?.material?.uniforms?.sun)atmosphere.material.uniforms.sun.value.copy(sun);
+ const sun=PlanetAstronomy.sunDirection(now);if(atmosphere?.material?.uniforms?.sun)atmosphere.material.uniforms.sun.value.copy(sun);
  const days=(now.getTime()/86400000+2440587.5-2451545)/365.25,angle=(days*2*Math.PI)%(2*Math.PI);moon.position.set(Math.cos(angle)*2.8,.35+Math.sin(angle*.5)*.5,Math.sin(angle)*2.8);sunLight.position.copy(sun).multiplyScalar(5);
  if(locationState){const info=PlanetAstronomy.solar(now,locationState.lat,locationState.lon);$('solar-state').textContent=info.altitude>=0?'DAYLIGHT':'NIGHT';$('sun-altitude').textContent=info.altitude.toFixed(1)+'°'}else{$('solar-state').textContent='UTC GEOMETRY';$('sun-altitude').textContent='—'}
 }
