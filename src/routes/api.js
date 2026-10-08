@@ -73,10 +73,14 @@ router.get('/observatory/summary', async (req, res) => {
             supabaseQuery('seed_telemetry_samples', 'select=sample_id,sampled_at,latitude,longitude,altitude_km,speed_km_s&order=sample_id.asc&limit=20'),
             supabaseQuery('earth_events', 'select=id,event_type,occurred_at,latitude,longitude,magnitude,title&order=occurred_at.desc&limit=20'),
             supabaseQuery('observatory_sources', 'select=id,slug,sector,name,provider,authority_level,expected_refresh_seconds,coverage,active&order=sector.asc'),
-            supabaseQuery('observatory_observations', 'select=sector,observed_at,source_id,quality_status&order=observed_at.desc&limit=1000'),
+            supabaseQuery('observatory_sources', 'select=sector&active=is.true&order=sector.asc'),
         ]);
         const freshness = {};
-        for (const row of sectorRows) {
+        const sectors = [...new Set(sectorRows.map(row => row.sector).filter(Boolean))];
+        const latestRows = (await Promise.all(sectors.map(sector =>
+            supabaseQuery('observatory_observations', 'select=sector,observed_at,source_id,quality_status&id=not.is.null&sector=eq.' + encodeURIComponent(sector) + '&order=observed_at.desc,id.desc&limit=1')
+        ))).flat();
+        for (const row of latestRows) {
             if (!freshness[row.sector]) {
                 const ageSeconds = Math.max(0, (Date.now() - new Date(row.observed_at).getTime()) / 1000);
                 const source = sources.find(item => item.id === row.source_id) || null;
@@ -93,9 +97,12 @@ router.get('/observatory/summary', async (req, res) => {
 router.get('/observatory/samples', async (req, res) => {
     try {
         if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });
-        const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 1000);
-        const samples = await supabaseQuery('seed_telemetry_samples', 'select=sample_id,sampled_at,latitude,longitude,altitude_km,speed_km_s,source&order=sample_id.asc&limit=' + limit);
-        res.json({ ts: Date.now(), source: 'Supabase synthetic development dataset', count: samples.length, samples });
+        const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+        const after = Math.max(Number(req.query.after) || 0, 0);
+        const filter = after > 0 ? '&sample_id=gt.' + after : '';
+        const samples = await supabaseQuery('seed_telemetry_samples', 'select=sample_id,sampled_at,latitude,longitude,altitude_km,speed_km_s,source&order=sample_id.asc&limit=' + limit + filter);
+        const nextCursor = samples.length === limit ? samples[samples.length - 1].sample_id : null;
+        res.json({ ts: Date.now(), source: 'Supabase synthetic development dataset', count: samples.length, next_cursor: nextCursor, samples });
     } catch (err) {
         logger.error('API', '/observatory/samples error', { message: err.message });
         res.status(502).json({ error: 'Supabase sample data unavailable' });
