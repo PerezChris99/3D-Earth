@@ -35,6 +35,20 @@ class TTLCache {
         return entry.value;
     }
 
+    async getOrSet(key, producer, ttlMs) {
+        const cached = this.get(key);
+        if (cached !== null) return cached;
+        const cacheKey = String(key).slice(0, 256);
+        if (this._inflight?.has(cacheKey)) return this._inflight.get(cacheKey);
+        if (!this._inflight) this._inflight = new Map();
+        const promise = Promise.resolve().then(producer).then(value => {
+            if (value !== null && value !== undefined) this.set(cacheKey, value, ttlMs);
+            return value;
+        }).finally(() => this._inflight.delete(cacheKey));
+        this._inflight.set(cacheKey, promise);
+        return promise;
+    }
+
     has(key) {
         return this.get(key) !== null;
     }
