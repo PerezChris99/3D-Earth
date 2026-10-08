@@ -1,7 +1,7 @@
 {
   "name": "earth",
   "version": "1.0.0",
-  "description": "A focused browser-based 3D Earth planetary renderer with real Earth textures, atmosphere, clouds, night lights, Moon and stars.",
+  "description": "A focused browser-based 3D Earth planetary renderer with real Earth textures, atmosphere, clouds, Moon and stars.",
   "main": "public/js/globe.js",
   "scripts": {
     "start": "node server.js",
