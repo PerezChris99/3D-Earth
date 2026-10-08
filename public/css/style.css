@@ -1,4 +1,4 @@
-/* style.css — base canvas and body styles only.
+/* style.css â€” base canvas and body styles only.
    All OSINT panel/layout styles live in osint.css */
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -57,3 +57,5 @@ html, body {
     letter-spacing: 1px;
 }
 #site-footer a:hover { color: rgba(0, 220, 255, 0.7); }
+
+.global-site-nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;gap:3px;padding:5px 6px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(4,9,15,.82);backdrop-filter:blur(16px);white-space:nowrap}.global-site-nav a{padding:8px 10px;border-radius:999px;color:#d9e4ee;text-decoration:none;font:800 9px/1 Arial,sans-serif;letter-spacing:.12em}.global-site-nav a:hover,.global-site-nav a:focus-visible{color:#fff;background:rgba(120,190,235,.16)}@media(max-width:760px){.global-site-nav{display:none}}

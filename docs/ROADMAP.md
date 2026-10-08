@@ -322,7 +322,7 @@ TimescaleDB        ←  time-series extension on Postgres (position history)
 | **Real-time** | `ws` (WebSocket) | Lightweight; avoids Socket.io bloat |
 | **Cache** | Redis | Sub-millisecond hot reads for live data |
 | **Database** | PostgreSQL + TimescaleDB | Relational for AOIs/users; time-series for tracks |
-| **2D Detail** | Leaflet (supplemental) | Pixel-perfect 2D overlay when zoomed to street level |
+| **2D Detail** | OpenLayers (primary 2D map renderer) | Pixel-perfect 2D overlay when zoomed to street level |
 | **Auth** | JWT + bcrypt | Stateless; works across nodes |
 | **Deploy** | Docker Compose + nginx | One-command deploy; easy to scale |
 | **Data Sources** | CelesTrak, Space-Track, OpenSky, AISHub, USGS, ACLED | All free tier available; no licensing barriers for research |
