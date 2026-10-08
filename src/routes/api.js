@@ -63,13 +63,13 @@ router.get('/satellites', async (req, res) => {
 });
 
 router.get('/satellites/:norad', async (req, res) => {
-    try { const norad = String(req.params.norad || '').replace(/\\D/g, ''); if (!norad || norad.length > 9) return res.status(400).json({ error: 'Invalid satellite catalog number' }); res.json(await getSatelliteCatalog(norad)); }
+    try { const norad = String(req.params.norad || '').replace(/\\D/g, ''); if (!norad || norad.length > 9) return res.status(400).json({ error: 'Invalid satellite catalog number' }); cacheable(res); res.json(await getSatelliteCatalog(norad)); }
     catch (err) { logger.error('API', '/satellites/:norad error', { message: err.message }); res.status(404).json({ error: 'Satellite catalog record unavailable' }); }
 });
 
-router.get('/flights', async (req, res) => { try { res.json(await getFlights()); } catch (err) { logger.error('API', '/flights error', { message: err.message }); res.status(500).json({ error: 'Flight data unavailable' }); } });
-router.get('/earthquakes', async (req, res) => { try { res.json(await getEarthquakes()); } catch (err) { logger.error('API', '/earthquakes error', { message: err.message }); res.status(500).json({ error: 'Seismic data unavailable' }); } });
-router.get('/thermal', async (req, res) => { try { res.json(await getThermalHotspots()); } catch (err) { logger.error('API', '/thermal error', { message: err.message }); res.status(500).json({ error: 'Thermal data unavailable' }); } });
+router.get('/flights', async (req, res) => { try { cacheable(res); res.json(await getFlights()); } catch (err) { logger.error('API', '/flights error', { message: err.message }); res.status(500).json({ error: 'Flight data unavailable' }); } });
+router.get('/earthquakes', async (req, res) => { try { cacheable(res); res.json(await getEarthquakes()); } catch (err) { logger.error('API', '/earthquakes error', { message: err.message }); res.status(500).json({ error: 'Seismic data unavailable' }); } });
+router.get('/thermal', async (req, res) => { try { cacheable(res); res.json(await getThermalHotspots()); } catch (err) { logger.error('API', '/thermal error', { message: err.message }); res.status(500).json({ error: 'Thermal data unavailable' }); } });
 
 router.get('/observatory/summary', async (req, res) => {
     try {
