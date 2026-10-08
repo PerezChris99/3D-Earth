@@ -34,3 +34,5 @@
 .global-site-nav a[aria-current=page]{color:#fff;background:rgba(117,201,255,.14)}
 .global-site-nav a:hover,.global-site-nav a:focus-visible{color:#fff;background:rgba(120,190,235,.16)}
 @media(max-width:760px){.global-site-nav{display:none}}
+
+.global-info-footer{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:22px 28px;color:#8190a0;background:#050a11;border-top:1px solid rgba(255,255,255,.08);font:700 10px/1.4 Arial,sans-serif;letter-spacing:.08em}.global-info-footer nav{display:flex;gap:18px}.global-info-footer a{color:#cbd7e2;text-decoration:none}.global-info-footer a:hover,.global-info-footer a:focus-visible{color:#fff}@media(max-width:700px){.global-info-footer{padding:18px 16px 92px;font-size:9px}.global-info-footer nav{gap:14px}}
