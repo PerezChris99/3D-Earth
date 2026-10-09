@@ -126,7 +126,7 @@ async function loadData(showRefresh=false){
  if(showRefresh)mapStatus('Refreshing database-backed map layers…');
  try{
   const response=await fetch('/api/observatory/layers?limit=160',{cache:'no-store',signal:AbortSignal.timeout(18000)});
-  if(!response.ok)throw new Error('API returned HTTP '+response.status);
+  if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||body.message||('API returned HTTP '+response.status))}
   const data=await response.json();
   items=Array.isArray(data.items)?data.items.filter(item=>Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude))&&Math.abs(Number(item.latitude))<=90&&Math.abs(Number(item.longitude))<=180):[];
   if(!items.length)items=await loadFallbackMapRecords();
@@ -137,7 +137,7 @@ async function loadData(showRefresh=false){
   try{
    items=await loadFallbackMapRecords();
    if(items.length){renderRecordList();queueRender();mapStatus(items.length+' located records loaded from the Supabase catalog fallback · aggregate layer endpoint unavailable ('+error.message+')');}
-   else throw new Error('The aggregate and direct catalog endpoints returned no located records');
+   else throw new Error(error.message+'; direct catalog fallback returned no located records');
   }catch(fallbackError){mapStatus('Map base is available, but database data could not be loaded ('+fallbackError.message+'). Use Refresh Data to retry.')}
  }
  finally{refreshing=false;btn.disabled=false;btn.textContent='REFRESH DATA'}
