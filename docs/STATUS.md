@@ -44,7 +44,7 @@ Deliberately not enabled in the runtime yet: PostgreSQL driver installation, aut
 ## Stability audit — 2026-10-09
 
 Verified in source:
-- The map is intentionally a self-contained canvas renderer. Tile imagery is external and provider-dependent; a Leaflet rewrite is not inherently a fix for HTTP 403 responses. The renderer now tries CARTO Dark, CARTO Voyager, then OpenStreetMap and retries transiently failed tile keys after 30 seconds.
+- The map now prefers Leaflet with CARTO Dark → CARTO Voyager → OpenStreetMap tile fallback. If both Leaflet CDNs fail, the self-contained canvas renderer remains available. A 403 is treated as a tile-provider failure, not assumed to be solved by the map library alone; the Leaflet renderer switches providers after repeated tile errors.
 - Supabase REST requests now have a bounded 12-second timeout and report safe table/status context to server logs. This prevents stalled upstream requests from leaving API handlers pending indefinitely.
 - Satellite focus keeps the Earth target at the origin while offsetting the camera from the satellite's radial line, preventing the selected satellite from sitting directly over the Earth disk.
 - Axial rotation uses Earth's sidereal angular rate rather than the previous accelerated visual rate.
