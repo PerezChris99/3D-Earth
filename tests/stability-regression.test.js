@@ -42,7 +42,7 @@ test('observatory API exposes a safe database health probe and map preserves ser
   const api = read('src/routes/api.js');
   const map = read('public/js/map.js');
   assert.match(api, /router\.get\('\/observatory\/health'/);
-  assert.match(api, /database: 'connected'/);
+  assert.match(api, /database: connected \? 'connected' : 'unavailable'/);
   assert.match(api, /database: 'not-configured'/);
   assert.match(map, /body\.error\|\|body\.message/);
   assert.match(map, /direct catalog fallback returned no located records/);
