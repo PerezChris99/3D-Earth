@@ -96,3 +96,17 @@
  .layer-panel .location-card strong{font-size:7px}
  .observatory-card .astro-grid b{font-size:7px}
 }
+
+/* Clear, accessible collapse controls; keep the globe unobstructed on phones. */
+.panel-topline{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel-collapse{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04);color:var(--ink);font-size:16px;cursor:pointer}
+.layer-panel.panel-collapsed{width:auto;max-height:none;overflow:hidden;padding:10px 12px}
+.layer-panel.panel-collapsed>h1,.layer-panel.panel-collapsed>.panel-copy,.layer-panel.panel-collapsed>.location-card{display:none}
+.layer-panel.panel-collapsed .panel-topline{min-width:135px}
+.layer-panel.panel-collapsed .panel-kicker{margin:0}
+@media(max-width:760px){
+ .layer-panel.panel-collapsed{width:auto;max-width:48vw;padding:8px 10px}
+ .layer-panel.panel-collapsed .panel-topline{min-width:110px}
+ .layer-panel.panel-collapsed .panel-kicker{font-size:8px}
+ .observatory-card{top:60px}
+}

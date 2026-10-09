@@ -8,3 +8,15 @@
 .map-panel.collapsed{bottom:auto;height:64px;overflow:hidden}.map-panel.collapsed .map-status,.map-panel.collapsed .map-legend,.map-panel.collapsed .feature-detail,.map-panel.collapsed .map-list-heading,.map-panel.collapsed .map-record-list,.map-panel.collapsed .data-note,.map-panel.collapsed .catalog-toggle{display:none}
 @media(max-width:900px){.map-header{top:9px;left:10px;right:10px}.map-brand{font-size:9px;padding-top:7px}.map-actions{gap:5px}.map-actions button{font-size:8px;padding:9px 8px}.map-panel{left:8px;top:65px;bottom:calc(76px + env(safe-area-inset-bottom));width:min(330px,calc(100vw - 16px));padding:11px;gap:6px}.panel-title h1,.panel-title h2{font-size:18px}.map-legend{gap:3px}.map-legend button{font-size:8px;padding:6px 5px}.map-record-list{min-height:30px}.map-panel .data-note{font-size:7px}.map-panel.collapsed{height:54px;bottom:auto;max-height:54px}.catalog-panel{top:65px;left:auto;right:8px;bottom:calc(76px + env(safe-area-inset-bottom));width:min(470px,calc(100vw - 16px));max-height:none;padding:12px;gap:7px}.location-status{bottom:calc(70px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px)}.map-zoom{right:10px;bottom:calc(94px + env(safe-area-inset-bottom))}.map-attribution{right:7px;bottom:calc(6px + env(safe-area-inset-bottom));max-width:55vw;text-align:right;font-size:7px}.record-fields{grid-template-columns:minmax(62px,.6fr) minmax(0,1.4fr)}}
 @media(max-width:480px){.map-header{align-items:flex-start}.map-brand{max-width:95px;line-height:1.4}.map-actions button{padding:8px 6px;font-size:7px;letter-spacing:.03em}.map-panel{width:calc(100vw - 16px);max-height:53vh}.map-panel:not(.collapsed){bottom:calc(76px + env(safe-area-inset-bottom))}.map-panel .map-legend{grid-template-columns:1fr 1fr}.map-panel .map-list-heading{margin-top:0}.map-panel .data-note{display:none}.catalog-panel{max-height:calc(100vh - 150px)}.catalog-intro{font-size:9px}.map-zoom{bottom:calc(84px + env(safe-area-inset-bottom));right:8px}.map-attribution{max-width:54vw}.location-status{max-width:calc(100vw - 24px);white-space:normal;border-radius:8px}}
+
+/* A failed third-party tile response must never replace the in-app map with an error page. */
+.map-shell{isolation:isolate}
+#world-map{z-index:0}
+.map-grid-overlay{z-index:1}
+.map-panel.collapsed{height:54px;max-height:54px;bottom:auto;overflow:hidden;padding:10px 12px}
+.map-panel.collapsed>:not(.panel-title){display:none!important}
+.map-panel.collapsed .panel-title{min-height:32px}
+.map-panel.collapsed .panel-title h1{font-size:16px}
+.map-panel.collapsed #collapse-panel{transform:none}
+.map-header{padding-top:env(safe-area-inset-top)}
+@media(max-width:900px){.map-panel.collapsed{height:52px;max-height:52px;bottom:auto}.map-panel.collapsed .panel-title h1{font-size:16px}}

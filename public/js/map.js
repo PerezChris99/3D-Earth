@@ -42,12 +42,22 @@ function drawBase(w,h){
 function getTile(z,x,y){
  const n=2**z;x=(x%n+n)%n;if(y<0||y>=n)return null;const key=z+'/'+x+'/'+y;
  if(tileCache.has(key))return tileCache.get(key);
- if(tilePending.has(key))return null;
- if(tilePending.size>=48)return null;
- tilePending.add(key);const img=new Image();img.decoding='async';
- img.onload=()=>{tilePending.delete(key);tileCache.set(key,{img,failed:false});queueRender()};
- img.onerror=()=>{tilePending.delete(key);tileCache.set(key,{img:null,failed:true});};
- img.src='https://tile.openstreetmap.org/'+key+'.png';return null;
+ if(tilePending.has(key)||tilePending.size>=48)return null;
+ tilePending.add(key);
+ const img=new Image();img.decoding='async';
+ const providers=[
+  'https://basemaps.cartocdn.com/dark_all/'+key+'.png',
+  'https://tile.openstreetmap.org/'+key+'.png'
+ ];
+ let providerIndex=0;
+ const failOrFallback=()=>{
+  providerIndex++;
+  if(providerIndex<providers.length){img.src=providers[providerIndex];return}
+  tilePending.delete(key);tileCache.set(key,{img:null,failed:true});queueRender();
+ };
+ img.onload=()=>{tilePending.delete(key);tileCache.set(key,{img,failed:false,provider:providerIndex===0?'CARTO Dark':'OpenStreetMap'});queueRender()};
+ img.onerror=failOrFallback;
+ img.src=providers[providerIndex];return null;
 }
 function drawTiles(w,h){
  const z=zoom,size=worldSize(z),center=worldPixel(centerLon,centerLat),originX=center.x-w/2,originY=center.y-h/2;
@@ -81,7 +91,7 @@ function render(){
  if(!canvas.clientWidth||!canvas.clientHeight)return;
  const dpr=Math.min(window.devicePixelRatio||1,2),w=canvas.clientWidth,h=canvas.clientHeight;
  if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr)}
- ctx.setTransform(dpr,0,0,dpr,0,0);drawBase(w,h);const drawn=drawTiles(w,h);drawRecords(w,h);
+ ctx.setTransform(dpr,0,0,dpr,0,0);drawBase(w,h);drawTiles(w,h);drawRecords(w,h);
  $('zoom-world').title='Zoom level '+zoom;
 }
 function detailFor(item){
@@ -152,7 +162,7 @@ async function loadCatalog(reset=true){
  const searchAllowed=datasetsWithTextSearch.has(dataset);
  try{
   const params=new URLSearchParams({dataset,limit:'50',offset:String(catalogOffset)});if(q&&searchAllowed)params.set('q',q);
-  const response=await fetch('/api/observatory/catalog?'+params,{cache:'no-store',signal:AbortSignal.timeout(18000)});
+  const response=await fetch('/api/observatory/catalog?'+params,{cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(18000)});
   if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||'HTTP '+response.status)}
   const data=await response.json();const page=Array.isArray(data.items)?data.items:[];
   catalogOffset=data.next_offset??(catalogOffset+page.length);catalogHasMore=data.has_more===true;
@@ -168,7 +178,7 @@ function wire(){
  $('zoom-in').addEventListener('click',()=>{zoom=clamp(zoom+1,2,7);queueRender()});
  $('zoom-out').addEventListener('click',()=>{zoom=clamp(zoom-1,2,7);queueRender()});
  $('zoom-world').addEventListener('click',()=>{zoom=2;centerLon=15;centerLat=12;queueRender()});
- $('collapse-panel').addEventListener('click',()=>{const panel=$('map-panel');panel.classList.toggle('collapsed');$('collapse-panel').textContent=panel.classList.contains('collapsed')?'+':'−'});
+ $('collapse-panel').addEventListener('click',()=>{const panel=$('map-panel'),collapsed=panel.classList.toggle('collapsed');$('collapse-panel').textContent=collapsed?'+':'−';$('collapse-panel').setAttribute('aria-label',collapsed?'Expand Earth data panel':'Collapse Earth data panel');$('collapse-panel').setAttribute('aria-expanded',String(!collapsed))});
  $('locate-me').addEventListener('click',()=>{
   if(!navigator.geolocation){$('location-status').textContent='This browser does not support device location.';return}
   $('location-status').textContent='Waiting for browser location permission…';

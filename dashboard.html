@@ -13,7 +13,7 @@
 <div id="boot-screen"><div class="boot-mark">3D EARTH</div><div class="boot-title">INITIALIZING PLANETARY VIEW</div><div class="boot-bar"><span id="boot-progress"></span></div><div id="boot-status" class="boot-status">Loading Earth assets…</div></div>
 <header class="hud-header"><a href="/" class="brand">3D EARTH <span>BY PEREZ</span></a><div class="hud-readout"><span class="live-dot"></span><span id="system-state">PLANETARY VIEW</span></div><nav class="global-site-nav" aria-label="Primary navigation"><a href="/">HOME</a><a href="/dashboard.html">GLOBE</a><a href="/satellites.html">SATELLITES</a><a href="/map.html">MAP</a><a href="/about.html">ABOUT</a><a href="/data-policy.html">SOURCES</a></nav></header>
 <aside class="layer-panel" id="planet-panel">
-<div class="panel-kicker">OBSERVER</div><h1 id="observer-label">No device location</h1>
+<div class="panel-topline"><div class="panel-kicker">OBSERVER</div><button id="toggle-planet-panel" class="panel-collapse" type="button" aria-controls="planet-panel" aria-expanded="true" aria-label="Collapse observer panel">⌃</button></div><h1 id="observer-label">No device location</h1>
 <p class="panel-copy">Your location stays in this browser session. Device accuracy is reported by the browser and is not presented as survey-grade precision.</p>
 <div class="location-card"><div><span class="panel-kicker">LOCATION</span><strong id="observer-coordinates">Not set</strong><small id="observer-accuracy">Private browser-session location</small></div><button id="locate-globe" class="small-action">LOCATE</button></div>
 </aside>
@@ -35,7 +35,7 @@
 <div class="sat-toolbar"><select id="sat-group" aria-label="Satellite group"><option value="all">All catalog groups</option><option value="stations">Stations</option><option value="weather">Weather</option><option value="gps-ops">GPS</option><option value="science">Science</option><option value="starlink">Starlink</option></select><button id="reload-satellites">REFRESH</button></div>
 <div id="sat-source" class="source-note">Loading current orbital elements…</div><div id="sat-list" class="sat-list"></div>
 </section>
-<button type="button" id="data-layers-toggle" class="data-layers-toggle" aria-controls="data-layer-drawer">DATABASE LAYERS <span id="data-layer-total">●</span></button>
+<button type="button" id="data-layers-toggle" class="data-layers-toggle" aria-controls="data-layer-drawer" aria-expanded="false">EARTH DATA <span id="data-layer-total">●</span></button>
 <section class="data-layer-drawer" id="data-layer-drawer" aria-hidden="true">
  <div class="drawer-head"><div><span class="panel-kicker">SUPABASE OBSERVATIONS</span><h2>Earth data layers</h2></div><button id="close-data-layers" aria-label="Close data layers">×</button></div>
  <p id="data-layer-status" class="source-note">Loading geographic observations from the database…</p>
