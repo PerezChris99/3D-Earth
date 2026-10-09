@@ -10,3 +10,18 @@
 
 .global-site-nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;gap:3px;padding:5px 6px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(4,9,15,.82);backdrop-filter:blur(16px);box-shadow:0 8px 30px rgba(0,0,0,.18);white-space:nowrap}.global-site-nav a{display:block;padding:8px 10px;border-radius:999px;color:#d9e4ee;text-decoration:none;font:800 9px/1 Arial,sans-serif;letter-spacing:.12em}.global-site-nav a:hover,.global-site-nav a:focus-visible{color:#fff;background:rgba(120,190,235,.16)}@media(max-width:760px){.global-site-nav{display:none}}
 .global-site-nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;gap:3px;padding:5px 6px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(4,9,15,.84);backdrop-filter:blur(16px);white-space:nowrap}.global-site-nav a{padding:8px 10px;border-radius:999px;color:#d9e4ee;text-decoration:none;font:800 9px/1 Arial,sans-serif;letter-spacing:.12em}.global-site-nav a:hover,.global-site-nav a:focus-visible{color:#fff;background:rgba(120,190,235,.16)}@media(max-width:760px){.global-site-nav{display:none}}
+/* Styled, non-blocking location consent dialog and actionable renderer errors. */
+#boot-status.boot-status{margin-top:10px;font-size:10px;color:#8fa3ba;letter-spacing:.04em;text-align:center;max-width:min(520px,85vw);line-height:1.5}
+#boot-screen.boot-failed{background:radial-gradient(ellipse at center,#101f30 0,#02060d 68%);padding:24px}
+#boot-screen.boot-failed #boot-status{color:#ffc4a9;max-width:520px}
+.location-dialog{width:min(440px,calc(100vw - 32px));padding:28px;border:1px solid rgba(220,236,255,.18);border-radius:20px;background:rgba(5,13,23,.97);color:#eaf3ff;box-shadow:0 28px 90px rgba(0,0,0,.65);backdrop-filter:blur(22px)}
+.location-dialog::backdrop{background:rgba(0,4,10,.72);backdrop-filter:blur(8px)}
+.location-dialog-mark{display:grid;place-items:center;width:42px;height:42px;margin-bottom:18px;border:1px solid rgba(117,201,255,.4);border-radius:13px;color:#75c9ff;font-size:25px}
+.location-dialog h2{margin:8px 0 12px;font-size:25px;font-weight:500;letter-spacing:-.025em}
+.location-dialog>p:not(.panel-kicker){color:#aabbd0;font-size:13px;line-height:1.7}
+.location-dialog-status{min-height:1em;color:#ffc4a9;font-size:11px}
+.location-dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.location-dialog-actions button{border:1px solid rgba(220,236,255,.2);border-radius:9px;padding:11px 15px;background:transparent;color:#eaf3ff;font-size:11px;font-weight:800;cursor:pointer}
+.location-dialog-actions #confirm-location{background:#eaf6ff;color:#06111d;border-color:#eaf6ff}
+.location-dialog-actions button:focus-visible{outline:2px solid #75c9ff;outline-offset:3px}
+@media(max-width:700px){.location-dialog{padding:23px;border-radius:17px}.location-dialog h2{font-size:22px}}

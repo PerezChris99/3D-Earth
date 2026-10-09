@@ -10,7 +10,7 @@
 <body class="globe-dashboard">
 <main id="globe-app" aria-label="3D Earth planetary observatory">
 <div id="globe-stage"></div>
-<div id="boot-screen"><div class="boot-mark">3D EARTH</div><div class="boot-title">INITIALIZING PLANETARY VIEW</div><div class="boot-bar"><span id="boot-progress"></span></div><div id="boot-status">Loading Earth assets…</div></div>
+<div id="boot-screen"><div class="boot-mark">3D EARTH</div><div class="boot-title">INITIALIZING PLANETARY VIEW</div><div class="boot-bar"><span id="boot-progress"></span></div><div id="boot-status" class="boot-status">Loading Earth assets…</div></div>
 <header class="hud-header"><a href="/" class="brand">3D EARTH <span>BY PEREZ</span></a><div class="hud-readout"><span class="live-dot"></span><span id="system-state">PLANETARY VIEW</span></div><nav class="global-site-nav" aria-label="Primary navigation"><a href="/">HOME</a><a href="/dashboard.html">GLOBE</a><a href="/satellites.html">SATELLITES</a><a href="/map.html">MAP</a><a href="/about.html">ABOUT</a><a href="/data-policy.html">SOURCES</a></nav></header>
 <aside class="layer-panel" id="planet-panel">
 <div class="panel-kicker">OBSERVER</div><h1 id="observer-label">No device location</h1>
@@ -29,6 +29,14 @@
 <section class="planet-meta"><div class="meta-label">PLANETARY RENDERER</div><div class="meta-value">EARTH / DYNAMIC SOLAR GEOMETRY</div><div class="meta-line"><span id="camera-state">ORBITAL CAMERA</span><span id="fps-state">— FPS</span></div></section>
 <div class="hint">DRAG TO ORBIT · PINCH/SCROLL TO ZOOM · DOUBLE-TAP TO RESET</div>
 </main>
+<dialog id="location-dialog" class="location-dialog" aria-labelledby="location-dialog-title">
+  <div class="location-dialog-mark" aria-hidden="true">◎</div>
+  <p class="panel-kicker">PRIVATE OBSERVER LOCATION</p>
+  <h2 id="location-dialog-title">Locate this device?</h2>
+  <p>Your globe works without location. If you continue, your browser will ask permission to share a device position for local time, daylight and satellite-pass estimates. The position is kept in this browser session.</p>
+  <p id="location-dialog-status" class="location-dialog-status" role="status" aria-live="polite"></p>
+  <div class="location-dialog-actions"><button type="button" id="cancel-location">Not now</button><button type="button" id="confirm-location">Continue</button></div>
+</dialog>
 <footer class="global-info-footer"><span>3D Earth by Perez</span><nav><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></nav></footer>
 
 
