@@ -80,10 +80,13 @@ router.get('/observatory/health', async (req, res) => {
         });
     }
     const startedAt = Date.now();
-    const tables = ['observatory_sources', 'observatory_observations', 'earth_events', 'satellites', 'satellite_observations', 'seed_telemetry_samples'];
-    const checks = await Promise.all(tables.map(async table => {
+    const tables = [
+        ['observatory_sources', 'id'], ['observatory_observations', 'id'], ['earth_events', 'id'],
+        ['satellites', 'id'], ['satellite_observations', 'id'], ['seed_telemetry_samples', 'sample_id']
+    ];
+    const checks = await Promise.all(tables.map(async ([table, probeColumn]) => {
         try {
-            await supabaseQuery(table, 'select=*&limit=1');
+            await supabaseQuery(table, 'select=' + probeColumn + '&limit=1');
             return { table, status: 'ok' };
         } catch (err) {
             logger.error('API', '/observatory/health table probe failed', { table, message: err.message });
@@ -115,8 +118,7 @@ router.get('/observatory/summary', async (req, res) => {
             ['observations', () => supabaseQuery('satellite_observations', 'select=id,satellite_id,observed_at,latitude,longitude,altitude_km,speed_km_s&order=observed_at.desc&limit=20')],
             ['samples', () => supabaseQuery('seed_telemetry_samples', 'select=sample_id,sampled_at,latitude,longitude,altitude_km,speed_km_s&order=sample_id.asc&limit=20')],
             ['events', () => supabaseQuery('earth_events', 'select=id,event_type,occurred_at,latitude,longitude,magnitude,title&order=occurred_at.desc&limit=20')],
-            ['sources', () => supabaseQuery('observatory_sources', 'select=id,slug,sector,name,provider,authority_level,expected_refresh_seconds,coverage,active&order=sector.asc')],
-            ['sectorRows', () => supabaseQuery('observatory_sources', 'select=sector&active=is.true&order=sector.asc')]
+            ['sources', () => supabaseQuery('observatory_sources', 'select=id,slug,sector,name,provider,authority_level,expected_refresh_seconds,coverage,active&order=sector.asc')]
         ];
         const settled = await Promise.all(querySpecs.map(async ([name, run]) => {
             try { return { name, value: await run() }; }
@@ -131,9 +133,9 @@ router.get('/observatory/summary', async (req, res) => {
             return res.status(502).json({ error: 'Supabase observatory data unavailable', database: 'unavailable', failed_queries: failedQueries });
         }
 
-        const { satellites, observations, samples, events, sources, sectorRows } = results;
+        const { satellites, observations, samples, events, sources } = results;
         const freshness = {};
-        const sectors = [...new Set(sectorRows.map(row => row.sector).filter(Boolean))];
+        const sectors = [...new Set(sources.map(row => row.sector).filter(Boolean))];
         const latestResults = await Promise.all(sectors.map(async sector => {
             try {
                 const rows = await supabaseQuery('observatory_observations',
