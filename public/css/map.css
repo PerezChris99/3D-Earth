@@ -23,3 +23,5 @@
  .map-panel,.catalog-panel{top:auto;bottom:calc(76px + env(safe-area-inset-bottom));max-height:48vh}
  .map-page .location-status{bottom:calc(70px + env(safe-area-inset-bottom))}
 }
+
+@media(min-width:1001px){.map-panel,.catalog-panel{top:106px}}
