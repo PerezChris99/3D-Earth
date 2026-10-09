@@ -7,7 +7,7 @@ function loadEngine(index){
  if(window.ol&&window.ol.Map){window.dispatchEvent(new Event('openlayers-ready'));return}
  if(index>=sources.length)return;
  const script=document.createElement('script');script.src=sources[index];script.async=true;let settled=false;
- const timer=setTimeout(()=>{if(settled)return;settled=true;script.remove();loadEngine(index+1)},4500);
+ const timer=setTimeout(()=>{if(settled)return;settled=true;script.remove();loadEngine(index+1)},8000);
  script.onload=()=>{if(settled)return;settled=true;clearTimeout(timer);if(window.ol&&window.ol.Map)window.dispatchEvent(new Event('openlayers-ready'));else loadEngine(index+1)};
  script.onerror=()=>{if(settled)return;settled=true;clearTimeout(timer);script.remove();loadEngine(index+1)};document.head.appendChild(script)
 }
