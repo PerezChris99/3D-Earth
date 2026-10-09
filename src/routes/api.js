@@ -269,8 +269,10 @@ router.get('/observatory/catalog', async (req, res) => {
         if (!config) return res.status(400).json({ error: 'Unknown or non-public dataset' });
         const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
         const offset = Math.min(Math.max(Number(req.query.offset) || 0, 0), 1_000_000);
-        let params = 'select=' + config.select + '&order=' + config.order + '&limit=' + limit + '&offset=' + offset;
         const q = String(req.query.q || '').replace(/[^a-zA-Z0-9 ._-]/g, '').trim().slice(0, 80);
+        // The world-development catalog's broad ILIKE search uses trigram indexes; use a deterministic matching sort instead of walking the entire period index while filtering.
+        const order = q && dataset === 'world_development_observations' ? 'country_name.asc,indicator_code.asc,period.desc,id.asc' : config.order;
+        let params = 'select=' + config.select + (order ? '&order=' + order : '') + '&limit=' + limit + '&offset=' + offset;
         if (q) {
             const pattern = '*' + q + '*';
             const searchable = {
