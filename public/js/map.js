@@ -41,19 +41,20 @@ function drawBase(w,h){
 }
 function getTile(z,x,y){
  const n=2**z;x=(x%n+n)%n;if(y<0||y>=n)return null;const key=z+'/'+x+'/'+y;
- if(tileCache.has(key))return tileCache.get(key);
+ if(tileCache.has(key)){const cached=tileCache.get(key);if(!cached.failed||Date.now()-(cached.failedAt||0)<30000)return cached;tileCache.delete(key)}
  if(tilePending.has(key)||tilePending.size>=48)return null;
  tilePending.add(key);
  const img=new Image();img.decoding='async';
  const providers=[
   'https://basemaps.cartocdn.com/dark_all/'+key+'.png',
+  'https://basemaps.cartocdn.com/rastertiles/voyager/'+key+'.png',
   'https://tile.openstreetmap.org/'+key+'.png'
  ];
  let providerIndex=0;
  const failOrFallback=()=>{
   providerIndex++;
   if(providerIndex<providers.length){img.src=providers[providerIndex];return}
-  tilePending.delete(key);tileCache.set(key,{img:null,failed:true});queueRender();
+  tilePending.delete(key);tileCache.set(key,{img:null,failed:true,failedAt:Date.now()});queueRender();
  };
  img.onload=()=>{tilePending.delete(key);tileCache.set(key,{img,failed:false,provider:providerIndex===0?'CARTO Dark':'OpenStreetMap'});queueRender()};
  img.onerror=failOrFallback;
