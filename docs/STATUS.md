@@ -54,7 +54,7 @@ Still requires deployment/environment verification:
 - Supabase-backed features cannot return database records unless `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (or the supported service-role fallback) are configured correctly in the deployed environment and the corresponding tables/RLS policies exist.
 - The `FIRMS_MAP_KEY` is required for NASA FIRMS data. Provider credentials and ingestion health must be verified in production; code changes cannot manufacture missing secrets.
 - Browser checks are still required at desktop and mobile sizes for tile HTTP status, data explorer queries, WebGL/camera behavior, and live Vercel commit identity.
-- Moon-facing city lights remain intentionally unimplemented in this stability patch. The former static night-light overlay was removed as misleading; a correct implementation needs a defensible lunar-position/terminator shader and a validated city-lights asset, not simply re-adding the removed overlay.
+- Moon-facing night lights are now rendered through a dedicated shader using the existing city-lights texture, a solar-night mask, and a lunar-facing mask. The Moon's visual orbit period was corrected from an annual cycle to approximately 27.32 days. This is a low-precision visual lunar orbit, not an ephemeris-grade Moon position.
 
 ## Engineering principle
 
