@@ -183,6 +183,7 @@ app.use('/api',       apiRoutes);
 
 // Clean public routes
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
+app.get('/satellites', (req, res) => res.sendFile(path.join(__dirname, 'satellites.html')));
 app.get('/map', (req, res) => res.sendFile(path.join(__dirname, 'map.html')));
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'about.html')));
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'privacy.html')));

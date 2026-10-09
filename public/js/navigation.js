@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-const PAGES=[['home','HOME','/'],['globe','GLOBE','/dashboard.html'],['satellites','SATELLITES','/satellites.html'],['map','MAP','/map.html'],['about','ABOUT','/about.html'],['sources','SOURCES','/data-policy.html']];
+const PAGES=[['home','HOME','/'],['globe','GLOBE','/dashboard.html'],['satellites','SATELLITES','/satellites'],['map','MAP','/map.html'],['about','ABOUT','/about.html'],['sources','SOURCES','/data-policy.html']];
 const MOBILE=PAGES.slice(0,4);
 const ICONS={
  home:'<path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/>',
@@ -9,13 +9,13 @@ const ICONS={
  map:'<path d="m4 6 6-2 4 2 6-2v14l-6 2-4-2-6 2z"/><path d="M10 4v14M14 6v14"/>'
 };
 const path=location.pathname.replace(/\/$/,'')||'/',hash=location.hash;
-function active(id,href){const p=new URL(href,location.origin).pathname.replace(/\/$/,'')||'/';return id==='satellites'?(path==='/satellites.html'||(path==='/dashboard.html'&&hash==='#satellites')):p===path}
+function active(id,href){const p=new URL(href,location.origin).pathname.replace(/\/$/,'')||'/';return id==='satellites'?(path==='/satellites'||path==='/satellites.html'||(path==='/dashboard.html'&&hash==='#satellites')):p===path}
 function renderDesktop(){
  document.querySelectorAll('.landing-nav > nav,.sat-site-nav > nav,.info-header > nav,.hud-header > nav,.map-header > nav,nav.global-site-nav').forEach(n=>n.remove());
  let cluster=document.querySelector('.site-nav-cluster');if(!cluster){cluster=document.createElement('div');cluster.className='site-nav-cluster';cluster.setAttribute('aria-label','Site navigation');document.body.appendChild(cluster)}
  let nav=cluster.querySelector('.global-site-nav');if(!nav){nav=document.createElement('nav');nav.className='global-site-nav';nav.setAttribute('aria-label','Primary navigation');cluster.appendChild(nav)}
  nav.innerHTML=PAGES.map(([id,label,href])=>'<a href="'+href+'"'+(active(id,href)?' aria-current="page"':'')+'>'+label+'</a>').join('');
- let cta=cluster.querySelector('.global-open-globe');if(!cta){cta=document.createElement('a');cta.className='global-open-globe';cta.href='/dashboard.html';cta.textContent='OPEN GLOBE';cluster.appendChild(cta)}
+ 
 }
 function renderMobile(){let nav=document.querySelector('.mobile-bottom-nav');if(!nav){nav=document.createElement('nav');nav.className='mobile-bottom-nav';nav.setAttribute('aria-label','Primary navigation');document.body.appendChild(nav)}nav.innerHTML=MOBILE.map(([id,label,href])=>'<a href="'+href+'"'+(active(id,href)?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true">'+ICONS[id]+'</svg><span>'+label+'</span></a>').join('')}
 if(document.querySelector(".info-layout"))document.body.classList.add("light-content-page");

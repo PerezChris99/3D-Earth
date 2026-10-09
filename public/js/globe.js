@@ -2,7 +2,7 @@
 'use strict';
 const A={earth:'/assets/earth/earth_atmos_2048.jpg',normal:'/assets/earth/earth_normal_2048.jpg',specular:'/assets/earth/earth_specular_2048.jpg',clouds:'/assets/earth/earth_clouds_1024.png',moon:'/assets/earth/moon_1024.jpg'};
 const S={clouds:true,atmosphere:true,moon:true,stars:true,satellites:true,autoRotate:true};
-let scene,camera,renderer,controls,earth,clouds,atmosphere,moon,stars,sunLight,sunMesh,satGroup,dataMarkerGroup,trajectory,selectedMarker,locationState=null,satellites=[],selectedNorad=null,gltfLoader=null,dataLayerItems=[],dataLayerMeta=[],databaseSatelliteCatalog=[],activeDataSectors=new Set(['wildfires','volcanoes','oceans','weather','earthquakes']);
+let scene,camera,renderer,controls,earth,clouds,atmosphere,moon,stars,sunLight,sunMesh,satGroup,dataMarkerGroup,trajectory,selectedMarker,locationState=null,satellites=[],selectedNorad=null,gltfLoader=null,dataLayerItems=[],dataLayerMeta=[],databaseSatelliteCatalog=[],activeDataSectors=new Set(['wildfires','volcanoes','oceans','weather','earthquakes','severe_weather','other_events','telemetry_samples','earth_observation_products','volcano_alerts']);
 const $=id=>document.getElementById(id);
 const status=(t,p)=>{$('boot-status').textContent=t;$('boot-progress').style.width=p+'%'};
 const loadTexture=(loader,url)=>new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
@@ -43,14 +43,14 @@ async function init(){
 async function loadObservatorySummary(){
  const results=await Promise.allSettled([fetch('/api/observatory/summary'),fetch('/api/observatory/layers')]);
  if(results[0].status==='fulfilled'&&results[0].value.ok){try{const summary=await results[0].value.json();databaseSatelliteCatalog=Array.isArray(summary.satellites)?summary.satellites:[];mergeDatabaseSatelliteCatalog();const sampleCount=Array.isArray(summary.samples)?summary.samples.length:0;$('system-state').title='Supabase connected · '+databaseSatelliteCatalog.length+' satellite catalog records · '+sampleCount+' telemetry samples in the current sample window'}catch(_){}}
- if(results[1].status==='fulfilled'&&results[1].value.ok){try{const data=await results[1].value.json();installObservatoryLayers(data);$('system-state').textContent='SUPABASE · '+data.count+' GEO FEATURES · '+data.layers.length+' DATA LAYERS';$('system-state').title='Database-backed geographic observations are displayed on the globe'}catch(_){$('system-state').textContent='DATABASE LAYERS UNAVAILABLE'}}
+ if(results[1].status==='fulfilled'&&results[1].value.ok){try{const data=await results[1].value.json();installObservatoryLayers(data);$('system-state').textContent='SUPABASE · '+data.count+' GEO FEATURES · '+data.layers.length+' DATA LAYERS'+(data.partial?' · PARTIAL DATA':'');$('system-state').title='Database-backed geographic observations are displayed on the globe'}catch(_){$('system-state').textContent='DATABASE LAYERS UNAVAILABLE'}}
  else if(results[0].status!=='fulfilled'||!results[0].value.ok){$('system-state').textContent='PLANETARY VIEW · DATABASE OFFLINE'}
 }
 function mergeDatabaseSatelliteCatalog(){const byNorad=new Map(databaseSatelliteCatalog.filter(row=>row.norad_id!=null).map(row=>[String(row.norad_id),row]));satellites.forEach(item=>{const record=byNorad.get(String(item.norad));if(!record)return;item.databaseRecord=record;item.databaseOwner=record.owner_country;item.databaseOperator=record.operator;item.databaseType=record.object_type});if(satellites.length)renderSatList()}
 function installObservatoryLayers(data){
  dataLayerItems=Array.isArray(data.items)?data.items:[];dataLayerMeta=Array.isArray(data.layers)?data.layers:[];dataLayerItems.sort((a,b)=>new Date(b.observed_at||0)-new Date(a.observed_at||0));
  dataMarkerGroup.clear();const geometry=new THREE.SphereGeometry(.012,8,8);
- const colors={wildfires:0xff754f,volcanoes:0xffc45e,oceans:0x57c9ff,weather:0x8de2b4,earthquakes:0xff657a};
+ const colors={wildfires:0xff754f,volcanoes:0xffc45e,oceans:0x57c9ff,weather:0x8de2b4,earthquakes:0xff657a,severe_weather:0xc09cff,other_events:0xe6a6ff,telemetry_samples:0xb9c4d3,earth_observation_products:0xffdf7b,volcano_alerts:0xffc45e};
  const materials={};Object.entries(colors).forEach(([key,color])=>materials[key]=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.92}));
  dataLayerItems.forEach(item=>{
   const lat=Number(item.latitude),lon=Number(item.longitude);if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
