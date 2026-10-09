@@ -1,6 +1,6 @@
 # Implementation Status
 
-Updated: 2026-10-05
+Updated: 2026-10-09
 
 ## Execution rule
 
@@ -40,6 +40,21 @@ Deliberately not enabled in the runtime yet: PostgreSQL driver installation, aut
 - spatial query foundation
 - progressive loading/LOD
 - consistent map/globe object selection
+
+## Stability audit — 2026-10-09
+
+Verified in source:
+- The map is intentionally a self-contained canvas renderer. Tile imagery is external and provider-dependent; a Leaflet rewrite is not inherently a fix for HTTP 403 responses. The renderer now tries CARTO Dark, CARTO Voyager, then OpenStreetMap and retries transiently failed tile keys after 30 seconds.
+- Supabase REST requests now have a bounded 12-second timeout and report safe table/status context to server logs. This prevents stalled upstream requests from leaving API handlers pending indefinitely.
+- Satellite focus keeps the Earth target at the origin while offsetting the camera from the satellite's radial line, preventing the selected satellite from sitting directly over the Earth disk.
+- Axial rotation uses Earth's sidereal angular rate rather than the previous accelerated visual rate.
+- The satellite workspace uses a single-column, scrollable layout on narrow screens instead of compressing three columns into a phone viewport.
+
+Still requires deployment/environment verification:
+- Supabase-backed features cannot return database records unless `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (or the supported service-role fallback) are configured correctly in the deployed environment and the corresponding tables/RLS policies exist.
+- The `FIRMS_MAP_KEY` is required for NASA FIRMS data. Provider credentials and ingestion health must be verified in production; code changes cannot manufacture missing secrets.
+- Browser checks are still required at desktop and mobile sizes for tile HTTP status, data explorer queries, WebGL/camera behavior, and live Vercel commit identity.
+- Moon-facing city lights remain intentionally unimplemented in this stability patch. The former static night-light overlay was removed as misleading; a correct implementation needs a defensible lunar-position/terminator shader and a validated city-lights asset, not simply re-adding the removed overlay.
 
 ## Engineering principle
 
