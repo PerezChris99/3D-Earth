@@ -53,3 +53,5 @@ test('map tiles recover from a blocked provider and the data panel collapses on 
 test('globe has accessible collapsible observer and data panels plus mobile zoom-out',()=>{const h=read('dashboard.html'),g=read('public/js/globe.js'),c=read('public/css/globe-dashboard.css');assert.match(h,/id="toggle-planet-panel"/);assert.match(g,/panel-collapsed/);assert.match(g,/innerWidth<=760\?4\.55:3\.15/);assert.match(g,/resetView\(\)/);assert.match(c,/layer-panel\.panel-collapsed/)});
 
 test('globe satellite panel stays below navigation and has readable catalog typography',()=>{const c=read('public/css/globe-dashboard.css'),g=read('public/js/globe.js');assert.match(c,/\.satellite-drawer\{top:68px/);assert.match(c,/satellite-drawer \.sat-row strong\{font-size:15px/);assert.match(g,/let selectedHit=false/);assert.match(g,/if\(!selectedHit&&focusedNorad\)resetView\(\)/)});
+
+test('content security policy allows the fallback basemap tile provider',()=>{const s=read('server.js');assert.match(s,/https:\/\/basemaps\.cartocdn\.com/);assert.ok((s.match(/https:\/\/basemaps\.cartocdn\.com/g)||[]).length>=2)});
