@@ -1,117 +1,159 @@
 (() => {
 'use strict';
-const $ = id => document.getElementById(id);
-const status = $('map-status');
-const locationStatus = $('location-status');
-const mapRoot = $('map');
-const colors = { earthquakes:'#ff657a',severe_weather:'#c09cff',wildfires:'#ff754f',volcanoes:'#ffc45e',volcano_alerts:'#ffc45e',oceans:'#57c9ff',weather:'#8de2b4',earth_observation_products:'#ffdf7b',telemetry_samples:'#b9c4d3',other_events:'#e6a6ff' };
-const labels = { earthquakes:'Earthquakes',severe_weather:'Severe weather',wildfires:'Wildfires',volcanoes:'Volcano observations',volcano_alerts:'Volcano notices',oceans:'Ocean observations',weather:'Surface weather',earth_observation_products:'Satellite image footprints',telemetry_samples:'Seed telemetry samples',other_events:'Other Earth events' };
-let map = null, pointSource = null, footprintSource = null, pointLayer = null, footprintLayer = null, locationSource = null;
-let dataItems = [], dataLayers = [], catalogOffset = 0, catalogHasMore = false, catalogItems = [], currentLocation = null, fallback = false;
-const activeSectors = new Set(Object.keys(labels));
-const escapeHtml = value => String(value == null ? '' : value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
-function setStatus(message){if(status)status.textContent=message}
-function safeDate(value){if(!value)return 'Time not supplied';const d=new Date(value);return Number.isNaN(d.getTime())?'Time not supplied':d.toLocaleString()}
-function detailFor(item){
- const box=$('feature-detail');if(!box)return;box.hidden=false;box.replaceChildren();
- const fields=[['Record',item.label||item.event_type||item.sector||'Observation'],['Layer',labels[item.sector]||item.sector],['Coordinates',Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude))?Number(item.latitude).toFixed(5)+'°, '+Number(item.longitude).toFixed(5)+'°':'No point coordinates in source'],['Measurement',item.value==null?'Not reported':String(item.value)+' '+(item.unit||'')],['Observed',safeDate(item.observed_at)],['Quality',item.quality_status||'Not supplied'],['Location type',item.location_kind||'Stored coordinates'],['Source',item.source_name||item.provider||'Not listed']];
- fields.forEach(([key,value])=>{const p=document.createElement('p'),strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=key;span.textContent=String(value);p.append(strong,span);box.appendChild(p)});
+const $=id=>document.getElementById(id);
+const canvas=$('world-map'),ctx=canvas.getContext('2d',{alpha:false});
+const sectors={
+ earthquakes:{label:'Earthquakes',color:'#ff657a'},severe_weather:{label:'Severe weather',color:'#c09cff'},
+ wildfires:{label:'Wildfires',color:'#ff754f'},volcanoes:{label:'Volcano observations',color:'#ffc45e'},
+ volcano_alerts:{label:'Volcano notices',color:'#ffc45e'},oceans:{label:'Ocean observations',color:'#57c9ff'},
+ weather:{label:'Surface weather',color:'#8de2b4'},earth_observation_products:{label:'Satellite image footprints',color:'#ffdf7b'},
+ telemetry_samples:{label:'Seed telemetry samples',color:'#b9c4d3'},other_events:{label:'Other Earth events',color:'#e6a6ff'}
+};
+const active=new Set(Object.keys(sectors)),tileCache=new Map(),tilePending=new Set();
+let zoom=2,centerLon=15,centerLat=12,items=[],selected=null,observer=null,drag=null,catalogOffset=0,catalogHasMore=false,refreshing=false,renderQueued=false;
+const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+const mapStatus=message=>{$('map-status').textContent=message};
+const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+function worldSize(z=zoom){return 256*Math.pow(2,z)}
+function worldPixel(lon,lat,z=zoom){const size=worldSize(z),phi=clamp(lat,-85.0511,85.0511)*Math.PI/180;return{x:(lon+180)/360*size,y:(1-Math.asinh(Math.tan(phi))/Math.PI)/2*size}}
+function screenPoint(lon,lat){const p=worldPixel(lon,lat),c=worldPixel(centerLon,centerLat);let dx=p.x-c.x,size=worldSize();if(dx>size/2)dx-=size;if(dx< -size/2)dx+=size;return{x:canvas.clientWidth/2+dx,y:canvas.clientHeight/2+p.y-c.y}}
+function queueRender(){if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;render()})}
+const land=[
+[[-168,70],[-145,72],[-125,55],[-105,50],[-82,25],[-97,8],[-113,25],[-130,45],[-153,58]],
+[[-82,12],[-68,8],[-50,-5],[-35,-20],[-50,-55],[-72,-40],[-80,-8]],
+[[-52,80],[-24,76],[-20,60],[-42,58],[-62,68]],
+[[-12,72],[15,70],[38,55],[52,36],[35,5],[15,-35],[-3,-25],[-16,5],[-25,35]],
+[[-10,36],[5,44],[25,35],[45,12],[35,-12],[20,-35],[5,-28],[-5,5]],
+[[30,70],[70,78],[110,65],[160,60],[178,48],[150,30],[125,5],[100,0],[80,20],[60,5],[40,25]],
+[[68,25],[90,28],[105,10],[115,-10],[135,-5],[150,-18],[130,-42],[110,-25],[95,-5],[80,5]],
+[[112,-12],[155,-10],[154,-42],[130,-45],[115,-30]],
+[[130,32],[145,44],[147,34],[138,30]],
+[[45,-13],[51,-16],[49,-25],[43,-23]]
+];
+function projectPolygon(points){return points.map(([lon,lat])=>screenPoint(lon,lat))}
+function drawBase(w,h){
+ ctx.fillStyle='#0b2434';ctx.fillRect(0,0,w,h);
+ const gradient=ctx.createRadialGradient(w*.5,h*.45,20,w*.5,h*.45,Math.max(w,h)*.78);gradient.addColorStop(0,'#15384a');gradient.addColorStop(1,'#06121f');ctx.fillStyle=gradient;ctx.fillRect(0,0,w,h);
+ ctx.lineWidth=.6;ctx.strokeStyle='rgba(133,192,220,.15)';
+ for(let lat=-75;lat<=75;lat+=15){const y=screenPoint(0,lat).y;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ for(let lon=-180;lon<=180;lon+=15){const x=screenPoint(lon,0).x;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+ land.forEach(poly=>{const pts=projectPolygon(poly);ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle='#294d4e';ctx.fill();ctx.strokeStyle='rgba(142,194,169,.35)';ctx.lineWidth=1;ctx.stroke()});
 }
-function featureStyle(feature){
- const sector=feature.get('sector')||'other_events', color=colors[sector]||'#c4d3e2';
- if(sector==='earth_observation_products')return new ol.style.Style({fill:new ol.style.Fill({color:'rgba(255,223,123,.12)'}),stroke:new ol.style.Stroke({color,width:2})});
- const item=feature.get('item')||{}, magnitude=Number(item.value), radius=sector==='earthquakes'&&Number.isFinite(magnitude)?Math.max(4,Math.min(10,3+magnitude*1.25)):5;
- return new ol.style.Style({image:new ol.style.Circle({radius,fill:new ol.style.Fill({color}),stroke:new ol.style.Stroke({color:'#06111d',width:1.3})})});
+function getTile(z,x,y){
+ const n=2**z;x=(x%n+n)%n;if(y<0||y>=n)return null;const key=z+'/'+x+'/'+y;
+ if(tileCache.has(key))return tileCache.get(key);
+ if(tilePending.has(key))return null;
+ if(tilePending.size>=48)return null;
+ tilePending.add(key);const img=new Image();img.decoding='async';
+ img.onload=()=>{tilePending.delete(key);tileCache.set(key,{img,failed:false});queueRender()};
+ img.onerror=()=>{tilePending.delete(key);tileCache.set(key,{img:null,failed:true});};
+ img.src='https://tile.openstreetmap.org/'+key+'.png';return null;
 }
-function initializeOpenLayers(){
- if(!window.ol||!ol.Map)return false;
- pointSource=new ol.source.Vector();footprintSource=new ol.source.Vector();locationSource=new ol.source.Vector();
- const osm=new ol.layer.Tile({source:new ol.source.OSM({attributions:'© OpenStreetMap contributors'})});
- footprintLayer=new ol.layer.Vector({source:footprintSource,style:featureStyle});
- pointLayer=new ol.layer.Vector({source:pointSource,style:featureStyle});
- const observerLayer=new ol.layer.Vector({source:locationSource,style:new ol.style.Style({image:new ol.style.Circle({radius:8,fill:new ol.style.Fill({color:'#75c9ff'}),stroke:new ol.style.Stroke({color:'#fff',width:2})})})});
- map=new ol.Map({target:'map',layers:[osm,footprintLayer,pointLayer,observerLayer],view:new ol.View({center:ol.proj.fromLonLat([15,18]),zoom:2,minZoom:2,maxZoom:19}),controls:ol.control.defaults({attribution:true,zoom:true,rotate:false})});
- map.on('singleclick',event=>{
-  const feature=map.forEachFeatureAtPixel(event.pixel,f=>f.get('observatory')?f:undefined);
-  if(feature){const item=feature.get('item');if(item)detailFor(item)}
+function drawTiles(w,h){
+ const z=zoom,size=worldSize(z),center=worldPixel(centerLon,centerLat),originX=center.x-w/2,originY=center.y-h/2;
+ const firstX=Math.floor(originX/256),lastX=Math.floor((originX+w)/256),firstY=Math.floor(originY/256),lastY=Math.floor((originY+h)/256);
+ let drawn=0;
+ for(let ty=firstY;ty<=lastY;ty++)for(let tx=firstX;tx<=lastX;tx++){
+  const tile=getTile(z,tx,ty),x=tx*256-originX,y=ty*256-originY;
+  if(tile?.img){ctx.drawImage(tile.img,x,y,256,256);drawn++}
+ }
+ return drawn;
+}
+function drawGeometry(geometry){
+ if(!geometry||!geometry.coordinates)return;
+ const polygons=geometry.type==='Polygon'?[geometry.coordinates]:geometry.type==='MultiPolygon'?geometry.coordinates:[];
+ polygons.forEach(poly=>poly.forEach((ring,ri)=>{if(!ring?.length)return;const pts=ring.map(([lon,lat])=>screenPoint(lon,lat));ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();if(ri===0){ctx.fillStyle='rgba(255,223,123,.13)';ctx.fill();ctx.strokeStyle='#ffdf7b';ctx.lineWidth=1.5;ctx.stroke()}}));
+}
+function drawRecords(w,h){
+ const visible=items.filter(item=>active.has(item.sector));
+ visible.forEach(item=>{if(item.sector==='earth_observation_products')drawGeometry(item.geometry)});
+ visible.forEach(item=>{
+  const lat=Number(item.latitude),lon=Number(item.longitude);if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return;
+  const p=screenPoint(lon,lat);if(p.x< -15||p.x>w+15||p.y< -15||p.y>h+15)return;
+  const color=sectors[item.sector]?.color||'#c4d3e2',isSelected=selected&&String(selected.id)===String(item.id);
+  ctx.beginPath();ctx.arc(p.x,p.y,isSelected?6:3.2,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+  ctx.strokeStyle=isSelected?'#fff':'rgba(3,12,20,.88)';ctx.lineWidth=isSelected?2:1;ctx.stroke();
+  if(isSelected){ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.stroke()}
  });
- window.addEventListener('resize',()=>map.updateSize());
- setTimeout(()=>map.updateSize(),250);
- setStatus('OpenLayers map initialized · loading stored geographic records…');
- return true;
+ if(observer){const p=screenPoint(observer.longitude,observer.latitude);ctx.beginPath();ctx.arc(p.x,p.y,7,0,Math.PI*2);ctx.fillStyle='#75c9ff';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke()}
 }
-function worldPixel(lon,lat,zoom){const n=2**zoom,phi=Math.max(-85.0511,Math.min(85.0511,lat))*Math.PI/180;return{x:(lon+180)/360*n*256,y:(1-Math.asinh(Math.tan(phi))/Math.PI)/2*n*256,n}}
-function initFallback(){
- fallback=true;mapRoot.classList.add('map-fallback');
- mapRoot.innerHTML='<div class="fallback-map-tiles" id="fallback-tiles"></div><div id="fallback-markers"></div><div class="fallback-controls"><button type="button" id="fallback-plus" aria-label="Zoom in">+</button><button type="button" id="fallback-minus" aria-label="Zoom out">−</button><button type="button" id="fallback-world">WORLD</button></div><div class="fallback-credit">© OpenStreetMap contributors · OpenLayers CDN unavailable</div>';
- let zoom=2,centerLon=15,centerLat=18,drag=null;
- const tiles=$('fallback-tiles'),markers=$('fallback-markers');
- function render(){
-  const center=worldPixel(centerLon,centerLat,zoom),originX=center.x-innerWidth/2,originY=center.y-innerHeight/2,firstX=Math.floor(originX/256),firstY=Math.floor(originY/256),cols=Math.ceil(innerWidth/256)+2,rows=Math.ceil(innerHeight/256)+2;
-  tiles.style.left=(firstX*256-originX)+'px';tiles.style.top=(firstY*256-originY)+'px';tiles.style.gridTemplateColumns='repeat('+cols+',256px)';tiles.style.gridTemplateRows='repeat('+rows+',256px)';tiles.innerHTML='';
-  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){const tx=firstX+x,ty=firstY+y,img=document.createElement('img');img.alt='';img.draggable=false;img.src='https://tile.openstreetmap.org/'+zoom+'/'+((tx%center.n+center.n)%center.n)+'/'+Math.max(0,Math.min(center.n-1,ty))+'.png';tiles.appendChild(img)}
-  markers.innerHTML='';for(const item of dataItems){if(!activeSectors.has(item.sector)||!Number.isFinite(Number(item.latitude))||!Number.isFinite(Number(item.longitude)))continue;const p=worldPixel(Number(item.longitude),Number(item.latitude),zoom),button=document.createElement('button');button.type='button';button.className='fallback-data-marker';button.title=item.label||item.sector;button.style.background=colors[item.sector]||'#c4d3e2';button.style.left=(p.x-originX)+'px';button.style.top=(p.y-originY)+'px';button.addEventListener('click',()=>detailFor(item));markers.appendChild(button)}
- }
- mapRoot.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;drag={x:e.clientX,y:e.clientY,center:worldPixel(centerLon,centerLat,zoom)};mapRoot.setPointerCapture?.(e.pointerId)});
- mapRoot.addEventListener('pointermove',e=>{if(!drag)return;const x=drag.center.x-(e.clientX-drag.x),y=drag.center.y-(e.clientY-drag.y),world=256*2**zoom;centerLon=x/world*360-180;centerLat=Math.atan(Math.sinh(Math.PI*(1-2*y/world)))*180/Math.PI;render()});
- mapRoot.addEventListener('pointerup',()=>drag=null);mapRoot.addEventListener('pointercancel',()=>drag=null);
- $('fallback-plus').onclick=()=>{zoom=Math.min(18,zoom+1);render()};$('fallback-minus').onclick=()=>{zoom=Math.max(2,zoom-1);render()};$('fallback-world').onclick=()=>{zoom=2;centerLon=15;centerLat=18;render()};
- window.__fallbackSetView=(lon,lat,z)=>{centerLon=lon;centerLat=lat;zoom=z;render()};window.addEventListener('resize',render);render();setStatus('Emergency OpenStreetMap tile view active. The page will still load database records; OpenLayers could not be reached from its CDN.');
+function render(){
+ if(!canvas.clientWidth||!canvas.clientHeight)return;
+ const dpr=Math.min(window.devicePixelRatio||1,2),w=canvas.clientWidth,h=canvas.clientHeight;
+ if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr)}
+ ctx.setTransform(dpr,0,0,dpr,0,0);drawBase(w,h);const drawn=drawTiles(w,h);drawRecords(w,h);
+ $('zoom-world').title='Zoom level '+zoom;
 }
-function addPoint(item){
- const lat=Number(item.latitude),lon=Number(item.longitude);
- if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return;
- if(fallback)return;
- const feature=new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat([lon,lat])));
- feature.setProperties({observatory:true,sector:item.sector,item,id:item.id});
- if(item.sector==='earth_observation_products'&&item.geometry&&ol.format?.GeoJSON){
-  try{const polygon= new ol.format.GeoJSON().readFeature({type:'Feature',geometry:item.geometry,properties:{sector:item.sector,id:item.id}},{dataProjection:'EPSG:4326',featureProjection:'EPSG:3857'});polygon.setProperties({observatory:true,sector:item.sector,item,id:item.id});footprintSource.addFeature(polygon);return}catch(error){console.warn('Footprint geometry could not be drawn; using footprint center',error)}
- }
- pointSource.addFeature(feature);
+function detailFor(item){
+ selected=item;queueRender();const box=$('feature-detail');box.hidden=false;box.replaceChildren();
+ const values=[['Record',item.label||item.event_type||item.sector||'Observation'],['Layer',sectors[item.sector]?.label||item.sector],['Coordinates',Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude))?Number(item.latitude).toFixed(5)+'°, '+Number(item.longitude).toFixed(5)+'°':'No point coordinates in source'],['Measurement',item.value==null?'Not reported':String(item.value)+' '+(item.unit||'')],['Observed',item.observed_at?new Date(item.observed_at).toLocaleString():'Time not supplied'],['Quality',item.quality_status||'Not supplied'],['Source',item.source_name||item.provider||'Not listed']];
+ values.forEach(([label,value])=>{const row=document.createElement('p'),strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=label;span.textContent=String(value);row.append(strong,span);box.append(row)});
 }
 function renderRecordList(){
- const list=$('map-record-list');if(!list)return;list.replaceChildren();
- const visible=dataItems.filter(item=>activeSectors.has(item.sector)).slice(0,45);
- visible.forEach(item=>{const button=document.createElement('button');button.type='button';button.className='map-record';const title=document.createElement('strong'),meta=document.createElement('small');title.textContent=item.label||item.event_type||labels[item.sector]||item.sector;meta.textContent=(labels[item.sector]||item.sector)+' · '+safeDate(item.observed_at)+' · '+Number(item.latitude).toFixed(3)+', '+Number(item.longitude).toFixed(3);button.append(title,meta);button.addEventListener('click',()=>{detailFor(item);if(map&&!fallback){const feature=[...pointSource.getFeatures(),...footprintSource.getFeatures()].find(f=>f.get('id')===item.id);if(feature){const geom=feature.getGeometry();if(geom.getType()==='Point')map.getView().animate({center:geom.getCoordinates(),zoom:Math.max(map.getView().getZoom(),7),duration:350});else map.getView().fit(geom.getExtent(),{duration:350,padding:[70,420,70,70],maxZoom:10})}}});list.appendChild(button)});
- const loaded=$('loaded-count');if(loaded)loaded.textContent=visible.length+' shown / '+dataItems.length+' loaded';
+ const list=$('map-record-list');list.replaceChildren();const visible=items.filter(item=>active.has(item.sector)).slice(0,45);
+ $('loaded-count').textContent=visible.length+' shown · '+items.length+' loaded';
+ if(!visible.length){const p=document.createElement('p');p.className='empty-state';p.textContent='No located records returned yet. The map remains usable while data loads.';list.append(p);return}
+ visible.forEach(item=>{const button=document.createElement('button');button.type='button';button.className='map-record';const title=document.createElement('strong'),meta=document.createElement('small');title.textContent=item.label||item.event_type||sectors[item.sector]?.label||item.sector;meta.textContent=(sectors[item.sector]?.label||item.sector)+' · '+(item.observed_at?new Date(item.observed_at).toLocaleString():'time not supplied');button.append(title,meta);button.addEventListener('click',()=>{detailFor(item);centerLon=Number(item.longitude);centerLat=Number(item.latitude);zoom=Math.max(zoom,4);queueRender()});list.append(button)});
 }
-function updateLayerCounts(){
- dataLayers.forEach(layer=>{const el=$('count-'+layer.sector);if(el)el.textContent=String(layer.loaded_count??dataItems.filter(item=>item.sector===layer.sector).length)});
+function renderCounts(data){
+ const layers=Array.isArray(data.layers)?data.layers:[];
+ layers.forEach(layer=>{const el=$('count-'+layer.sector);if(el)el.textContent=String(layer.loaded_count??layer.count??0)});
+ Object.entries(sectors).forEach(([sector])=>{const el=$('count-'+sector);if(el&&!layers.some(layer=>layer.sector===sector))el.textContent=String(items.filter(item=>item.sector===sector).length)});
 }
-async function loadData(showRefresh){
- if(showRefresh)setStatus('Refreshing geographic records from Supabase…');
+async function loadData(showRefresh=false){
+ if(refreshing)return;refreshing=true;const btn=$('refresh-data');btn.disabled=true;btn.textContent='LOADING…';
+ if(showRefresh)mapStatus('Refreshing database-backed map layers…');
  try{
-  const response=await fetch('/api/observatory/layers?limit=300',{signal:AbortSignal.timeout(25000),cache:'no-store'});
-  if(!response.ok)throw new Error('Database endpoint returned HTTP '+response.status);
-  const data=await response.json();dataItems=Array.isArray(data.items)?data.items:[];dataLayers=Array.isArray(data.layers)?data.layers:[];
-  if(!fallback){pointSource.clear();footprintSource.clear();dataItems.forEach(addPoint)}
-  const notes=dataLayers.map(layer=>(layer.label||layer.sector)+': '+(layer.loaded_count??0)).filter(x=>!x.endsWith(': 0'));
-  setStatus(dataItems.length+' located database records loaded from Supabase. '+(notes.length?notes.join(' · '):'No located records were returned.')+' Coordinates are stored values; seed samples are marked separately.'+(data.partial?' Some database queries failed; partial results are shown.':''));
-  updateLayerCounts();renderRecordList();if(fallback)window.dispatchEvent(new Event('resize'));
-  if(locationStatus)locationStatus.textContent='Database layers loaded · map works without device location.';
- }catch(error){console.error('Database map layers failed:',error);setStatus('The OpenStreetMap base is running, but database records could not be loaded ('+error.message+').');if(locationStatus)locationStatus.textContent='Map available; database layer request failed.'}
+  const response=await fetch('/api/observatory/layers?limit=300',{cache:'no-store',signal:AbortSignal.timeout(18000)});
+  if(!response.ok)throw new Error('API returned HTTP '+response.status);
+  const data=await response.json();items=Array.isArray(data.items)?data.items:[];
+  renderCounts(data);renderRecordList();queueRender();
+  mapStatus(items.length+' geographic records loaded from Supabase · '+(data.partial?'some sources returned partial data':'database sources responded')+' · refreshed '+new Date(data.ts||Date.now()).toLocaleTimeString());
+ }catch(error){mapStatus('Map is live, but database data could not be loaded ('+error.message+'). Use Refresh Data to retry.')}
+ finally{refreshing=false;btn.disabled=false;btn.textContent='REFRESH DATA'}
 }
-function wireLayers(){
- document.querySelectorAll('[data-sector]').forEach(button=>button.addEventListener('click',()=>{
-  const sector=button.dataset.sector;if(activeSectors.has(sector))activeSectors.delete(sector);else activeSectors.add(sector);
-  button.classList.toggle('active',activeSectors.has(sector));button.setAttribute('aria-pressed',String(activeSectors.has(sector)));
-  if(pointLayer)pointLayer.changed();if(footprintLayer)footprintLayer.changed();
-  if(pointLayer)pointLayer.setStyle(feature=>activeSectors.has(feature.get('sector'))?featureStyle(feature):new ol.style.Style({image:new ol.style.Circle({radius:0,fill:new ol.style.Fill({color:'rgba(0,0,0,0)'})})}));
-  if(footprintLayer)footprintLayer.setStyle(feature=>activeSectors.has(feature.get('sector'))?featureStyle(feature):new ol.style.Style({fill:new ol.style.Fill({color:'rgba(0,0,0,0)'}),stroke:new ol.style.Stroke({color:'rgba(0,0,0,0)',width:0})}));
-  renderRecordList();if(fallback)mapRoot.dispatchEvent(new Event('resize'));
- }));
- $('collapse-panel').addEventListener('click',()=>{const panel=$('map-panel');panel.classList.toggle('collapsed');$('collapse-panel').textContent=panel.classList.contains('collapsed')?'+':'−';if(map)setTimeout(()=>map.updateSize(),100)});
+const datasetsWithTextSearch=new Set(['observatory_observations','world_development_observations','earth_events','earth_observation_products','satellites','seed_telemetry_samples','volcano_observations','environment_observations','space_weather_observations','celestial_bodies','observatory_sources','data_sources','data_layer_configs','ingestion_runs','observatory_ingestion_runs']);
+function valueText(value){if(value===null||value===undefined||value==='')return '—';if(typeof value==='object')return JSON.stringify(value);if(typeof value==='string'&&value.length>180)return value.slice(0,177)+'…';return String(value)}
+function recordTitle(item,index){return item.title||item.name||item.country_name||item.indicator_name||item.volcano_name||item.external_id||item.event_type||item.product||item.job_name||item.slug||item.layer_key||item.sector||item.collection||item.norad_id||item.sample_id||('Record '+(catalogOffset+index+1))}
+function renderCatalogRecords(itemsToRender){
+ const target=$('catalog-results');itemsToRender.forEach((item,index)=>{
+  const article=document.createElement('article');article.className='catalog-record';const heading=document.createElement('h3');heading.textContent=recordTitle(item,index);article.append(heading);
+  const meta=document.createElement('div');meta.className='record-meta';[item.sector,item.status,item.period,item.observed_at||item.captured_at||item.acquired_at||item.started_at].filter(Boolean).slice(0,3).forEach(value=>{const chip=document.createElement('span');chip.textContent=String(value);meta.append(chip)});if(meta.childElementCount)article.append(meta);
+  const fields=document.createElement('dl');fields.className='record-fields';const entries=Object.entries(item).filter(([key,value])=>value!==undefined&&value!==null&&value!==''&&!['metadata','payload','asset_links','geometry','metrics','position'].includes(key));
+  entries.slice(0,8).forEach(([key,value])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key.replaceAll('_',' ');dd.textContent=valueText(value);fields.append(dt,dd)});article.append(fields);
+  const extraEntries=Object.fromEntries(Object.entries(item).filter(([key])=>['metadata','payload','asset_links','geometry','metrics','position'].includes(key)));
+  if(Object.keys(extraEntries).length){const details=document.createElement('details');details.className='record-extra';const summary=document.createElement('summary');summary.textContent='Inspect structured fields';const pre=document.createElement('pre');pre.textContent=JSON.stringify(extraEntries,null,2);details.append(summary,pre);article.append(details)}
+  target.append(article);
+ });
+}
+async function loadCatalog(reset=true){
+ const dataset=$('catalog-dataset').value,q=$('catalog-search').value.trim();
+ if(reset){catalogOffset=0;$('catalog-results').replaceChildren()}
+ $('catalog-status').textContent='Loading '+dataset.replaceAll('_',' ')+'…';$('catalog-more').disabled=true;
+ const searchAllowed=datasetsWithTextSearch.has(dataset);
+ try{
+  const params=new URLSearchParams({dataset,limit:'50',offset:String(catalogOffset)});if(q&&searchAllowed)params.set('q',q);
+  const response=await fetch('/api/observatory/catalog?'+params,{cache:'no-store',signal:AbortSignal.timeout(18000)});
+  if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||'HTTP '+response.status)}
+  const data=await response.json();const page=Array.isArray(data.items)?data.items:[];
+  catalogOffset=data.next_offset??(catalogOffset+page.length);catalogHasMore=data.has_more===true;
+  renderCatalogRecords(page);
+  $('catalog-status').textContent=dataset.replaceAll('_',' ')+' · '+page.length+' records loaded · '+(catalogHasMore?'more records available':'end of matching records')+(q&&searchAllowed?' · filtered by '+q:q&&!searchAllowed?' · this dataset has no indexed text search; browse pages instead':'');
+  $('catalog-more').hidden=!catalogHasMore;$('catalog-more').disabled=!catalogHasMore;
+  if(!page.length&&reset)$('catalog-status').textContent='No records matched this query. Try a broader search or another dataset.';
+ }catch(error){$('catalog-status').textContent='Dataset query failed: '+error.message;$('catalog-more').disabled=true;$('catalog-more').hidden=true}
+}
+function wire(){
+ document.querySelectorAll('[data-sector]').forEach(button=>button.addEventListener('click',()=>{const sector=button.dataset.sector;if(active.has(sector))active.delete(sector);else active.add(sector);button.classList.toggle('active',active.has(sector));button.setAttribute('aria-pressed',String(active.has(sector)));renderRecordList();queueRender()}));
  $('refresh-data').addEventListener('click',()=>loadData(true));
+ $('zoom-in').addEventListener('click',()=>{zoom=clamp(zoom+1,2,7);queueRender()});
+ $('zoom-out').addEventListener('click',()=>{zoom=clamp(zoom-1,2,7);queueRender()});
+ $('zoom-world').addEventListener('click',()=>{zoom=2;centerLon=15;centerLat=12;queueRender()});
+ $('collapse-panel').addEventListener('click',()=>{const panel=$('map-panel');panel.classList.toggle('collapsed');$('collapse-panel').textContent=panel.classList.contains('collapsed')?'+':'−'});
  $('locate-me').addEventListener('click',()=>{
-  if(!navigator.geolocation){if(locationStatus)locationStatus.textContent='This browser does not support device location.';return}
-  if(locationStatus)locationStatus.textContent='Waiting for browser location permission…';
-  navigator.geolocation.getCurrentPosition(position=>{
-   const c=position.coords;currentLocation={latitude:c.latitude,longitude:c.longitude,accuracy:c.accuracy};
-   if(map){const point=new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat([c.longitude,c.latitude])));locationSource.clear();locationSource.addFeature(point);map.getView().animate({center:ol.proj.fromLonLat([c.longitude,c.latitude]),zoom:Math.max(12,map.getView().getZoom()),duration:500})}
-   else{fallbackCenter(c.longitude,c.latitude,12)}
-   try{sessionStorage.setItem('3dearth-location',JSON.stringify({lat:c.latitude,lon:c.longitude,accuracy:c.accuracy,timestamp:position.timestamp}))}catch(_){}
-   if(locationStatus)locationStatus.textContent='Device location · '+(Number.isFinite(c.accuracy)?Math.round(c.accuracy)+' m reported':'accuracy unavailable')+' · WGS84';
-  },error=>{if(locationStatus)locationStatus.textContent=(error.code===1?'Location permission denied.':error.code===2?'Device location unavailable.':'Location request timed out.')+' The map remains available.'},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+  if(!navigator.geolocation){$('location-status').textContent='This browser does not support device location.';return}
+  $('location-status').textContent='Waiting for browser location permission…';
+  navigator.geolocation.getCurrentPosition(pos=>{observer={latitude:pos.coords.latitude,longitude:pos.coords.longitude};centerLon=observer.longitude;centerLat=observer.latitude;zoom=clamp(Math.max(zoom,5),2,7);queueRender();$('location-status').textContent='Device location shown locally · reported accuracy '+(Number.isFinite(pos.coords.accuracy)?Math.round(pos.coords.accuracy)+' m':'unavailable')+'. Not uploaded.'},error=>{$('location-status').textContent=(error.code===1?'Location permission denied.':error.code===2?'Device location unavailable.':'Location request timed out.')+' The map remains available.'},{enableHighAccuracy:true,maximumAge:30000,timeout:15000});
  });
  $('catalog-toggle').addEventListener('click',()=>{$('catalog-panel').hidden=false;loadCatalog(true)});
  $('close-catalog').addEventListener('click',()=>{$('catalog-panel').hidden=true});
@@ -119,37 +161,14 @@ function wireLayers(){
  $('catalog-search-button').addEventListener('click',()=>loadCatalog(true));
  $('catalog-search').addEventListener('keydown',e=>{if(e.key==='Enter')loadCatalog(true)});
  $('catalog-more').addEventListener('click',()=>loadCatalog(false));
+ canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};canvas.setPointerCapture(e.pointerId)});
+ canvas.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.lastX,dy=e.clientY-drag.lastY;if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)>4)drag.moved=true;if(drag.moved){const size=worldSize();const c=worldPixel(centerLon,centerLat);centerLon=((c.x-dx+size)%size)/size*360-180;const newY=clamp(c.y-dy,0,size);centerLat=Math.atan(Math.sinh(Math.PI*(1-2*newY/size)))*180/Math.PI;drag.lastX=e.clientX;drag.lastY=e.clientY;queueRender()}});
+ const finish=e=>{if(!drag)return;const was=drag;drag=null;if(!was.moved&&e.type==='pointerup'){const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;let best=null,bestD=13;for(const item of items){if(!active.has(item.sector))continue;const p=screenPoint(Number(item.longitude),Number(item.latitude)),d=Math.hypot(p.x-x,p.y-y);if(d<bestD){bestD=d;best=item}}if(best)detailFor(best)}};
+ canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',()=>drag=null);
+ canvas.addEventListener('wheel',e=>{e.preventDefault();const old=zoom;zoom=clamp(zoom+(e.deltaY<0?1:-1),2,7);if(old!==zoom)queueRender()},{passive:false});
+ canvas.addEventListener('dblclick',e=>{e.preventDefault();zoom=clamp(zoom+1,2,7);queueRender()});
+ window.addEventListener('resize',queueRender);
 }
-function fallbackCenter(lon,lat,zoom){if(typeof window.__fallbackSetView==='function')window.__fallbackSetView(lon,lat,zoom)}
-async function loadCatalog(reset){
- const dataset=$('catalog-dataset').value,q=$('catalog-search').value.trim();
- if(reset){catalogOffset=0;catalogItems=[];$('catalog-results').replaceChildren()}
- $('catalog-status').textContent='Loading '+dataset.replaceAll('_',' ')+'…';$('catalog-more').disabled=true;
- try{
-  const params=new URLSearchParams({dataset,limit:'50',offset:String(catalogOffset)});if(q)params.set('q',q);
-  const response=await fetch('/api/observatory/catalog?'+params.toString(),{signal:AbortSignal.timeout(20000),cache:'no-store'});
-  if(!response.ok)throw new Error('HTTP '+response.status);
-  const data=await response.json();const items=Array.isArray(data.items)?data.items:[];catalogItems.push(...items);catalogOffset=data.next_offset??catalogOffset;catalogHasMore=data.has_more===true;
-  const target=$('catalog-results');items.forEach((item,index)=>{
-   const article=document.createElement('article');article.className='catalog-record';const heading=document.createElement('h3');
-   heading.textContent=item.title||item.name||item.country_name||item.indicator_name||item.volcano_name||item.external_id||item.event_type||item.product||item.job_name||item.slug||item.sector||item.collection||item.norad_id||('Record '+(data.offset+index+1));
-   const body=document.createElement('pre');body.textContent=JSON.stringify(item,null,2);article.append(heading,body);target.appendChild(article);
-  });
-  $('catalog-status').textContent=dataset.replaceAll('_',' ')+' · '+items.length+' records on this page · '+(catalogHasMore?'more records available':'end of matching records')+(q?' · search: '+q:'');
-  $('catalog-more').hidden=!catalogHasMore;$('catalog-more').disabled=!catalogHasMore;
-  if(!items.length&&reset)$('catalog-status').textContent='No records matched this query. Try a broader search.';
- }catch(error){$('catalog-status').textContent='Dataset query failed: '+error.message;$('catalog-more').disabled=true;$('catalog-more').hidden=true}
-}
-function upgradeToOpenLayers(){
- if(!fallback||!window.ol||!ol.Map)return;
- mapRoot.classList.remove('map-fallback');mapRoot.replaceChildren();fallback=false;
- if(!initializeOpenLayers()){fallback=true;initFallback();return}
- dataItems.forEach(addPoint);
- if(currentLocation){const point=new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat([currentLocation.longitude,currentLocation.latitude])));locationSource.addFeature(point)}
- updateLayerCounts();renderRecordList();setStatus('OpenLayers ready · OpenStreetMap tiles and stored geographic records are visible.');
- map.updateSize();requestAnimationFrame(()=>map&&map.updateSize());
-}
-window.addEventListener('openlayers-ready',upgradeToOpenLayers);
-function boot(){wireLayers();if(!initializeOpenLayers())initFallback();loadData(false);loadCatalog(true)}
+function boot(){wire();render();loadData(false);loadCatalog(true)}
 boot();
 })();

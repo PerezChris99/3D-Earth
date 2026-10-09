@@ -4,74 +4,78 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071019">
-<meta name="description" content="OpenLayers world map with database-backed environmental events, satellite observation footprints, and searchable scientific records.">
+<meta name="description" content="Interactive world map with database-backed Earth observations, satellite image footprints and a searchable scientific data explorer.">
 <title>World Map & Data Explorer — 3D Earth by Perez</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.11.0/ol.css">
 <link rel="stylesheet" href="/css/map.css">
 <link rel="stylesheet" href="/css/mobile-nav.css">
 </head>
 <body class="map-page">
-<header class="map-header">
-  <a href="/" class="map-brand">3D EARTH <span>BY PEREZ</span></a>
-  <div class="map-heading"><strong>WORLD MAP</strong><small>OPENLAYERS · OPENSTREETMAP · SUPABASE</small></div>
-  <div class="map-actions"><button id="refresh-data" type="button">REFRESH DATA</button><button id="locate-me" type="button">LOCATE ME</button></div>
-</header>
-<main id="map" aria-label="Interactive OpenLayers world map"></main>
-<aside class="map-panel" id="map-panel" aria-label="Map data layers">
-  <div class="panel-title"><div><span class="eyebrow">DATABASE CONNECTED MAP</span><h1>Earth data</h1></div><button id="collapse-panel" type="button" aria-label="Collapse data panel">−</button></div>
-  <p id="map-status" class="map-status" role="status" aria-live="polite">Starting OpenLayers map and loading stored observations…</p>
-  <div class="map-legend" aria-label="Map layer filters">
-    <button type="button" data-sector="earthquakes" class="active" aria-pressed="true"><i class="dot earthquakes"></i>Earthquakes <b id="count-earthquakes">—</b></button>
-    <button type="button" data-sector="severe_weather" class="active" aria-pressed="true"><i class="dot severe_weather"></i>Severe weather <b id="count-severe_weather">—</b></button>
-    <button type="button" data-sector="wildfires" class="active" aria-pressed="true"><i class="dot wildfires"></i>Wildfires <b id="count-wildfires">—</b></button>
-    <button type="button" data-sector="volcanoes" class="active" aria-pressed="true"><i class="dot volcanoes"></i>Volcanoes <b id="count-volcanoes">—</b></button>
-    <button type="button" data-sector="volcano_alerts" class="active" aria-pressed="true"><i class="dot volcano_alerts"></i>Volcano notices <b id="count-volcano_alerts">—</b></button>
-    <button type="button" data-sector="oceans" class="active" aria-pressed="true"><i class="dot oceans"></i>Ocean observations <b id="count-oceans">—</b></button>
-    <button type="button" data-sector="weather" class="active" aria-pressed="true"><i class="dot weather"></i>Surface weather <b id="count-weather">—</b></button>
-    <button type="button" data-sector="earth_observation_products" class="active" aria-pressed="true"><i class="dot earth_observation_products"></i>Satellite image footprints <b id="count-earth_observation_products">—</b></button>
-    <button type="button" data-sector="telemetry_samples" class="active" aria-pressed="true"><i class="dot telemetry_samples"></i>Seed telemetry samples <b id="count-telemetry_samples">—</b></button>
-    <button type="button" data-sector="other_events" class="active" aria-pressed="true"><i class="dot other_events"></i>Other Earth events <b id="count-other_events">—</b></button>
-  </div>
-  <div id="feature-detail" class="feature-detail" hidden></div>
-  <div class="map-list-heading"><span class="eyebrow">LATEST LOCATED RECORDS</span><span id="loaded-count">0 loaded</span></div>
-  <div id="map-record-list" class="map-record-list"></div>
-  <p class="data-note">Pins use coordinates stored with each record. Satellite image products are shown as their stored polygon footprints. Seed telemetry is labelled as sample data, not live satellite tracking.</p>
-  <button type="button" id="catalog-toggle" class="catalog-toggle">OPEN DATABASE EXPLORER <span>↓</span></button>
-</aside>
-<section class="catalog-panel" id="catalog-panel" hidden aria-label="Database explorer">
-  <div class="panel-title"><div><span class="eyebrow">PAGINATED DATABASE BROWSER</span><h2>Database explorer</h2></div><button id="close-catalog" type="button" aria-label="Close database explorer">×</button></div>
-  <div class="catalog-controls">
-    <label for="catalog-dataset">Dataset</label>
-    <select id="catalog-dataset">
-      <option value="observatory_observations">Environmental / observatory observations</option>
-      <option value="world_development_observations">World development indicators (204k+)</option>
-      <option value="earth_events">Earth events</option>
-      <option value="earth_observation_products">Satellite image products</option>
-      <option value="satellites">Satellite database catalog</option>
-      <option value="satellite_observations">Satellite telemetry observations</option>
-      <option value="satellite_passes">Satellite passes</option>
-      <option value="seed_telemetry_samples">Seed telemetry samples</option>
-      <option value="volcano_observations">Volcano observations</option>
-      <option value="environment_observations">Environment observations</option>
-      <option value="space_weather_observations">Space weather</option>
-      <option value="astronomy_snapshots">Astronomy snapshots</option>
-      <option value="celestial_bodies">Celestial bodies</option>
-      <option value="observatory_sources">Observatory sources</option>
-      <option value="data_sources">Data sources</option>
-      <option value="data_layer_configs">Layer configuration</option>
-      <option value="ingestion_runs">Ingestion runs</option>
-      <option value="observatory_ingestion_runs">Observatory ingestion runs</option>
-    </select>
-    <label for="catalog-search">Search dataset</label>
-    <div class="catalog-search-row"><input id="catalog-search" type="search" placeholder="Country, indicator, event, metric…"><button id="catalog-search-button" type="button">SEARCH</button></div>
-  </div>
-  <p id="catalog-status" class="map-status">Choose a dataset to browse database records.</p>
-  <div id="catalog-results" class="catalog-results"></div>
-  <button id="catalog-more" type="button" class="catalog-more">LOAD NEXT PAGE</button>
-  <p class="data-note">Sensitive observer-location and ingestion-credential tables are intentionally excluded. Records without geographic coordinates remain searchable here instead of being assigned invented map locations.</p>
-</section>
-<div id="location-status" class="location-status" role="status" aria-live="polite">Map is available without sharing your location.</div>
-<script src="/js/map-loader.js"></script>
+<main class="map-shell">
+  <canvas id="world-map" aria-label="Interactive world map. Drag to pan, use plus and minus to zoom, and select a marker for its record details."></canvas>
+  <div class="map-grid-overlay" aria-hidden="true"></div>
+  <header class="map-header">
+    <a href="/" class="map-brand">3D EARTH <span>BY PEREZ</span></a>
+    <div class="map-actions"><button id="refresh-data" type="button">REFRESH DATA</button><button id="locate-me" type="button">LOCATE ME</button></div>
+  </header>
+  <div class="map-zoom" aria-label="Map zoom controls"><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-out" type="button" aria-label="Zoom out">−</button><button id="zoom-world" type="button">WORLD</button></div>
+  <div class="map-attribution">Map tiles © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · Map display works without external map libraries.</div>
+  <aside class="map-panel" id="map-panel" aria-label="Map layers and latest records">
+    <div class="panel-title"><div><span class="eyebrow">DATABASE-CONNECTED OBSERVATORY</span><h1>Earth data</h1></div><button id="collapse-panel" type="button" aria-label="Collapse map panel">−</button></div>
+    <p id="map-status" class="map-status" role="status" aria-live="polite">World map ready · loading database observations…</p>
+    <div class="map-legend" aria-label="Toggle map data layers">
+      <button type="button" data-sector="earthquakes" class="active" aria-pressed="true"><i class="dot earthquakes"></i>Earthquakes <b id="count-earthquakes">—</b></button>
+      <button type="button" data-sector="severe_weather" class="active" aria-pressed="true"><i class="dot severe_weather"></i>Severe weather <b id="count-severe_weather">—</b></button>
+      <button type="button" data-sector="wildfires" class="active" aria-pressed="true"><i class="dot wildfires"></i>Wildfires <b id="count-wildfires">—</b></button>
+      <button type="button" data-sector="volcanoes" class="active" aria-pressed="true"><i class="dot volcanoes"></i>Volcanoes <b id="count-volcanoes">—</b></button>
+      <button type="button" data-sector="volcano_alerts" class="active" aria-pressed="true"><i class="dot volcano_alerts"></i>Volcano notices <b id="count-volcano_alerts">—</b></button>
+      <button type="button" data-sector="oceans" class="active" aria-pressed="true"><i class="dot oceans"></i>Ocean observations <b id="count-oceans">—</b></button>
+      <button type="button" data-sector="weather" class="active" aria-pressed="true"><i class="dot weather"></i>Surface weather <b id="count-weather">—</b></button>
+      <button type="button" data-sector="earth_observation_products" class="active" aria-pressed="true"><i class="dot earth_observation_products"></i>Satellite footprints <b id="count-earth_observation_products">—</b></button>
+      <button type="button" data-sector="telemetry_samples" class="active" aria-pressed="true"><i class="dot telemetry_samples"></i>Seed telemetry <b id="count-telemetry_samples">—</b></button>
+      <button type="button" data-sector="other_events" class="active" aria-pressed="true"><i class="dot other_events"></i>Other Earth events <b id="count-other_events">—</b></button>
+    </div>
+    <div id="feature-detail" class="feature-detail" hidden></div>
+    <div class="map-list-heading"><span class="eyebrow">LATEST LOCATED RECORDS</span><span id="loaded-count">0 loaded</span></div>
+    <div id="map-record-list" class="map-record-list"><p class="empty-state">Database records will appear here while the map remains interactive.</p></div>
+    <p class="data-note">Pins use stored coordinates. Satellite products use their recorded footprint geometry. Seed telemetry is sample data, not live satellite tracking.</p>
+    <button type="button" id="catalog-toggle" class="catalog-toggle">OPEN DATABASE EXPLORER <span>↓</span></button>
+  </aside>
+  <section class="catalog-panel" id="catalog-panel" hidden aria-label="Searchable database explorer">
+    <div class="panel-title"><div><span class="eyebrow">SEARCHABLE DATASETS</span><h2>Database explorer</h2></div><button id="close-catalog" type="button" aria-label="Close database explorer">×</button></div>
+    <p class="catalog-intro">Browse database records by dataset, inspect their fields, and search supported text columns. Sensitive observer-location and ingestion-credential tables are deliberately excluded.</p>
+    <div class="catalog-controls">
+      <label for="catalog-dataset">Dataset</label>
+      <select id="catalog-dataset">
+        <option value="observatory_observations">Environmental / observatory observations</option>
+        <option value="world_development_observations">World development indicators</option>
+        <option value="earth_events">Earth events</option>
+        <option value="earth_observation_products">Satellite image products</option>
+        <option value="satellites">Satellite database catalog</option>
+        <option value="satellite_observations">Satellite telemetry observations</option>
+        <option value="satellite_passes">Satellite passes</option>
+        <option value="seed_telemetry_samples">Seed telemetry samples</option>
+        <option value="volcano_observations">Volcano observations</option>
+        <option value="environment_observations">Environment observations</option>
+        <option value="space_weather_observations">Space weather</option>
+        <option value="astronomy_snapshots">Astronomy snapshots</option>
+        <option value="celestial_bodies">Celestial bodies</option>
+        <option value="observatory_sources">Observatory sources</option>
+        <option value="data_sources">Data sources</option>
+        <option value="data_layer_configs">Layer configuration</option>
+        <option value="ingestion_runs">Ingestion runs</option>
+        <option value="observatory_ingestion_runs">Observatory ingestion runs</option>
+      </select>
+      <label for="catalog-search">Search records</label>
+      <div class="catalog-search-row"><input id="catalog-search" type="search" placeholder="Country, indicator, event, source…"><button id="catalog-search-button" type="button">SEARCH</button></div>
+    </div>
+    <p id="catalog-status" class="map-status" role="status" aria-live="polite">Select a dataset to browse its current records.</p>
+    <div id="catalog-results" class="catalog-results"></div>
+    <button id="catalog-more" type="button" class="catalog-more" hidden>LOAD NEXT PAGE</button>
+    <p class="data-note">Geographic layers show a recent window for speed; the explorer paginates through the stored dataset. Non-geographic records remain searchable here instead of being assigned fabricated map locations.</p>
+  </section>
+  <div id="location-status" class="location-status" role="status" aria-live="polite">Map is ready. Device location is optional.</div>
+</main>
+<script src="/js/map.js" defer></script>
 <script src="/js/navigation.js" defer></script>
 </body>
 </html>

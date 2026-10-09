@@ -282,8 +282,15 @@ router.get('/observatory/catalog', async (req, res) => {
                 data_sources: ['name','provider','description'], observatory_sources: ['name','provider','sector','slug'],
                 celestial_bodies: ['name','body_type'], seed_telemetry_samples: ['source'], ingestion_runs: ['job_name','status'],
                 observatory_ingestion_runs: ['status','error']
+                data_layer_configs: ['layer_key','sector','status','notes'],
+                satellite_observations: [],
+                satellite_passes: [],
             }[dataset];
-            if (searchable) params += '&or=' + encodeURIComponent('(' + searchable.map(column => column + '.ilike.' + pattern).join(',') + ')');
+            if (searchable && searchable.length) params += '&or=' + encodeURIComponent('(' + searchable.map(column => column + '.ilike.' + pattern).join(',') + ')');
+            // UUID-backed satellite tables support exact ID lookup without casting UUID columns to text.
+            if (q && ['satellite_observations','satellite_passes'].includes(dataset) && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(q)) {
+                params += '&satellite_id=eq.' + encodeURIComponent(q);
+            }
         }
         const rows = await supabaseQuery(dataset, params);
         res.set('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=30');

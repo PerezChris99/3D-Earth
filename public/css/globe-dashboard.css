@@ -48,3 +48,51 @@
 .astro-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 .astro-grid b{white-space:normal;overflow-wrap:anywhere;line-height:1.35;min-height:1.2em}
 @media(max-width:700px){.observatory-card{max-height:42vh;overflow:auto}.astro-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.astro-location-note{font-size:7px;margin-top:7px;padding-top:6px}}
+
+
+/* Compact, corner-anchored HUD: the planet remains the primary visual. */
+.observatory-card{top:70px;right:18px;left:auto;width:286px;max-width:calc(100vw - 36px);padding:12px;max-height:38vh;overflow:auto}
+.observatory-card>strong{font-size:15px;margin-top:3px}
+.observatory-card>span{font-size:8px;margin-top:2px}
+.observatory-card .astro-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;margin-top:9px}
+.observatory-card .astro-grid div{padding-top:6px}
+.observatory-card .astro-grid small{font-size:7px;letter-spacing:.1em}
+.observatory-card .astro-grid b{font-size:9px;line-height:1.3}
+.observatory-card .astro-grid div:nth-child(n+5){display:none}
+.observatory-card .astro-location-note{display:none}
+.layer-panel{top:76px;left:18px;width:270px;max-height:calc(100vh - 150px);overflow:auto}
+.data-layers-toggle{right:18px;bottom:62px}
+.data-layer-drawer{right:18px;bottom:108px}
+.satellite-drawer{z-index:30}
+@media(max-width:760px){
+ .global-site-nav{display:none}
+ .hud-header{top:9px;left:8px;right:8px}
+ .brand{font-size:9px}
+ .observatory-card{top:58px;right:8px;left:auto;width:min(52vw,205px);max-width:205px;padding:9px;max-height:33vh;border-radius:11px}
+ .observatory-card>strong{font-size:12px}
+ .observatory-card>span{font-size:7px;line-height:1.3}
+ .observatory-card .astro-grid{gap:5px;margin-top:7px}
+ .observatory-card .astro-grid small{font-size:6px;letter-spacing:.06em}
+ .observatory-card .astro-grid b{font-size:8px;line-height:1.25}
+ .layer-panel{top:58px;left:8px;right:auto;bottom:auto;width:min(42vw,165px);max-height:35vh;padding:9px;border-radius:11px;overflow:auto}
+ .layer-panel h1{font-size:14px;margin:3px 0 6px}
+ .layer-panel .panel-kicker{font-size:6px;letter-spacing:.1em}
+ .layer-panel .location-card{display:block;padding:7px;margin-bottom:0}
+ .layer-panel .location-card strong{font-size:8px;overflow-wrap:anywhere;line-height:1.35}
+ .layer-panel .location-card small{display:block;font-size:6px;line-height:1.3;overflow-wrap:anywhere}
+ .layer-panel .small-action{width:100%;margin-top:7px;padding:7px 4px;font-size:7px}
+ .layer-panel .panel-copy{display:none}
+ .layer-panel .layer-list{grid-template-columns:1fr}
+ .layer-panel .layer{justify-content:flex-start;padding:6px 0;font-size:7px}
+ .planet-meta,.hint{display:none}
+ .data-layers-toggle{right:8px;bottom:calc(78px + env(safe-area-inset-bottom));padding:9px 10px;font-size:8px}
+ .data-layer-drawer{right:8px;bottom:calc(124px + env(safe-area-inset-bottom));width:calc(100vw - 16px);max-height:42vh;padding:12px}
+ .satellite-drawer{width:min(390px,100vw);padding:18px 12px calc(90px + env(safe-area-inset-bottom))}
+}
+@media(max-width:380px){
+ .observatory-card{width:51vw;padding:7px}
+ .layer-panel{width:41vw;padding:7px}
+ .layer-panel .location-card{padding:5px}
+ .layer-panel .location-card strong{font-size:7px}
+ .observatory-card .astro-grid b{font-size:7px}
+}
