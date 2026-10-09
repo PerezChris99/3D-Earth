@@ -75,7 +75,7 @@ router.get('/observatory/summary', async (req, res) => {
     try {
         if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });
         const [satellites, observations, samples, events, sources, sectorRows] = await Promise.all([
-            supabaseQuery('satellites', 'select=id,norad_id,name,object_type,owner_country,operator&order=name.asc&limit=20'),
+            supabaseQuery('satellites', 'select=id,norad_id,name,object_type,owner_country,operator&order=name.asc&limit=300'),
             supabaseQuery('satellite_observations', 'select=id,satellite_id,observed_at,latitude,longitude,altitude_km,speed_km_s&order=observed_at.desc&limit=20'),
             supabaseQuery('seed_telemetry_samples', 'select=sample_id,sampled_at,latitude,longitude,altitude_km,speed_km_s&order=sample_id.asc&limit=20'),
             supabaseQuery('earth_events', 'select=id,event_type,occurred_at,latitude,longitude,magnitude,title&order=occurred_at.desc&limit=20'),
