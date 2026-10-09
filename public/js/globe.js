@@ -47,7 +47,7 @@ async function loadObservatorySummary(){
  else if(results[0].status!=='fulfilled'||!results[0].value.ok){$('system-state').textContent='PLANETARY VIEW · DATABASE OFFLINE'}
 }
 function installObservatoryLayers(data){
- dataLayerItems=Array.isArray(data.items)?data.items:[];dataLayerMeta=Array.isArray(data.layers)?data.layers:[];
+ dataLayerItems=Array.isArray(data.items)?data.items:[];dataLayerMeta=Array.isArray(data.layers)?data.layers:[];dataLayerItems.sort((a,b)=>new Date(b.observed_at||0)-new Date(a.observed_at||0));
  dataMarkerGroup.clear();const geometry=new THREE.SphereGeometry(.012,8,8);
  const colors={wildfires:0xff754f,volcanoes:0xffc45e,oceans:0x57c9ff,weather:0x8de2b4};
  const materials={};Object.entries(colors).forEach(([key,color])=>materials[key]=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.92}));
@@ -158,7 +158,7 @@ async function loadSatellites(group){
  }else{const response=await fetch('/api/satellites?group='+encodeURIComponent(group),{signal:AbortSignal.timeout(16000)});if(!response.ok)throw new Error('Satellite group unavailable');data=await response.json();satellites=(data.items||data||[]).slice(0,500)}
  satGroup.clear();trajectory=null;
  satellites.forEach(item=>{const model=makeSatelliteModel(item);item._satrec=window.satellite?satellite.twoline2satrec(item.tle1,item.tle2):null;model.userData={kind:'satellite',item,norad:item.norad,icon:true};model.name=item.name;item._mesh=model;satGroup.add(model);loadAuthoritativeModel(item,model)});
- $('sat-source').textContent=(data.source||'CelesTrak')+' · '+satellites.length+' current objects · fetched '+new Date(data.ts||Date.now()).toLocaleTimeString()+' · click a marker to inspect';renderSatList();
+ $('sat-source').textContent=(data.source||'CelesTrak')+' · '+satellites.length+' current objects · fetched '+new Date(data.ts||Date.now()).toLocaleTimeString()+(data.partial?' · some groups unavailable':'')+' · click a marker to inspect';renderSatList();
  }catch(_){$('sat-source').textContent='Satellite data unavailable; Earth rendering continues normally.';$('sat-list').innerHTML='<div class="source-note">No live orbital feed was returned.</div>'}
 }
 function renderSatList(){const list=$('sat-list');list.innerHTML='';const ordered=selectedNorad?[...satellites].sort((a,b)=>String(a.norad)===selectedNorad?-1:String(b.norad)===selectedNorad?1:0):satellites;ordered.slice(0,80).forEach(item=>{const row=document.createElement('article');row.className='sat-row';row.dataset.norad=item.norad||'';row.innerHTML='<strong>'+escapeHtml(item.name||'Unnamed object')+'</strong><div class="sat-meta"><span>NORAD '+escapeHtml(String(item.norad||'—'))+'</span><span>'+escapeHtml(item.type||'PAYLOAD')+'</span><span class="sat-live">Awaiting propagation</span></div>';list.appendChild(row)})}
