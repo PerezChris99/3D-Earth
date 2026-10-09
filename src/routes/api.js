@@ -87,7 +87,7 @@ router.get('/observatory/health', async (req, res) => {
             return { table, status: 'ok' };
         } catch (err) {
             logger.error('API', '/observatory/health table probe failed', { table, message: err.message });
-            const reason = /timed out/i.test(err.message) ? 'timeout' : /REST 4\\d\\d/i.test(err.message) ? 'schema_or_access' : 'upstream_unavailable';
+            const reason = /timed out/i.test(err.message) ? 'timeout' : /REST 4\d\d/i.test(err.message) ? 'schema_or_access' : 'upstream_unavailable';
             return { table, status: 'unavailable', reason };
         }
     }));
