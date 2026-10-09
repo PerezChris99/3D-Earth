@@ -57,7 +57,7 @@ function installObservatoryLayers(data){
   const marker=new THREE.Mesh(geometry,materials[item.sector]||materials.weather);marker.position.copy(earthPoint(lat,lon,1.014));
   marker.userData={kind:'observation',item};marker.visible=activeDataSectors.has(item.sector);item._marker=marker;dataMarkerGroup.add(marker);
  });
- dataLayerMeta.forEach(layer=>{const count=$('count-'+layer.sector);if(count)count.textContent=String(layer.count);});
+ dataLayerMeta.forEach(layer=>{const count=$('count-'+layer.sector);if(count)count.textContent=String(layer.loaded_count??layer.count??0);});
  const total=$('data-layer-total');if(total)total.textContent=String(dataLayerItems.length);
  const statusText=$('data-layer-status');if(statusText)statusText.textContent=dataLayerItems.length+' database-backed observations · '+(data.source||'Supabase')+' · updated '+new Date(data.ts||Date.now()).toLocaleTimeString();
  const list=$('data-layer-list');if(list){list.innerHTML='';dataLayerItems.slice(0,14).forEach(item=>{const row=document.createElement('button');row.type='button';row.className='data-layer-row';row.dataset.observationId=String(item.id);row.textContent=(item.label||item.sector)+' · '+(item.metric||item.sector)+' '+(item.value??'')+' '+(item.unit||'');list.appendChild(row)});}

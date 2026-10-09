@@ -281,7 +281,7 @@ router.get('/observatory/catalog', async (req, res) => {
                 environment_observations: ['sector','external_id','quality_flag'], space_weather_observations: ['product'],
                 data_sources: ['name','provider','description'], observatory_sources: ['name','provider','sector','slug'],
                 celestial_bodies: ['name','body_type'], seed_telemetry_samples: ['source'], ingestion_runs: ['job_name','status'],
-                observatory_ingestion_runs: ['status','error']
+                observatory_ingestion_runs: ['status','error'],
                 data_layer_configs: ['layer_key','sector','status','notes'],
                 satellite_observations: [],
                 satellite_passes: [],
