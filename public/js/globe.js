@@ -91,7 +91,7 @@ function wire(){
  renderer.domElement.addEventListener('pointerup',event=>{
   if(!pointerStart)return;const moved=Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y);pointerStart=null;if(moved>7)return;
   const rect=renderer.domElement.getBoundingClientRect();pointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);raycaster.setFromCamera(pointer,camera);
-  const hits=raycaster.intersectObjects([...satGroup.children,...dataMarkerGroup.children],true);
+  const hits=raycaster.intersectObjects([...satGroup.children,...dataMarkerGroup.children],true);let selectedHit=false;
   for(const hit of hits){let object=hit.object;while(object&&object!==satGroup&&object!==dataMarkerGroup&&!object.userData?.kind)object=object.parent;
    if(object?.userData?.kind==='satellite'){const item=object.userData.item;if(item){selectedHit=true;$('satellite-drawer').classList.add('open');$('satellite-drawer').setAttribute('aria-hidden','false');$('data-layer-drawer').classList.remove('open');selectSatellite(item.norad);return}}
    if(object?.userData?.kind==='observation'){const item=object.userData.item;if(item){selectedHit=true;$('data-layer-drawer').classList.add('open');$('data-layer-drawer').setAttribute('aria-hidden','false');$('satellite-drawer').classList.remove('open');selectObservation(item.id);return}}

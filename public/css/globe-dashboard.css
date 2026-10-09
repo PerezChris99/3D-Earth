@@ -110,3 +110,26 @@
  .layer-panel.panel-collapsed .panel-kicker{font-size:8px}
  .observatory-card{top:60px}
 }
+
+/* Satellite drawer sits below the desktop navigation; catalog typography is readable at a glance. */
+.satellite-drawer{top:68px;bottom:12px;padding:20px 20px 22px;overflow:hidden;display:flex;flex-direction:column}
+.satellite-drawer .drawer-head{flex:0 0 auto}
+.satellite-drawer .drawer-head h2{font-size:24px;line-height:1.2}
+.satellite-drawer .drawer-head .panel-kicker{font-size:10px}
+.satellite-drawer .sat-toolbar{flex:0 0 auto;margin:14px 0 9px}
+.satellite-drawer .sat-toolbar select,.satellite-drawer .sat-toolbar button{font-size:12px;padding:11px}
+.satellite-drawer .source-note{flex:0 0 auto;font-size:12px;line-height:1.55;color:#a4b7cb}
+.satellite-drawer .sat-list{min-height:0;flex:1;overflow:auto;align-content:start;overscroll-behavior:contain;padding:0 2px 12px 0}
+.satellite-drawer .sat-row{padding:13px}
+.satellite-drawer .sat-row strong{font-size:15px;line-height:1.35}
+.satellite-drawer .sat-row .sat-meta{font-size:11px;line-height:1.5;margin-top:6px}
+.satellite-drawer .sat-detail{font-size:12px;line-height:1.6;color:#a9bbce}
+.satellite-drawer .sat-detail b{color:#f0f7ff}
+@media(max-width:760px){
+ .satellite-drawer{top:50px;bottom:calc(58px + env(safe-area-inset-bottom));width:min(430px,100vw);padding:14px 12px 12px}
+ .satellite-drawer .drawer-head h2{font-size:21px}
+ .satellite-drawer .source-note{font-size:11px}
+ .satellite-drawer .sat-row strong{font-size:14px}
+ .satellite-drawer .sat-row .sat-meta{font-size:10px}
+ .satellite-drawer .sat-detail{font-size:11px}
+}
