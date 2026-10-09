@@ -47,3 +47,16 @@ test('observatory API exposes a safe database health probe and map preserves ser
   assert.match(map, /body\.error\|\|body\.message/);
   assert.match(map, /direct catalog fallback returned no located records/);
 });
+
+test('Leaflet map supports database overlays while retaining the offline canvas fallback', () => {
+  const html = read('map.html');
+  const loader = read('public/js/map-loader.js');
+  const leaflet = read('public/js/leaflet-map.js');
+  const fallback = read('public/js/map.js');
+  assert.match(html, /id="leaflet-map"/);
+  assert.match(loader, /loadLeaflet\(0\)/);
+  assert.match(loader, /fallback\(\)/);
+  assert.match(leaflet, /\/api\/observatory\/layers\?limit=160/);
+  assert.match(leaflet, /\/api\/observatory\/catalog\?/);
+  assert.match(fallback, /function drawBase/);
+});
