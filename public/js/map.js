@@ -140,11 +140,16 @@ async function loadCatalog(reset){
   if(!items.length&&reset)$('catalog-status').textContent='No records matched this query. Try a broader search.';
  }catch(error){$('catalog-status').textContent='Dataset query failed: '+error.message;$('catalog-more').disabled=true;$('catalog-more').hidden=true}
 }
-function boot(){
- wireLayers();
- if(!initializeOpenLayers())initFallback();
- loadData(false);
- loadCatalog(true);
+function upgradeToOpenLayers(){
+ if(!fallback||!window.ol||!ol.Map)return;
+ mapRoot.classList.remove('map-fallback');mapRoot.replaceChildren();fallback=false;
+ if(!initializeOpenLayers()){fallback=true;initFallback();return}
+ dataItems.forEach(addPoint);
+ if(currentLocation){const point=new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat([currentLocation.longitude,currentLocation.latitude])));locationSource.addFeature(point)}
+ updateLayerCounts();renderRecordList();setStatus('OpenLayers ready · OpenStreetMap tiles and stored geographic records are visible.');
+ map.updateSize();requestAnimationFrame(()=>map&&map.updateSize());
 }
+window.addEventListener('openlayers-ready',upgradeToOpenLayers);
+function boot(){wireLayers();if(!initializeOpenLayers())initFallback();loadData(false);loadCatalog(true)}
 boot();
 })();

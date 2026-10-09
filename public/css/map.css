@@ -8,3 +8,18 @@
 @media(min-width:1001px){.map-panel.collapsed{width:290px;bottom:auto;max-height:70px;overflow:hidden}.map-panel.collapsed .map-legend,.map-panel.collapsed .map-status,.map-panel.collapsed .map-list-heading,.map-panel.collapsed .map-record-list,.map-panel.collapsed .data-note,.map-panel.collapsed .catalog-toggle,.map-panel.collapsed .feature-detail{display:none}}
 
 .fallback-controls{position:absolute;z-index:10;right:14px;bottom:80px;display:grid;gap:5px}.fallback-controls button{border:1px solid rgba(255,255,255,.2);border-radius:8px;background:#071019e8;color:#fff;padding:9px 12px;font-size:12px;cursor:pointer}
+
+/* Keep map actions clear of the shared fixed navigation. */
+.map-header{z-index:1200;pointer-events:none}
+.map-header .map-brand{position:fixed;top:14px;left:18px}
+.map-header .map-actions{position:fixed;top:62px;right:18px;z-index:1201;display:flex;gap:7px}
+.map-header .map-heading{display:none}
+#map{min-width:100%;min-height:100%;isolation:isolate}
+#map .ol-viewport{position:absolute!important;inset:0;width:100%;height:100%}
+@media(max-width:1000px){
+ .map-header .map-brand{top:12px;left:10px}
+ .map-header .map-actions{top:52px;right:10px;left:auto;gap:6px}
+ .map-header .map-actions button{padding:9px 10px;font-size:8px}
+ .map-panel,.catalog-panel{top:auto;bottom:calc(76px + env(safe-area-inset-bottom));max-height:48vh}
+ .map-page .location-status{bottom:calc(70px + env(safe-area-inset-bottom))}
+}

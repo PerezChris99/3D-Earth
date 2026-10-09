@@ -6,3 +6,40 @@
 
 .sat-preview-fallback{display:block;width:100%;height:100%;min-height:300px}
 #sat-visual canvas{max-width:100%}
+
+/* Orbital catalog polish: clearer hierarchy, responsive layout, and useful empty state. */
+.sat-hero{min-height:76vh;grid-template-columns:minmax(320px,.88fr) minmax(0,1.12fr);gap:2vw;padding-top:105px;padding-bottom:48px}
+.sat-hero>div:first-child{position:relative;z-index:1}
+.sat-hero .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid rgba(117,201,255,.22);border-radius:999px;background:rgba(117,201,255,.06)}
+.sat-hero h1{font-size:clamp(54px,6vw,88px);line-height:.94}
+.sat-hero p:not(.eyebrow){font-size:14px;max-width:490px}
+.sat-visual{height:min(570px,62vh);min-height:360px;border:1px solid rgba(117,201,255,.12);border-radius:24px;background:radial-gradient(circle at 50% 48%,rgba(23,74,111,.25),rgba(2,7,13,0) 68%);box-shadow:inset 0 0 70px rgba(39,119,170,.06)}
+.sat-catalog{grid-template-columns:minmax(340px,43%) minmax(0,1fr);min-height:640px;background:linear-gradient(135deg,#050d16,#02070d)}
+.sat-list-panel,.sat-detail-panel{padding:42px clamp(20px,4vw,64px)}
+.sat-list-panel{border-right:1px solid var(--line)}
+.sat-detail-panel{align-self:stretch;background:radial-gradient(ellipse at 80% 20%,rgba(23,64,94,.18),transparent 60%)}
+.sat-detail-panel>#empty-detail{max-width:520px;padding:28px 0}
+.sat-detail-panel>#empty-detail>p:not(.eyebrow){max-width:450px;color:var(--muted);font-size:13px;line-height:1.8}
+.sat-detail-panel>#empty-detail:after{content:"SELECT ANY CATALOG ROW TO LOAD ITS ORBITAL PROFILE";display:block;margin-top:34px;padding:14px;border:1px dashed rgba(117,201,255,.2);border-radius:10px;color:#6f879f;font-size:8px;letter-spacing:.12em;line-height:1.6}
+#detail{max-width:650px;padding:26px;border:1px solid var(--line);border-radius:16px;background:rgba(8,17,27,.45)}
+#detail h2{font-size:clamp(30px,3vw,44px);overflow-wrap:anywhere}
+#detail .globe-link{border-radius:8px}
+#search{margin:18px 0 12px;border-radius:9px}
+.sat-row{transition:border-color .16s,background .16s;overflow-wrap:anywhere}
+.sat-row small{line-height:1.6}
+.sat-list{max-height:680px;padding-right:3px}
+.status{line-height:1.6}
+footer{gap:20px}
+@media(max-width:850px){
+ .sat-hero{min-height:auto;grid-template-columns:1fr;padding:100px 6vw 32px;gap:12px}
+ .sat-visual{height:360px;min-height:300px;order:-1}
+ .sat-hero h1{font-size:clamp(48px,13vw,72px)}
+ .sat-hero p:not(.eyebrow){font-size:13px}
+ .sat-catalog{grid-template-columns:minmax(0,1fr);min-height:0}
+ .sat-list-panel,.sat-detail-panel{padding:28px 6vw}
+ .sat-list-panel{border-right:0;border-bottom:1px solid var(--line)}
+ .sat-detail-panel{min-height:320px}
+ #detail{padding:18px}
+ .detail-grid{gap:12px}
+ footer{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+}
