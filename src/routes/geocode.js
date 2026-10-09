@@ -1,11 +1,14 @@
 'use strict';
 
 const express = require('express');
+const net = require('node:net');
 const router = express.Router();
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const MIN_INTERVAL_MS = 1100;
 const cache = new Map();
+const NETWORK_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const networkCache = new Map();
 let lastRequestAt = 0;
 let queue = Promise.resolve();
 
@@ -32,6 +35,17 @@ async function throttledFetch(url) {
   queue = next.catch(() => {});
   return next;
 }
+
+function isPrivateIp(ip) {
+ if(net.isIP(ip)===4){const o=ip.split('.').map(Number);return o[0]===10||o[0]===127||o[0]===0||(o[0]===169&&o[1]===254)||(o[0]===172&&o[1]>=16&&o[1]<=31)||(o[0]===192&&o[1]===168)}
+ return ip==='::1'||/^f[cd]/i.test(ip)||/^fe80:/i.test(ip);
+}
+router.get('/network',async(req,res)=>{
+ const ip=String(req.ip||'').replace(/^::ffff:/i,'');
+ if(!ip||net.isIP(ip)===0||isPrivateIp(ip))return res.json({isp:null,organization:null,city:null,region:null,country:null,approximate:true});
+ const cached=networkCache.get(ip);if(cached&&cached.expiresAt>Date.now())return res.set('Cache-Control','private, max-age=300').json(cached.value);
+ try{const response=await fetch('https://ipwho.is/'+encodeURIComponent(ip),{headers:{Accept:'application/json'},signal:AbortSignal.timeout(5000)});if(!response.ok)throw new Error('Network lookup HTTP '+response.status);const data=await response.json();if(data.success===false)throw new Error('Network lookup did not resolve');const value={isp:data.connection?.isp||null,organization:data.connection?.org||null,city:data.city||null,region:data.region||null,country:data.country||null,approximate:true,source:'IP network estimate'};networkCache.set(ip,{value,expiresAt:Date.now()+NETWORK_CACHE_TTL_MS});if(networkCache.size>2000)networkCache.delete(networkCache.keys().next().value);res.set('Cache-Control','private, max-age=300').json(value)}catch(error){res.status(502).json({error:'Network/ISP lookup unavailable.'})}
+});
 
 router.get('/reverse', async (req, res) => {
   const lat = Number(req.query.lat);

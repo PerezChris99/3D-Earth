@@ -1,7 +1,7 @@
 (() => {
 'use strict';
-const sources=['https://cdn.jsdelivr.net/npm/ol@10.11.0/dist/ol.js','https://unpkg.com/ol@10.11.0/dist/ol.js'];
-function startMap(){const script=document.createElement('script');script.src='/js/map.js';script.onerror=()=>{const status=document.getElementById('location-status');if(status)status.textContent='Map script failed to load. Reload the page; device location is not required.'};document.body.appendChild(script)}
-function load(index){if(window.ol&&window.ol.Map){startMap();return}if(index>=sources.length){startMap();return}const script=document.createElement('script');script.src=sources[index];script.async=true;script.onload=()=>window.ol&&window.ol.Map?startMap():load(index+1);script.onerror=()=>load(index+1);document.head.appendChild(script)}
-load(0);
+const sources=['https://cdn.jsdelivr.net/npm/ol@10.11.0/dist/ol.js','https://unpkg.com/ol@10.11.0/dist/ol.js'];let started=false;
+function startMap(){if(started)return;started=true;const status=document.getElementById('location-status');if(status)status.textContent='Starting OpenLayers map…';const script=document.createElement('script');script.src='/js/map.js';script.async=true;script.onerror=()=>{if(status)status.textContent='OpenLayers startup failed. Loading the OpenStreetMap fallback…'};document.body.appendChild(script)}
+function load(index){if(started)return;if(window.ol&&window.ol.Map){startMap();return}if(index>=sources.length){startMap();return}const script=document.createElement('script');script.src=sources[index];script.async=true;let settled=false;const timer=setTimeout(()=>{if(settled||started)return;settled=true;script.remove();load(index+1)},4500);script.onload=()=>{if(settled||started)return;settled=true;clearTimeout(timer);if(window.ol&&window.ol.Map)startMap();else load(index+1)};script.onerror=()=>{if(settled||started)return;settled=true;clearTimeout(timer);load(index+1)};document.head.appendChild(script)}
+const status=document.getElementById('location-status');if(status)status.textContent='Loading OpenLayers / OpenStreetMap…';load(0);
 })();

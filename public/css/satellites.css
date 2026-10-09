@@ -3,3 +3,6 @@
 .global-site-nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;gap:3px;padding:5px 6px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(4,9,15,.84);backdrop-filter:blur(16px);white-space:nowrap}.global-site-nav a{padding:8px 10px;border-radius:999px;color:#d9e4ee;text-decoration:none;font:800 9px/1 Arial,sans-serif;letter-spacing:.12em}.global-site-nav a:hover,.global-site-nav a:focus-visible{color:#fff;background:rgba(120,190,235,.16)}@media(max-width:760px){.global-site-nav{display:none}}
 /* The orbital preview needs a sized viewport before WebGL initialization. */
 #sat-visual,.sat-visual{position:relative;display:block;width:100%;height:620px;min-height:320px;overflow:hidden}#sat-visual canvas{display:block;width:100%;height:100%}.sat-site-nav{background:transparent!important;box-shadow:none!important}.sat-site-nav nav{display:none!important}@media(max-width:850px){#sat-visual,.sat-visual{height:400px;min-height:300px}}
+
+.sat-preview-fallback{display:block;width:100%;height:100%;min-height:300px}
+#sat-visual canvas{max-width:100%}

@@ -25,3 +25,8 @@
 .location-dialog-actions #confirm-location{background:#eaf6ff;color:#06111d;border-color:#eaf6ff}
 .location-dialog-actions button:focus-visible{outline:2px solid #75c9ff;outline-offset:3px}
 @media(max-width:700px){.location-dialog{padding:23px;border-radius:17px}.location-dialog h2{font-size:22px}}
+
+.astro-location-note{margin:12px 0 0;padding-top:10px;border-top:1px solid rgba(220,236,255,.08);font-size:8px;line-height:1.5;color:#71859d}
+.astro-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.astro-grid b{white-space:normal;overflow-wrap:anywhere;line-height:1.35;min-height:1.2em}
+@media(max-width:700px){.observatory-card{max-height:42vh;overflow:auto}.astro-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.astro-location-note{font-size:7px;margin-top:7px;padding-top:6px}}

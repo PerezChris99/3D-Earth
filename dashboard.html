@@ -19,7 +19,16 @@
 </aside>
 <section class="observatory-card" id="observatory-card">
 <div class="panel-kicker">ASTRONOMICAL CLOCK</div><strong id="utc-clock">UTC —</strong><span id="local-clock">Local time unavailable</span>
-<div class="astro-grid"><div><small>TIMEZONE</small><b id="timezone-name">Awaiting observer</b></div><div><small>SOLAR STATE</small><b id="solar-state">Calculating</b></div><div><small>SUN ALT.</small><b id="sun-altitude">—</b></div><div><small>DAYLIGHT</small><b id="daylight-window">—</b></div></div>
+<div class="astro-grid">
+<div><small>CITY / TOWN</small><b id="observer-place">Awaiting observer</b></div>
+<div><small>NETWORK / ISP · IP ESTIMATE</small><b id="observer-isp">Available after location is enabled</b></div>
+<div><small>ALTITUDE</small><b id="observer-altitude">Not provided by device</b></div>
+<div><small>COORDINATES · WGS84</small><b id="observer-astro-coordinates">Not set</b></div>
+<div><small>TIMEZONE</small><b id="timezone-name">Awaiting observer</b></div>
+<div><small>SOLAR STATE</small><b id="solar-state">Calculating</b></div>
+<div><small>SUN ALT.</small><b id="sun-altitude">—</b></div>
+<div><small>DAYLIGHT</small><b id="daylight-window">—</b></div>
+</div><p class="astro-location-note">Place names use reverse geocoding. ISP and city estimates from public IP can differ when using VPNs or mobile networks.</p>
 </section>
 <section class="satellite-drawer" id="satellite-drawer" aria-hidden="true">
 <div class="drawer-head"><div><span class="panel-kicker">ORBITAL CATALOG</span><h2>Live satellites</h2></div><button id="close-satellites" aria-label="Close satellite panel">×</button></div>

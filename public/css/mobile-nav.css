@@ -30,3 +30,11 @@
 .hud-readout{display:none!important}
 .map-header #locate-me{position:fixed;top:62px;right:20px;z-index:9000}
 @media(max-width:1000px){.map-header #locate-me{top:12px;right:12px}.map-header .map-brand{max-width:calc(100vw - 110px)}}
+
+.light-content-page .site-nav-cluster{padding:5px 7px;border:1px solid rgba(20,37,56,.18);border-radius:12px;background:rgba(255,255,252,.97);box-shadow:0 8px 28px rgba(22,35,49,.15)}
+.light-content-page .global-site-nav a{color:#23364a}
+.light-content-page .global-site-nav a[aria-current=page]{color:#fff;background:#244e76}
+.light-content-page .global-site-nav a:hover,.light-content-page .global-site-nav a:focus-visible{color:#14263a;background:#dce8f2;outline-color:#7898b7}
+.light-content-page .global-open-globe{background:#173e61;color:#fff;border-color:#173e61}
+.light-content-page .global-open-globe:hover,.light-content-page .global-open-globe:focus-visible{background:#0e2c49;color:#fff}
+@media(min-width:1001px){.light-content-page .site-nav-cluster{top:10px;right:16px}}

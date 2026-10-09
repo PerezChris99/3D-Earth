@@ -18,6 +18,7 @@ function renderDesktop(){
  let cta=cluster.querySelector('.global-open-globe');if(!cta){cta=document.createElement('a');cta.className='global-open-globe';cta.href='/dashboard.html';cta.textContent='OPEN GLOBE';cluster.appendChild(cta)}
 }
 function renderMobile(){let nav=document.querySelector('.mobile-bottom-nav');if(!nav){nav=document.createElement('nav');nav.className='mobile-bottom-nav';nav.setAttribute('aria-label','Primary navigation');document.body.appendChild(nav)}nav.innerHTML=MOBILE.map(([id,label,href])=>'<a href="'+href+'"'+(active(id,href)?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true">'+ICONS[id]+'</svg><span>'+label+'</span></a>').join('')}
+if(document.querySelector(".info-layout"))document.body.classList.add("light-content-page");
 renderDesktop();renderMobile();
 const prefetched=new Set();function prefetch(link){try{const url=new URL(link.href,location.href);if(url.origin!==location.origin||prefetched.has(url.href))return;prefetched.add(url.href);const p=document.createElement('link');p.rel='prefetch';p.as='document';p.href=url.href;document.head.appendChild(p)}catch(_){}}
 document.querySelectorAll('a[href]').forEach(link=>{if(link.target==='_blank'||link.hasAttribute('download'))return;link.addEventListener('pointerenter',()=>prefetch(link),{once:true});link.addEventListener('focus',()=>prefetch(link),{once:true})});
