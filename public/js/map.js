@@ -41,19 +41,20 @@ function drawBase(w,h){
 }
 function getTile(z,x,y){
  const n=2**z;x=(x%n+n)%n;if(y<0||y>=n)return null;const key=z+'/'+x+'/'+y;
- if(tileCache.has(key))return tileCache.get(key);
+ if(tileCache.has(key)){const cached=tileCache.get(key);if(!cached.failed||Date.now()-(cached.failedAt||0)<30000)return cached;tileCache.delete(key)}
  if(tilePending.has(key)||tilePending.size>=48)return null;
  tilePending.add(key);
  const img=new Image();img.decoding='async';
  const providers=[
   'https://basemaps.cartocdn.com/dark_all/'+key+'.png',
+  'https://basemaps.cartocdn.com/rastertiles/voyager/'+key+'.png',
   'https://tile.openstreetmap.org/'+key+'.png'
  ];
  let providerIndex=0;
  const failOrFallback=()=>{
   providerIndex++;
   if(providerIndex<providers.length){img.src=providers[providerIndex];return}
-  tilePending.delete(key);tileCache.set(key,{img:null,failed:true});queueRender();
+  tilePending.delete(key);tileCache.set(key,{img:null,failed:true,failedAt:Date.now()});queueRender();
  };
  img.onload=()=>{tilePending.delete(key);tileCache.set(key,{img,failed:false,provider:providerIndex===0?'CARTO Dark':'OpenStreetMap'});queueRender()};
  img.onerror=failOrFallback;
@@ -125,7 +126,7 @@ async function loadData(showRefresh=false){
  if(showRefresh)mapStatus('Refreshing database-backed map layers…');
  try{
   const response=await fetch('/api/observatory/layers?limit=160',{cache:'no-store',signal:AbortSignal.timeout(18000)});
-  if(!response.ok)throw new Error('API returned HTTP '+response.status);
+  if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||body.message||('API returned HTTP '+response.status))}
   const data=await response.json();
   items=Array.isArray(data.items)?data.items.filter(item=>Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude))&&Math.abs(Number(item.latitude))<=90&&Math.abs(Number(item.longitude))<=180):[];
   if(!items.length)items=await loadFallbackMapRecords();
@@ -136,7 +137,7 @@ async function loadData(showRefresh=false){
   try{
    items=await loadFallbackMapRecords();
    if(items.length){renderRecordList();queueRender();mapStatus(items.length+' located records loaded from the Supabase catalog fallback · aggregate layer endpoint unavailable ('+error.message+')');}
-   else throw new Error('The aggregate and direct catalog endpoints returned no located records');
+   else throw new Error(error.message+'; direct catalog fallback returned no located records');
   }catch(fallbackError){mapStatus('Map base is available, but database data could not be loaded ('+fallbackError.message+'). Use Refresh Data to retry.')}
  }
  finally{refreshing=false;btn.disabled=false;btn.textContent='REFRESH DATA'}

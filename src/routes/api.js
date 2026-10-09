@@ -71,6 +71,21 @@ router.get('/flights', async (req, res) => { try { cacheable(res); res.json(awai
 router.get('/earthquakes', async (req, res) => { try { cacheable(res); res.json(await getEarthquakes()); } catch (err) { logger.error('API', '/earthquakes error', { message: err.message }); res.status(500).json({ error: 'Seismic data unavailable' }); } });
 router.get('/thermal', async (req, res) => { try { cacheable(res); res.json(await getThermalHotspots()); } catch (err) { logger.error('API', '/thermal error', { message: err.message }); res.status(500).json({ error: 'Thermal data unavailable' }); } });
 
+router.get('/observatory/health', async (req, res) => {
+    if (!supabaseConfigured()) {
+        return res.status(503).json({ status: 'unavailable', database: 'not-configured', reason: 'Supabase server credentials are not configured' });
+    }
+    const startedAt = Date.now();
+    try {
+        await supabaseQuery('observatory_sources', 'select=id&limit=1');
+        res.json({ status: 'ok', database: 'connected', latency_ms: Date.now() - startedAt, ts: Date.now() });
+    } catch (err) {
+        logger.error('API', '/observatory/health error', { message: err.message });
+        const reason = /timed out/i.test(err.message) ? 'timeout' : /REST 4\d\d/i.test(err.message) ? 'schema_or_access' : 'upstream_unavailable';
+        res.status(503).json({ status: 'unavailable', database: 'unavailable', reason, message: 'The observatory database health check failed.' });
+    }
+});
+
 router.get('/observatory/summary', async (req, res) => {
     try {
         if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });
