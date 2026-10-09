@@ -73,17 +73,35 @@ router.get('/thermal', async (req, res) => { try { cacheable(res); res.json(awai
 
 router.get('/observatory/health', async (req, res) => {
     if (!supabaseConfigured()) {
-        return res.status(503).json({ status: 'unavailable', database: 'not-configured', reason: 'Supabase server credentials are not configured' });
+        return res.status(503).json({
+            status: 'unavailable', database: 'not-configured',
+            reason: 'Supabase server credentials are not configured',
+            checks: {}, failed_tables: []
+        });
     }
     const startedAt = Date.now();
-    try {
-        await supabaseQuery('observatory_sources', 'select=id&limit=1');
-        res.json({ status: 'ok', database: 'connected', latency_ms: Date.now() - startedAt, ts: Date.now() });
-    } catch (err) {
-        logger.error('API', '/observatory/health error', { message: err.message });
-        const reason = /timed out/i.test(err.message) ? 'timeout' : /REST 4\d\d/i.test(err.message) ? 'schema_or_access' : 'upstream_unavailable';
-        res.status(503).json({ status: 'unavailable', database: 'unavailable', reason, message: 'The observatory database health check failed.' });
-    }
+    const tables = ['observatory_sources', 'observatory_observations', 'earth_events', 'satellites', 'satellite_observations', 'seed_telemetry_samples'];
+    const checks = await Promise.all(tables.map(async table => {
+        try {
+            await supabaseQuery(table, 'select=*&limit=1');
+            return { table, status: 'ok' };
+        } catch (err) {
+            logger.error('API', '/observatory/health table probe failed', { table, message: err.message });
+            const reason = /timed out/i.test(err.message) ? 'timeout' : /REST 4\\d\\d/i.test(err.message) ? 'schema_or_access' : 'upstream_unavailable';
+            return { table, status: 'unavailable', reason };
+        }
+    }));
+    const failedTables = checks.filter(item => item.status !== 'ok').map(item => item.table);
+    const connected = checks.some(item => item.status === 'ok');
+    const complete = failedTables.length === 0;
+    res.set('Cache-Control', 'no-store, max-age=0');
+    res.status(connected ? 200 : 503).json({
+        status: complete ? 'ok' : connected ? 'degraded' : 'unavailable',
+        database: connected ? 'connected' : 'unavailable',
+        latency_ms: Date.now() - startedAt, ts: Date.now(),
+        checks: Object.fromEntries(checks.map(({ table, status, reason }) => [table, reason ? { status, reason } : { status }])),
+        failed_tables: failedTables
+    });
 });
 
 router.get('/observatory/summary', async (req, res) => {
