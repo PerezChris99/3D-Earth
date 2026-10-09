@@ -127,7 +127,7 @@ async function loadData(showRefresh=false){
    items=await loadFallbackMapRecords();
    if(items.length){renderRecordList();queueRender();mapStatus(items.length+' located records loaded from the Supabase catalog fallback · aggregate layer endpoint unavailable ('+error.message+')');}
    else throw new Error('The aggregate and direct catalog endpoints returned no located records');
-  }catch(fallbackError){mapStatus('Map base is available, but database records could not be loaded ('+fallbackError.message+'). Use Refresh Data to retry.')}
+  }catch(fallbackError){mapStatus('Map base is available, but database data could not be loaded ('+fallbackError.message+'). Use Refresh Data to retry.')}
  }
  finally{refreshing=false;btn.disabled=false;btn.textContent='REFRESH DATA'}
 }
