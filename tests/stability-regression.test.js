@@ -42,7 +42,7 @@ test('observatory API exposes a safe database health probe and map preserves ser
   const api = read('src/routes/api.js');
   const map = read('public/js/map.js');
   assert.match(api, /router\.get\('\/observatory\/health'/);
-  assert.match(api, /database: 'connected'/);
+  assert.match(api, /database: connected \? 'connected' : 'unavailable'/);
   assert.match(api, /database: 'not-configured'/);
   assert.match(map, /body\.error\|\|body\.message/);
   assert.match(map, /direct catalog fallback returned no located records/);
@@ -59,4 +59,47 @@ test('Leaflet map supports database overlays while retaining the offline canvas 
   assert.match(leaflet, /\/api\/observatory\/layers\?limit=160/);
   assert.match(leaflet, /\/api\/observatory\/catalog\?/);
   assert.match(fallback, /function drawBase/);
+});
+
+
+test('production asset policy prevents stale JS/CSS from hiding merged implementations', () => {
+  const config = JSON.parse(read('vercel.json'));
+  const jsCss = config.headers.find(rule => rule.source === '/(.*)\\.(js|css)');
+  assert.ok(jsCss, 'JavaScript and CSS need an explicit cache policy');
+  assert.equal(jsCss.headers.find(header => header.key === 'Cache-Control')?.value, 'no-cache, no-store, must-revalidate');
+  assert.match(read('dashboard.html'), /\/js\/globe\.js\?v=20261009d/);
+  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261009d/);
+  assert.match(read('satellites.html'), /\/js\/satellites\.js\?v=20261009d/);
+});
+
+test('Earth rotation is visibly continuous rather than imperceptible real-time sidereal rotation', () => {
+  const source = read('public/js/globe.js');
+  assert.match(source, /earthGroup\.rotation\.y\+=dt\*7\.2921159e-5\*100/);
+  assert.match(source, /accelerated visualization/);
+});
+
+test('observatory summary tolerates a failing optional table and reports partial data', () => {
+  const api = read('src/routes/api.js');
+  const route = api.slice(api.indexOf("router.get('/observatory/summary'"), api.indexOf('function collectGeometryCoordinates'));
+  assert.match(route, /Promise\.all\(querySpecs\.map/);
+  assert.match(route, /partial: failedQueries\.length > 0/);
+  assert.match(route, /failed_queries:/);
+  assert.match(route, /failedQueries\.length === querySpecs\.length/);
+});
+
+test('database health diagnoses each required dataset without exposing credentials', () => {
+  const api = read('src/routes/api.js');
+  const route = api.slice(api.indexOf("router.get('/observatory/health'"), api.indexOf("router.get('/observatory/summary'"));
+  for (const table of ['observatory_sources', 'observatory_observations', 'earth_events', 'satellites', 'satellite_observations', 'seed_telemetry_samples']) {
+    assert.ok(route.includes("'" + table + "'"), table);
+  }
+  assert.match(route, /failed_tables/);
+  assert.match(route, /schema_or_access/);
+  assert.doesNotMatch(route, /SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY/);
+});
+
+test('database explorer loads only when opened, reducing initial API and database load', () => {
+  assert.match(read('public/js/leaflet-map.js'), /function boot\(\)\{initMap\(\);wire\(\);loadData\(false\)\}/);
+  assert.match(read('public/js/map.js'), /function boot\(\)\{wire\(\);render\(\);loadData\(false\)\}/);
+  assert.match(read('public/js/leaflet-map.js'), /catalog-toggle.*loadCatalog\(true\)/);
 });

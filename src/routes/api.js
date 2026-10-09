@@ -73,43 +73,100 @@ router.get('/thermal', async (req, res) => { try { cacheable(res); res.json(awai
 
 router.get('/observatory/health', async (req, res) => {
     if (!supabaseConfigured()) {
-        return res.status(503).json({ status: 'unavailable', database: 'not-configured', reason: 'Supabase server credentials are not configured' });
+        return res.status(503).json({
+            status: 'unavailable', database: 'not-configured',
+            reason: 'Supabase server credentials are not configured',
+            checks: {}, failed_tables: []
+        });
     }
     const startedAt = Date.now();
-    try {
-        await supabaseQuery('observatory_sources', 'select=id&limit=1');
-        res.json({ status: 'ok', database: 'connected', latency_ms: Date.now() - startedAt, ts: Date.now() });
-    } catch (err) {
-        logger.error('API', '/observatory/health error', { message: err.message });
-        const reason = /timed out/i.test(err.message) ? 'timeout' : /REST 4\d\d/i.test(err.message) ? 'schema_or_access' : 'upstream_unavailable';
-        res.status(503).json({ status: 'unavailable', database: 'unavailable', reason, message: 'The observatory database health check failed.' });
-    }
+    const tables = ['observatory_sources', 'observatory_observations', 'earth_events', 'satellites', 'satellite_observations', 'seed_telemetry_samples'];
+    const checks = await Promise.all(tables.map(async table => {
+        try {
+            await supabaseQuery(table, 'select=*&limit=1');
+            return { table, status: 'ok' };
+        } catch (err) {
+            logger.error('API', '/observatory/health table probe failed', { table, message: err.message });
+            const reason = /timed out/i.test(err.message) ? 'timeout' : /REST 4\d\d/i.test(err.message) ? 'schema_or_access' : 'upstream_unavailable';
+            return { table, status: 'unavailable', reason };
+        }
+    }));
+    const failedTables = checks.filter(item => item.status !== 'ok').map(item => item.table);
+    const connected = checks.some(item => item.status === 'ok');
+    const complete = failedTables.length === 0;
+    res.set('Cache-Control', 'no-store, max-age=0');
+    res.status(connected ? 200 : 503).json({
+        status: complete ? 'ok' : connected ? 'degraded' : 'unavailable',
+        database: connected ? 'connected' : 'unavailable',
+        latency_ms: Date.now() - startedAt, ts: Date.now(),
+        checks: Object.fromEntries(checks.map(({ table, status, reason }) => [table, reason ? { status, reason } : { status }])),
+        failed_tables: failedTables
+    });
 });
 
 router.get('/observatory/summary', async (req, res) => {
     try {
-        if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });
-        const [satellites, observations, samples, events, sources, sectorRows] = await Promise.all([
-            supabaseQuery('satellites', 'select=id,norad_id,name,object_type,owner_country,operator&order=name.asc&limit=300'),
-            supabaseQuery('satellite_observations', 'select=id,satellite_id,observed_at,latitude,longitude,altitude_km,speed_km_s&order=observed_at.desc&limit=20'),
-            supabaseQuery('seed_telemetry_samples', 'select=sample_id,sampled_at,latitude,longitude,altitude_km,speed_km_s&order=sample_id.asc&limit=20'),
-            supabaseQuery('earth_events', 'select=id,event_type,occurred_at,latitude,longitude,magnitude,title&order=occurred_at.desc&limit=20'),
-            supabaseQuery('observatory_sources', 'select=id,slug,sector,name,provider,authority_level,expected_refresh_seconds,coverage,active&order=sector.asc'),
-            supabaseQuery('observatory_sources', 'select=sector&active=is.true&order=sector.asc'),
-        ]);
+        if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured', database: 'not-configured' });
+
+        // Keep independent datasets independent: a missing optional table must not blank every
+        // database-backed feature (notably the satellite metadata panel).
+        const querySpecs = [
+            ['satellites', () => supabaseQuery('satellites', 'select=id,norad_id,name,object_type,owner_country,operator&order=name.asc&limit=300')],
+            ['observations', () => supabaseQuery('satellite_observations', 'select=id,satellite_id,observed_at,latitude,longitude,altitude_km,speed_km_s&order=observed_at.desc&limit=20')],
+            ['samples', () => supabaseQuery('seed_telemetry_samples', 'select=sample_id,sampled_at,latitude,longitude,altitude_km,speed_km_s&order=sample_id.asc&limit=20')],
+            ['events', () => supabaseQuery('earth_events', 'select=id,event_type,occurred_at,latitude,longitude,magnitude,title&order=occurred_at.desc&limit=20')],
+            ['sources', () => supabaseQuery('observatory_sources', 'select=id,slug,sector,name,provider,authority_level,expected_refresh_seconds,coverage,active&order=sector.asc')],
+            ['sectorRows', () => supabaseQuery('observatory_sources', 'select=sector&active=is.true&order=sector.asc')]
+        ];
+        const settled = await Promise.all(querySpecs.map(async ([name, run]) => {
+            try { return { name, value: await run() }; }
+            catch (error) {
+                logger.error('API', '/observatory/summary dataset failed', { dataset: name, message: error.message });
+                return { name, error };
+            }
+        }));
+        const results = Object.fromEntries(settled.map(item => [item.name, item.value || []]));
+        const failedQueries = settled.filter(item => item.error).map(item => item.name);
+        if (failedQueries.length === querySpecs.length) {
+            return res.status(502).json({ error: 'Supabase observatory data unavailable', database: 'unavailable', failed_queries: failedQueries });
+        }
+
+        const { satellites, observations, samples, events, sources, sectorRows } = results;
         const freshness = {};
         const sectors = [...new Set(sectorRows.map(row => row.sector).filter(Boolean))];
-        const latestRows = (await Promise.all(sectors.map(sector =>
-            supabaseQuery('observatory_observations', 'select=sector,observed_at,source_id,quality_status&id=not.is.null&sector=eq.' + encodeURIComponent(sector) + '&order=observed_at.desc,id.desc&limit=1')
-        ))).flat();
-        for (const row of latestRows) {
-            if (!freshness[row.sector]) {
-                const ageSeconds = Math.max(0, (Date.now() - new Date(row.observed_at).getTime()) / 1000);
+        const latestResults = await Promise.all(sectors.map(async sector => {
+            try {
+                const rows = await supabaseQuery('observatory_observations',
+                    'select=sector,observed_at,source_id,quality_status&id=not.is.null&sector=eq.' +
+                    encodeURIComponent(sector) + '&order=observed_at.desc,id.desc&limit=1');
+                return { sector, rows };
+            } catch (error) {
+                logger.error('API', '/observatory/summary freshness query failed', { sector, message: error.message });
+                return { sector, error };
+            }
+        }));
+        for (const result of latestResults) {
+            if (result.error) { failedQueries.push('freshness:' + result.sector); continue; }
+            for (const row of result.rows) {
+                if (freshness[row.sector]) continue;
+                const observedAt = new Date(row.observed_at).getTime();
+                const ageSeconds = Number.isFinite(observedAt) ? Math.max(0, (Date.now() - observedAt) / 1000) : null;
                 const source = sources.find(item => item.id === row.source_id) || null;
-                freshness[row.sector] = { latest_observed_at: row.observed_at, age_seconds: Math.round(ageSeconds), status: source?.expected_refresh_seconds && ageSeconds <= source.expected_refresh_seconds ? 'LIVE' : ageSeconds < 86400 ? 'RECENT' : 'STALE', quality_status: row.quality_status };
+                freshness[row.sector] = {
+                    latest_observed_at: row.observed_at,
+                    age_seconds: ageSeconds === null ? null : Math.round(ageSeconds),
+                    status: ageSeconds === null ? 'UNKNOWN' : source?.expected_refresh_seconds && ageSeconds <= source.expected_refresh_seconds ? 'LIVE' : ageSeconds < 86400 ? 'RECENT' : 'STALE',
+                    quality_status: row.quality_status
+                };
             }
         }
-        cacheable(res); res.json({ ts: Date.now(), source: 'Supabase', satellites, observations, samples, events, observatory: { sources, freshness } });
+        res.set('Cache-Control', 'no-store, max-age=0');
+        res.json({
+            ts: Date.now(), source: 'Supabase', satellites, observations, samples, events,
+            observatory: { sources, freshness },
+            partial: failedQueries.length > 0,
+            failed_queries: [...new Set(failedQueries)]
+        });
     } catch (err) {
         logger.error('API', '/observatory/summary error', { message: err.message });
         res.status(502).json({ error: 'Supabase observatory data unavailable' });

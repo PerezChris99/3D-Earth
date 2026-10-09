@@ -16,10 +16,10 @@ function loadApp(src,primary){
 }
 function fallback(){
  if(status)status.textContent='Leaflet could not load from the available CDNs. Starting the built-in fallback map…';
- loadApp('/js/map.js?v=20261009c',false);
+ loadApp('/js/map.js?v=20261009d',false);
 }
 function loadLeaflet(index){
- if(window.L&&window.L.map){const link=document.createElement('link');link.rel='stylesheet';link.href=scripts[index].css;link.onload=()=>loadApp('/js/leaflet-map.js?v=20261009c',true);link.onerror=()=>{if(index+1<scripts.length)loadLeaflet(index+1);else fallback()};document.head.appendChild(link);return}
+ if(window.L&&window.L.map){const link=document.createElement('link');link.rel='stylesheet';link.href=scripts[index].css;link.onload=()=>loadApp('/js/leaflet-map.js?v=20261009d',true);link.onerror=()=>{if(index+1<scripts.length)loadLeaflet(index+1);else fallback()};document.head.appendChild(link);return}
  if(index>=scripts.length){fallback();return}
  const script=document.createElement('script');script.src=scripts[index].js;script.async=true;let settled=false;
  const timer=setTimeout(()=>{if(settled)return;settled=true;script.remove();loadLeaflet(index+1)},8000);

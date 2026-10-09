@@ -122,6 +122,6 @@ function wire(){
  $('catalog-toggle').addEventListener('click',()=>{$('catalog-panel').hidden=false;loadCatalog(true);setTimeout(()=>map.invalidateSize({pan:false}),80)});$('close-catalog').addEventListener('click',()=>$('catalog-panel').hidden=true);
  $('catalog-dataset').addEventListener('change',()=>loadCatalog(true));$('catalog-search-button').addEventListener('click',()=>loadCatalog(true));$('catalog-search').addEventListener('keydown',e=>{if(e.key==='Enter')loadCatalog(true)});$('catalog-more').addEventListener('click',()=>loadCatalog(false));
 }
-function boot(){initMap();wire();loadData(false);loadCatalog(true)}
+function boot(){initMap();wire();loadData(false)}
 boot();
 })();

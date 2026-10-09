@@ -199,6 +199,6 @@ function wire(){
  canvas.addEventListener('dblclick',e=>{e.preventDefault();zoom=clamp(zoom+1,2,7);queueRender()});
  window.addEventListener('resize',queueRender);
 }
-function boot(){wire();render();loadData(false);loadCatalog(true)}
+function boot(){wire();render();loadData(false)}
 boot();
 })();
