@@ -2,7 +2,7 @@
 'use strict';
 const A={earth:'/assets/earth/earth_atmos_2048.jpg',normal:'/assets/earth/earth_normal_2048.jpg',specular:'/assets/earth/earth_specular_2048.jpg',clouds:'/assets/earth/earth_clouds_1024.png',moon:'/assets/earth/moon_1024.jpg'};
 const S={clouds:true,atmosphere:true,moon:true,stars:true,satellites:true,autoRotate:true};
-let scene,camera,renderer,controls,earth,clouds,atmosphere,moon,stars,sunLight,sunMesh,satGroup,dataMarkerGroup,trajectory,selectedMarker,locationState=null,satellites=[],selectedNorad=null,gltfLoader=null,dataLayerItems=[],dataLayerMeta=[],activeDataSectors=new Set(['wildfires','volcanoes','oceans','weather']);
+let scene,camera,renderer,controls,earth,clouds,atmosphere,moon,stars,sunLight,sunMesh,satGroup,dataMarkerGroup,trajectory,selectedMarker,locationState=null,satellites=[],selectedNorad=null,gltfLoader=null,dataLayerItems=[],dataLayerMeta=[],activeDataSectors=new Set(['wildfires','volcanoes','oceans','weather','earthquakes']);
 const $=id=>document.getElementById(id);
 const status=(t,p)=>{$('boot-status').textContent=t;$('boot-progress').style.width=p+'%'};
 const loadTexture=(loader,url)=>new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
@@ -49,7 +49,7 @@ async function loadObservatorySummary(){
 function installObservatoryLayers(data){
  dataLayerItems=Array.isArray(data.items)?data.items:[];dataLayerMeta=Array.isArray(data.layers)?data.layers:[];dataLayerItems.sort((a,b)=>new Date(b.observed_at||0)-new Date(a.observed_at||0));
  dataMarkerGroup.clear();const geometry=new THREE.SphereGeometry(.012,8,8);
- const colors={wildfires:0xff754f,volcanoes:0xffc45e,oceans:0x57c9ff,weather:0x8de2b4};
+ const colors={wildfires:0xff754f,volcanoes:0xffc45e,oceans:0x57c9ff,weather:0x8de2b4,earthquakes:0xff657a};
  const materials={};Object.entries(colors).forEach(([key,color])=>materials[key]=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.92}));
  dataLayerItems.forEach(item=>{
   const lat=Number(item.latitude),lon=Number(item.longitude);if(!Number.isFinite(lat)||!Number.isFinite(lon))return;

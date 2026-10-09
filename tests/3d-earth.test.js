@@ -27,7 +27,7 @@ test('light-content pages receive a high-contrast shared navigation treatment',(
 
 test('database-backed observation layers are served and rendered on globe and map',()=>{
  const api=read('src/routes/api.js'),g=read('public/js/globe.js'),h=read('dashboard.html'),m=read('public/js/map.js');
- assert.ok(api.includes("router.get('/observatory/layers'"));assert.ok(api.includes('observatory_observations'));
+ assert.ok(api.includes("router.get('/observatory/layers'"));assert.ok(api.includes('observatory_observations'));assert.ok(api.includes("supabaseQuery('earth_events'"));assert.ok(h.includes('data-sector="earthquakes"'));
  assert.ok(g.includes('installObservatoryLayers'));assert.ok(g.includes('dataMarkerGroup'));assert.ok(g.includes('selectObservation'));
  assert.ok(h.includes('data-layer-drawer'));assert.ok(m.includes('loadObservatoryPoints'));assert.ok(m.includes('/api/observatory/layers'));
 });

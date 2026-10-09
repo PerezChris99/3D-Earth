@@ -53,7 +53,7 @@ const map = new ol.Map({
 
 const markerSource = new ol.source.Vector();
 const observatorySource = new ol.source.Vector();
-const observatoryLayer = new ol.layer.Vector({source: observatorySource, style: feature => { const colors={wildfires:'#ff754f',volcanoes:'#ffc45e',oceans:'#57c9ff',weather:'#8de2b4'}; return new ol.style.Style({image:new ol.style.Circle({radius:4.5,fill:new ol.style.Fill({color:colors[feature.get('sector')]||'#b7c9dc'}),stroke:new ol.style.Stroke({color:'#06111d',width:1.2})})}); }});
+const observatoryLayer = new ol.layer.Vector({source: observatorySource, style: feature => { const colors={wildfires:'#ff754f',volcanoes:'#ffc45e',oceans:'#57c9ff',weather:'#8de2b4',earthquakes:'#ff657a'}; return new ol.style.Style({image:new ol.style.Circle({radius:4.5,fill:new ol.style.Fill({color:colors[feature.get('sector')]||'#b7c9dc'}),stroke:new ol.style.Stroke({color:'#06111d',width:1.2})})}); }});
 const accuracySource = new ol.source.Vector();
 map.addLayer(new ol.layer.Vector({
   source: accuracySource,
