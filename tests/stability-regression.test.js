@@ -37,3 +37,13 @@ test('satellite page switches to a scrollable single-column layout on mobile', (
   assert.match(mobile, /grid-template-columns:minmax\(0,1fr\)/);
   assert.match(mobile, /sat-visual\{min-height:230px/);
 });
+
+test('observatory API exposes a safe database health probe and map preserves server errors', () => {
+  const api = read('src/routes/api.js');
+  const map = read('public/js/map.js');
+  assert.match(api, /router\.get\('\/observatory\/health'/);
+  assert.match(api, /database: 'connected'/);
+  assert.match(api, /database: 'not-configured'/);
+  assert.match(map, /body\.error\|\|body\.message/);
+  assert.match(map, /direct catalog fallback returned no located records/);
+});
