@@ -10,7 +10,7 @@ let started=false;
 function loadApp(src,primary){
  if(started)return;started=true;
  const script=document.createElement('script');script.src=src;script.async=true;
- script.onerror=()=>{if(status)status.textContent='Map application failed to load. Please reload the page.'};
+ script.onerror=()=>{if(primary){started=false;document.querySelector('.map-shell')?.classList.remove('leaflet-active');const canvas=document.getElementById('world-map');if(canvas)canvas.removeAttribute('aria-hidden');fallback()}else if(status)status.textContent='Map application failed to load. Please reload the page.'};
  document.body.appendChild(script);
  if(primary){document.querySelector('.map-shell')?.classList.add('leaflet-active');const canvas=document.getElementById('world-map');if(canvas)canvas.setAttribute('aria-hidden','true')}
 }
