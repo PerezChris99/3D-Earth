@@ -101,6 +101,45 @@ router.get('/observatory/summary', async (req, res) => {
     }
 });
 
+router.get('/observatory/layers', async (req, res) => {
+    try {
+        if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });
+        const sectors = ['wildfires', 'volcanoes', 'oceans', 'weather'];
+        const payload = await cache.getOrSet('api:observatory:layers:v1', async () => {
+            const [sources, ...rowsBySector] = await Promise.all([
+                supabaseQuery('observatory_sources', 'select=id,slug,sector,name,provider,expected_refresh_seconds,active&active=is.true'),
+                ...sectors.map(sector => supabaseQuery('observatory_observations',
+                    'select=id,sector,external_id,observed_at,latitude,longitude,metric,value,unit,quality_status,source_id,payload&sector=eq.' +
+                    encodeURIComponent(sector) +
+                    '&latitude=not.is.null&longitude=not.is.null&quality_status=in.(valid,verified,estimated,modelled)&order=observed_at.desc,id.desc&limit=45'))
+            ]);
+            const sourceById = new Map(sources.map(source => [source.id, source]));
+            const items = rowsBySector.flat().filter(row => Number.isFinite(Number(row.latitude)) && Number.isFinite(Number(row.longitude))).map(row => {
+                const source = sourceById.get(row.source_id) || null;
+                const details = row.payload && typeof row.payload === 'object' ? row.payload : {};
+                const label = details.station?.name || details.volcano_name || details.name || details.station_name || row.external_id || row.sector;
+                return { id: row.id, sector: row.sector, external_id: row.external_id, observed_at: row.observed_at,
+                    latitude: Number(row.latitude), longitude: Number(row.longitude), metric: row.metric, value: row.value, unit: row.unit,
+                    quality_status: row.quality_status, source_id: row.source_id, label: String(label),
+                    source_name: source?.name || source?.provider || row.sector, provider: source?.provider || 'Source not listed' };
+            });
+            const layers = sectors.map(sector => {
+                const sectorItems = items.filter(item => item.sector === sector);
+                const latest = sectorItems.reduce((value, item) => !value || new Date(item.observed_at) > new Date(value) ? item.observed_at : value, null);
+                const source = sources.find(item => item.sector === sector) || null;
+                return { sector, label: ({ wildfires: 'Wildfires', volcanoes: 'Volcanoes', oceans: 'Ocean observations', weather: 'Surface weather' })[sector],
+                    count: sectorItems.length, latest_observed_at: latest, source_name: source?.name || source?.provider || 'Source not listed',
+                    provider: source?.provider || 'Source not listed' };
+            });
+            return { ts: Date.now(), source: 'Supabase observatory_observations', count: items.length, layers, items };
+        }, 30_000);
+        cacheable(res); res.json(payload);
+    } catch (err) {
+        logger.error('API', '/observatory/layers error', { message: err.message });
+        res.status(502).json({ error: 'Supabase geographic observations unavailable' });
+    }
+});
+
 router.get('/observatory/samples', async (req, res) => {
     try {
         if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });

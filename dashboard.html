@@ -35,6 +35,19 @@
 <div class="sat-toolbar"><select id="sat-group" aria-label="Satellite group"><option value="all">All catalog groups</option><option value="stations">Stations</option><option value="weather">Weather</option><option value="gps-ops">GPS</option><option value="science">Science</option><option value="starlink">Starlink</option></select><button id="reload-satellites">REFRESH</button></div>
 <div id="sat-source" class="source-note">Loading current orbital elements…</div><div id="sat-list" class="sat-list"></div>
 </section>
+<button type="button" id="data-layers-toggle" class="data-layers-toggle" aria-controls="data-layer-drawer">DATABASE LAYERS <span id="data-layer-total">●</span></button>
+<section class="data-layer-drawer" id="data-layer-drawer" aria-hidden="true">
+ <div class="drawer-head"><div><span class="panel-kicker">SUPABASE OBSERVATIONS</span><h2>Earth data layers</h2></div><button id="close-data-layers" aria-label="Close data layers">×</button></div>
+ <p id="data-layer-status" class="source-note">Loading geographic observations from the database…</p>
+ <div class="data-layer-controls" aria-label="Toggle observation layers">
+  <button type="button" data-sector="wildfires" class="active" aria-pressed="true">Wildfires <b id="count-wildfires">—</b></button>
+  <button type="button" data-sector="volcanoes" class="active" aria-pressed="true">Volcanoes <b id="count-volcanoes">—</b></button>
+  <button type="button" data-sector="oceans" class="active" aria-pressed="true">Oceans <b id="count-oceans">—</b></button>
+  <button type="button" data-sector="weather" class="active" aria-pressed="true">Weather <b id="count-weather">—</b></button>
+ </div>
+ <div id="data-observation-detail" class="data-observation-detail" hidden></div><div id="data-layer-list" class="data-layer-list"></div>
+ <p class="data-layer-footnote">Markers are database observations, not live satellite telemetry. Select a point for its timestamp, metric, quality flag and source.</p>
+</section>
 <section class="planet-meta"><div class="meta-label">PLANETARY RENDERER</div><div class="meta-value">EARTH / DYNAMIC SOLAR GEOMETRY</div><div class="meta-line"><span id="camera-state">ORBITAL CAMERA</span><span id="fps-state">— FPS</span></div></section>
 <div class="hint">DRAG TO ORBIT · PINCH/SCROLL TO ZOOM · DOUBLE-TAP TO RESET</div>
 </main>

@@ -24,3 +24,18 @@ test('satellite catalog initializes independently from WebGL and offers a 2D fal
 test('map loader times out stalled OpenLayers CDNs and starts map fallback without Leaflet',()=>{const l=read('public/js/map-loader.js'),m=read('public/js/map.js');assert.match(l,/setTimeout/);assert.match(l,/4500/);assert.match(m,/new ol\.Map/);assert.match(m,/initFallbackMap/);assert.doesNotMatch(l+m,/leaflet/i);});
 test('astronomical clock exposes place, ISP estimate, altitude, and coordinates',()=>{const h=read('dashboard.html'),j=read('public/js/globe.js'),g=read('src/routes/geocode.js');for(const id of ['observer-place','observer-isp','observer-altitude','observer-astro-coordinates'])assert.ok(h.includes(id),id);assert.match(j,/updateObserverDetails/);assert.match(g,/router\.get\('\/network'/);assert.match(g,/ipwho\.is/);});
 test('light-content pages receive a high-contrast shared navigation treatment',()=>{const n=read('public/js/navigation.js'),c=read('public/css/mobile-nav.css');assert.match(n,/light-content-page/);assert.match(c,/\.light-content-page \.global-site-nav a\{color:#23364a\}/);});
+
+test('database-backed observation layers are served and rendered on globe and map',()=>{
+ const api=read('src/routes/api.js'),g=read('public/js/globe.js'),h=read('dashboard.html'),m=read('public/js/map.js');
+ assert.ok(api.includes("router.get('/observatory/layers'"));assert.ok(api.includes('observatory_observations'));
+ assert.ok(g.includes('installObservatoryLayers'));assert.ok(g.includes('dataMarkerGroup'));assert.ok(g.includes('selectObservation'));
+ assert.ok(h.includes('data-layer-drawer'));assert.ok(m.includes('loadObservatoryPoints'));assert.ok(m.includes('/api/observatory/layers'));
+});
+test('globe satellites are selectable and use SGP4-derived position and altitude',()=>{
+ const g=read('public/js/globe.js');assert.ok(g.includes('Raycaster'));assert.ok(g.includes("kind:'satellite'"));
+ assert.ok(g.includes('item._satrec'));assert.ok(g.includes('geo.height)/6371'));assert.ok(g.includes('nextState=satellite.propagate'));
+});
+test('mobile landing hero is decluttered and mobile navigation remains fixed while scrolling',()=>{
+ const c=read('public/css/landing.css'),n=read('public/css/mobile-nav.css');
+ assert.ok(c.includes('88dvh'));assert.ok(c.includes('max-width:36ch'));assert.ok(n.includes('position:fixed!important'));assert.ok(n.includes('bottom:0!important'));
+});

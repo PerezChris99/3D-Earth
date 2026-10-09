@@ -11,12 +11,13 @@
 .global-info-footer nav{display:flex;gap:18px}.global-info-footer a{color:#cbd7e2;text-decoration:none}.global-info-footer a:hover,.global-info-footer a:focus-visible{color:#fff}
 @media(max-width:1000px){
  .site-nav-cluster{display:none}
- .mobile-bottom-nav{position:fixed;z-index:10000;left:0;right:0;bottom:0;width:100%;height:calc(64px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:4px 0 env(safe-area-inset-bottom);border-top:1px solid var(--nav-line);border-radius:14px 14px 0 0;background:var(--nav-bg);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 -12px 40px rgba(0,0,0,.35)}
+ .mobile-bottom-nav{position:fixed!important;z-index:2147483000;left:0;right:0;bottom:0!important;top:auto!important;transform:none!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;will-change:transform;isolation:isolate;width:100%;height:calc(64px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:4px 0 env(safe-area-inset-bottom);border-top:1px solid var(--nav-line);border-radius:14px 14px 0 0;background:var(--nav-bg);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 -12px 40px rgba(0,0,0,.35)}
  .mobile-bottom-nav a{min-width:0;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#91a0b2;text-decoration:none;border-radius:10px;font:800 9px/1 Arial,sans-serif;letter-spacing:.04em;-webkit-tap-highlight-color:transparent}
  .mobile-bottom-nav a svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
  .mobile-bottom-nav a[aria-current=page]{color:#f2f8ff;background:rgba(117,201,255,.13)}
  .mobile-bottom-nav a[aria-current=page] svg{color:var(--nav-active);filter:drop-shadow(0 0 7px rgba(117,201,255,.35))}
- body:not(.map-page){padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+ body:not(.map-page){padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+ body{scroll-padding-bottom:calc(80px + env(safe-area-inset-bottom))}
  .global-info-footer{padding:18px 16px 88px;font-size:9px}.global-info-footer nav{gap:14px}
  .map-page .location-status{bottom:calc(76px + env(safe-area-inset-bottom))}
 }

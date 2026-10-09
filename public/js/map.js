@@ -52,6 +52,8 @@ const map = new ol.Map({
 });
 
 const markerSource = new ol.source.Vector();
+const observatorySource = new ol.source.Vector();
+const observatoryLayer = new ol.layer.Vector({source: observatorySource, style: feature => { const colors={wildfires:'#ff754f',volcanoes:'#ffc45e',oceans:'#57c9ff',weather:'#8de2b4'}; return new ol.style.Style({image:new ol.style.Circle({radius:4.5,fill:new ol.style.Fill({color:colors[feature.get('sector')]||'#b7c9dc'}),stroke:new ol.style.Stroke({color:'#06111d',width:1.2})})}); }});
 const accuracySource = new ol.source.Vector();
 map.addLayer(new ol.layer.Vector({
   source: accuracySource,
@@ -60,6 +62,7 @@ map.addLayer(new ol.layer.Vector({
     stroke: new ol.style.Stroke({color:'rgba(117,201,255,.75)',width:1.5})
   })
 }));
+map.addLayer(observatoryLayer);
 map.addLayer(new ol.layer.Vector({
   source: markerSource,
   style: new ol.style.Style({
@@ -78,6 +81,31 @@ let bestAccuracy = Infinity;
 function setStatus(message) {
   status.textContent = message;
 }
+async function loadObservatoryPoints() {
+  try {
+    const response = await fetch('/api/observatory/layers', { signal: AbortSignal.timeout(12000) });
+    if (!response.ok) throw new Error('Database observations unavailable');
+    const data = await response.json();
+    observatorySource.clear();
+    (data.items || []).forEach(item => {
+      const latitude=Number(item.latitude), longitude=Number(item.longitude);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+      const feature=new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat([longitude,latitude])));
+      feature.setProperties({observatory:true,id:item.id,sector:item.sector,label:item.label,metric:item.metric,value:item.value,unit:item.unit,observed_at:item.observed_at,quality_status:item.quality_status,source_name:item.source_name,provider:item.provider});
+      observatorySource.addFeature(feature);
+    });
+    setStatus('World map · '+observatorySource.getFeatures().length+' database observations · click a marker for source and timestamp.');
+  } catch(error) { console.warn('Database map layer unavailable:',error); }
+}
+map.on('singleclick',event=>{
+  const feature=map.forEachFeatureAtPixel(event.pixel,candidate=>candidate.get('observatory')?candidate:undefined);
+  if(!feature)return;
+  const label=feature.get('label')||feature.get('sector')||'Observation';
+  const value=feature.get('value')==null?'Value unavailable':feature.get('value')+' '+(feature.get('unit')||'');
+  const observed=feature.get('observed_at')?new Date(feature.get('observed_at')).toLocaleString():'Time unavailable';
+  setStatus(label+' · '+value+' · '+observed+' · '+(feature.get('source_name')||feature.get('provider')||'Source not listed')+' · '+(feature.get('quality_status')||'quality unspecified'));
+});
+loadObservatoryPoints();
 
 function renderPosition(position) {
   const c = position.coords;
