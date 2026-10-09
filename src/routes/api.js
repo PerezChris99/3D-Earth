@@ -271,7 +271,16 @@ router.get('/observatory/catalog', async (req, res) => {
         const q = String(req.query.q || '').replace(/[^a-zA-Z0-9 ._-]/g, '').trim().slice(0, 80);
         // The world-development catalog's broad ILIKE search uses trigram indexes; use a deterministic matching sort instead of walking the entire period index while filtering.
         const order = q && dataset === 'world_development_observations' ? 'country_name.asc,indicator_code.asc,period.desc,id.asc' : config.order;
-        let params = 'select=' + config.select + (order ? '&order=' + order : '') + '&limit=' + limit + '&offset=' + offset;
+        const mapMode = req.query.map === '1';
+        const mapSelect = mapMode && dataset === 'observatory_observations'
+            ? 'id,source_id,sector,external_id,observed_at,published_at,latitude,longitude,metric,value,unit,quality_status'
+            : mapMode && dataset === 'earth_events'
+                ? 'id,event_type,occurred_at,latitude,longitude,magnitude,depth_km,title,description,source_id'
+                : config.select;
+        let params = 'select=' + mapSelect + (order ? '&order=' + order : '') + '&limit=' + limit + '&offset=' + offset;
+        if (mapMode && ['observatory_observations', 'earth_events'].includes(dataset)) {
+            params += '&latitude=not.is.null&longitude=not.is.null&latitude=gte.-90&latitude=lte.90&longitude=gte.-180&longitude=lte.180';
+        }
         if (q) {
             const pattern = '*' + q + '*';
             const searchable = {

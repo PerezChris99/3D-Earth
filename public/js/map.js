@@ -102,8 +102,8 @@ function renderCounts(data){
 }
 async function loadFallbackMapRecords(){
  const fallback=await Promise.allSettled([
-  fetch('/api/observatory/catalog?dataset=observatory_observations&limit=100&offset=0',{cache:'no-store',signal:AbortSignal.timeout(12000)}).then(r=>{if(!r.ok)throw new Error('Observation catalog HTTP '+r.status);return r.json()}),
-  fetch('/api/observatory/catalog?dataset=earth_events&limit=100&offset=0',{cache:'no-store',signal:AbortSignal.timeout(12000)}).then(r=>{if(!r.ok)throw new Error('Event catalog HTTP '+r.status);return r.json()})
+  fetch('/api/observatory/catalog?dataset=observatory_observations&map=1&limit=100&offset=0',{cache:'no-store',signal:AbortSignal.timeout(12000)}).then(r=>{if(!r.ok)throw new Error('Observation catalog HTTP '+r.status);return r.json()}),
+  fetch('/api/observatory/catalog?dataset=earth_events&map=1&limit=100&offset=0',{cache:'no-store',signal:AbortSignal.timeout(12000)}).then(r=>{if(!r.ok)throw new Error('Event catalog HTTP '+r.status);return r.json()})
  ]);
  const rows=[];
  if(fallback[0].status==='fulfilled')for(const row of fallback[0].value.items||[])rows.push({...row,id:'fallback-observation-'+row.id,label:row.external_id||row.metric||row.sector,sector:sectors[row.sector]?row.sector:'other_events',observed_at:row.observed_at,latitude:Number(row.latitude),longitude:Number(row.longitude),source_name:row.source_id||'Supabase observatory observations'});
