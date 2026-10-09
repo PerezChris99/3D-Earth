@@ -1,9 +1,51 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Real satellite catalog and orbital inspection for 3D Earth by Perez."><title>Satellites — 3D Earth by Perez</title><link rel="stylesheet" href="/css/satellites.css"><link rel="stylesheet" href="/css/mobile-nav.css"></head>
-<body>
-<header class="sat-site-nav"><a href="/">3D EARTH <span>BY PEREZ</span></a><nav><a href="/">Home</a><a href="/dashboard.html">Globe</a><a href="/map.html">Map</a><a href="/about.html">About</a><a href="/data-policy.html">Sources</a></nav><nav class="global-site-nav" aria-label="Primary navigation"><a href="/">HOME</a><a href="/dashboard.html">GLOBE</a><a href="/satellites.html">SATELLITES</a><a href="/map.html">MAP</a><a href="/about.html">ABOUT</a><a href="/data-policy.html">SOURCES</a></nav></header>
-<main class="sat-page"><section class="sat-hero"><div><p class="eyebrow">ORBITAL OBSERVATORY</p><h1>Real objects.<br>Real orbits.</h1><p>Browse the current satellite catalog supplied by CelesTrak. Select an object to inspect its catalog metadata and follow its propagated position on the Earth.</p><div class="sat-actions"><a href="/dashboard.html">Open globe</a><a href="/data-policy.html">Source & accuracy notes</a></div></div><div id="sat-visual" class="sat-visual" aria-label="3D satellite orbital preview"></div></section>
-<section class="sat-catalog"><aside class="sat-list-panel"><div class="catalog-head"><div><span class="eyebrow">CATALOG</span><h2>Satellites</h2></div><select id="group"><option value="all">All cataloged groups</option><option value="active">Active</option><option value="stations">Stations</option><option value="weather">Weather</option><option value="gps-ops">GPS</option><option value="science">Science</option><option value="starlink">Starlink</option></select></div><input id="search" type="search" placeholder="Search name or NORAD ID"><div id="status" class="status">Loading current catalog…</div><div id="db-catalog-status" class="status">Checking Supabase catalog…</div><div id="list" class="sat-list"></div></aside><article class="sat-detail-panel"><div id="empty-detail"><p class="eyebrow">SELECT AN OBJECT</p><h2>Inspect a satellite</h2><p>Choose an object from the catalog. Its details appear here, and the same selection can be opened on the globe for live propagation and orbit tracking.</p></div><div id="detail" hidden></div></article></section>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#030a12">
+<meta name="description" content="Live satellite catalog, propagated orbital position, and database-backed satellite metadata.">
+<title>Orbital Catalog — 3D Earth by Perez</title>
+<link rel="stylesheet" href="/css/satellites.css?v=20261009b">
+<link rel="stylesheet" href="/css/mobile-nav.css">
+</head>
+<body class="satellite-workspace">
+<header class="sat-site-nav"><a class="sat-brand" href="/">3D EARTH <span>BY PEREZ</span></a><div class="sat-header-status"><span class="live-indicator"></span>ORBITAL OBSERVATORY <span id="status">Connecting to live catalog…</span></div></header>
+<main class="sat-workspace" aria-label="Satellite orbital observatory">
+<section class="sat-column sat-catalog-column" aria-labelledby="catalog-title">
+<div class="column-heading"><div><span class="eyebrow">TRACKING NETWORK</span><h1 id="catalog-title">Orbital Catalog</h1></div><span class="column-index">01 / 03</span></div>
+<div class="catalog-controls">
+<label for="group">Catalog group</label>
+<select id="group"><option value="all">All catalog groups</option><option value="active">Active</option><option value="stations">Stations</option><option value="weather">Weather</option><option value="gps-ops">GPS navigation</option><option value="science">Science</option><option value="starlink">Starlink</option></select>
+<label for="search">Find by name or NORAD ID</label><input id="search" type="search" placeholder="e.g. ISS or 25544" autocomplete="off">
+</div>
+<div id="db-catalog-status" class="status db-status" role="status">Checking Supabase catalog…</div>
+<div id="catalog-count" class="catalog-count">Waiting for catalog records</div>
+<div id="list" class="sat-list" aria-label="Satellite catalog results"><p class="empty-state">Loading orbital elements…</p></div>
+<p class="column-footnote">Orbital positions are propagated from the current CelesTrak element feed. Database metadata is shown only when a NORAD ID matches a stored record.</p>
+</section>
+<section class="sat-column sat-preview-column" aria-labelledby="preview-title">
+<div class="column-heading"><div><span class="eyebrow">LIVE PROPAGATION</span><h2 id="preview-title">Orbital View</h2></div><span class="live-pill"><span class="live-indicator"></span>LIVE</span></div>
+<div id="sat-visual" class="sat-visual" aria-label="Rotating Earth with a propagated satellite marker"></div>
+<div class="preview-object"><div><span class="eyebrow">TRACKED OBJECT</span><strong id="live-object-name">International Space Station</strong></div><span id="live-norad" class="norad-chip">NORAD 25544</span></div>
+<div class="live-metrics" aria-label="Current propagated satellite telemetry">
+<div class="metric-card"><span>ALTITUDE</span><strong id="live-altitude">Calculating…</strong></div>
+<div class="metric-card"><span>ORBITAL SPEED</span><strong id="live-speed">Calculating…</strong></div>
+<div class="metric-card"><span>SUBSATELLITE LATITUDE</span><strong id="live-latitude">—</strong></div>
+<div class="metric-card"><span>SUBSATELLITE LONGITUDE</span><strong id="live-longitude">—</strong></div>
+</div>
+<div class="preview-footer"><span id="live-updated">Waiting for propagated position</span><a href="/dashboard.html">OPEN 3D GLOBE ↗</a></div>
+</section>
+<section class="sat-column sat-detail-column" aria-labelledby="detail-title">
+<div class="column-heading"><div><span class="eyebrow">OBJECT INTELLIGENCE</span><h2 id="detail-title">Satellite Profile</h2></div><span class="column-index">03 / 03</span></div>
+<div id="empty-detail" class="empty-detail"><div class="empty-orbit-icon" aria-hidden="true">◎</div><h3>Select a satellite</h3><p>Choose any catalog entry to inspect its identity, orbit, owner and matching database metadata. Live position values update from its orbital elements.</p><div class="detail-placeholder"><span>IDENTITY</span><span>ORBITAL ELEMENTS</span><span>DATABASE MATCH</span></div></div>
+<div id="detail" hidden></div>
+<div class="source-card"><div class="source-card-heading"><span class="eyebrow">DATA PROVENANCE</span><span id="source-health" class="source-health">CHECKING</span></div><p id="source-description">Live orbital elements: CelesTrak GP feed. Stored ownership and catalog fields: Supabase, matched by NORAD ID.</p><div class="source-row"><span>ORBIT PROPAGATOR</span><strong>SGP4</strong></div><div class="source-row"><span>DATABASE</span><strong>Supabase</strong></div><div class="source-row"><span>COORDINATE STATUS</span><strong id="coordinate-health">Waiting for valid elements</strong></div><a href="/data-policy.html">Sources and accuracy notes ↗</a></div>
+</section>
 </main>
-<footer><span>3D Earth by Perez</span><nav><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/data-policy.html">Sources</a></nav></footer>
-<script src="/vendor/three-r128.min.js"></script><script src="/vendor/GLTFLoader-r128.js"></script><script src="https://cdn.jsdelivr.net/npm/satellite.js@4.1.4/dist/satellite.min.js"></script><script src="/js/satellites.js"></script><script src="/js/navigation.js" defer></script></body></html>
+<script src="/vendor/three-r128.min.js"></script>
+<script src="/vendor/GLTFLoader-r128.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/satellite.js@4.1.4/dist/satellite.min.js"></script>
+<script src="/js/satellites.js?v=20261009b"></script>
+<script src="/js/navigation.js" defer></script>
+</body></html>

@@ -145,13 +145,13 @@ function geometryCenter(geometry) {
 router.get('/observatory/layers', async (req, res) => {
     try {
         if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });
-        const limit = Math.min(Math.max(Number(req.query.limit) || 180, 30), 350);
-        const payload = await cache.getOrSet('api:observatory:layers:v3:' + limit, async () => {
+        const limit = Math.min(Math.max(Number(req.query.limit) || 160, 30), 220);
+        const payload = await cache.getOrSet('api:observatory:layers:v4:' + limit, async () => {
             const sectors = ['wildfires', 'volcanoes', 'oceans', 'weather'];
             const settled = await Promise.allSettled([
                 supabaseQuery('observatory_sources', 'select=id,slug,sector,name,provider,expected_refresh_seconds,active&active=is.true'),
                 ...sectors.map(sector => supabaseQuery('observatory_observations',
-                    'select=id,sector,external_id,observed_at,published_at,latitude,longitude,metric,value,unit,quality_status,source_id,payload&sector=eq.' +
+                    'select=id,sector,external_id,observed_at,published_at,latitude,longitude,metric,value,unit,quality_status,source_id&sector=eq.' +
                     encodeURIComponent(sector) + '&latitude=not.is.null&longitude=not.is.null&order=observed_at.desc,id.desc&limit=' + limit)),
                 supabaseQuery('earth_events', 'select=id,event_type,occurred_at,latitude,longitude,magnitude,depth_km,title,description,source_id,metadata&latitude=not.is.null&longitude=not.is.null&order=occurred_at.desc,id.desc&limit=350'),
                 supabaseQuery('seed_telemetry_samples', 'select=sample_id,sampled_at,latitude,longitude,altitude_km,speed_km_s,source&order=sampled_at.desc,sample_id.desc&limit=180'),
@@ -166,8 +166,7 @@ router.get('/observatory/layers', async (req, res) => {
                 Math.abs(Number(row.latitude)) <= 90 && Math.abs(Number(row.longitude)) <= 180
             ).map(row => {
                 const source = bySource.get(row.source_id) || null;
-                const details = row.payload && typeof row.payload === 'object' ? row.payload : {};
-                const label = details.station?.name || details.volcano_name || details.name || details.station_name || row.external_id || row.sector;
+                const label = row.external_id || row.metric || row.sector;
                 return { id: 'observation-' + row.id, record_id: row.id, sector: row.sector, external_id: row.external_id,
                     observed_at: row.observed_at, published_at: row.published_at, latitude: Number(row.latitude), longitude: Number(row.longitude),
                     metric: row.metric, value: row.value, unit: row.unit, quality_status: row.quality_status,
