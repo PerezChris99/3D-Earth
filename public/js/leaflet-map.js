@@ -24,7 +24,8 @@ function installBase(index){
  baseIndex=index;tileErrors=0;
  if(baseLayer)map.removeLayer(baseLayer);
  const provider=baseProviders[index];
- baseLayer=L.tileLayer(provider.url,{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · tiles '+provider.name,updateWhenIdle:true,keepBuffer:2});
+ const attribution=provider.name.startsWith('CARTO')?'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · © <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>':'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
+ baseLayer=L.tileLayer(provider.url,{maxZoom:19,attribution,updateWhenIdle:true,keepBuffer:2});
  baseLayer.on('tileerror',()=>{
   tileErrors++;
   if(tileErrors>=3&&baseIndex===index&&!tileFallbackTimer&&index<baseProviders.length-1){
