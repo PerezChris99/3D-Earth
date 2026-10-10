@@ -128,7 +128,7 @@ async function loadData(showRefresh=false){
  if(refreshing)return;refreshing=true;const btn=$('refresh-data');btn.disabled=true;btn.textContent='LOADING…';
  if(showRefresh)mapStatus('Refreshing database-backed map layers…');
  try{
-  const response=await fetch('/api/observatory/layers?limit=160',{cache:'no-store',signal:AbortSignal.timeout(18000)});
+  const response=await fetch('/api/observatory/layers?limit=160',{cache:'no-store',signal:AbortSignal.timeout(6000)});
   if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||body.message||('API returned HTTP '+response.status))}
   const data=await response.json();
   window.__earthDataResult=null;
