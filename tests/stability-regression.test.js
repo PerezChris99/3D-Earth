@@ -103,3 +103,17 @@ test('database explorer loads only when opened, reducing initial API and databas
   assert.match(read('public/js/map.js'), /function boot\(\)\{wire\(\);render\(\);loadData\(false\)\}/);
   assert.match(read('public/js/leaflet-map.js'), /catalog-toggle.*loadCatalog\(true\)/);
 });
+
+test('map loader quickly falls back when external Leaflet CDNs are unavailable', () => {
+  const loader=read('public/js/map-loader.js');
+  assert.match(loader,/3500/);
+  assert.match(loader,/no Google Maps API key required/);
+  assert.match(loader,/fallback\(\)/);
+});
+test('map and globe share the public read-only database fallback', () => {
+  const map=read('public/js/map.js'),leaflet=read('public/js/leaflet-map.js'),globe=read('public/js/globe.js'),html=read('dashboard.html');
+  assert.match(map,/EarthData\.fetchLayers/);
+  assert.match(leaflet,/EarthData\.fetchLayers/);
+  assert.match(globe,/window\.EarthData\?\.fetchLayers/);
+  assert.match(html,/data-layer-refresh/);
+});
