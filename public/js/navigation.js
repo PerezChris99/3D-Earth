@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-const PAGES=[['home','HOME','/'],['globe','GLOBE','/dashboard.html'],['satellites','SATELLITES','/satellites'],['map','MAP','/map.html'],['about','ABOUT','/about.html'],['sources','SOURCES','/data-policy.html']];
+const PAGES=[['home','HOME','/'],['globe','GLOBE','/dashboard.html'],['satellites','SATELLITES','/satellites'],['map','MAP','/map'],['about','ABOUT','/about.html'],['sources','SOURCES','/data-policy.html']];
 const MOBILE=PAGES.slice(0,4);
 const ICONS={
  home:'<path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/>',
