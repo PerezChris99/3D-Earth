@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#071019">
 <meta name="description" content="Interactive world map with database-backed Earth observations, satellite image footprints and a searchable scientific data explorer.">
 <title>World Map & Data Explorer — 3D Earth by Perez</title>
-<link rel="stylesheet" href="/css/map.css?v=20261009d">
-<link rel="stylesheet" href="/css/mobile-nav.css?v=20261009d">
+<link rel="stylesheet" href="/css/map.css?v=20261010a">
+<link rel="stylesheet" href="/css/mobile-nav.css?v=20261010a">
 </head>
 <body class="map-page">
 <main class="map-shell">
@@ -19,7 +19,7 @@
     <div class="map-actions"><button id="refresh-data" type="button">REFRESH DATA</button><button id="locate-me" type="button">LOCATE ME</button></div>
   </header>
   <div class="map-zoom" aria-label="Map zoom controls"><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-out" type="button" aria-label="Zoom out">−</button><button id="zoom-world" type="button">WORLD</button></div>
-  <div class="map-attribution">Map tiles © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · Leaflet with a built-in canvas fallback.</div>
+  <div class="map-attribution">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · basemap tiles © <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a> / OpenStreetMap · Leaflet with a built-in canvas fallback.</div>
   <aside class="map-panel" id="map-panel" aria-label="Map layers and latest records">
     <div class="panel-title"><div><span class="eyebrow">DATABASE-CONNECTED OBSERVATORY</span><h1>Earth data</h1></div><button id="collapse-panel" type="button" aria-label="Collapse Earth data panel" aria-expanded="true">−</button></div>
     <p id="map-status" class="map-status" role="status" aria-live="polite">World map ready · loading database observations…</p>
@@ -76,7 +76,8 @@
   </section>
   <div id="location-status" class="location-status" role="status" aria-live="polite">Map is ready. Device location is optional.</div>
 </main>
-<script src="/js/map-loader.js?v=20261009d" defer></script>
-<script src="/js/navigation.js?v=20261009d" defer></script>
+<script src="/js/supabase-public.js?v=20261010a" defer></script>
+<script src="/js/map-loader.js?v=20261010a" defer></script>
+<script src="/js/navigation.js?v=20261010a" defer></script>
 </body>
 </html>

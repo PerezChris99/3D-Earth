@@ -112,6 +112,9 @@ function renderCounts(data){
  Object.entries(sectors).forEach(([sector])=>{const el=$('count-'+sector);if(el&&!layers.some(layer=>layer.sector===sector))el.textContent=String(items.filter(item=>item.sector===sector).length)});
 }
 async function loadFallbackMapRecords(){
+ if(window.EarthData&&typeof window.EarthData.fetchLayers==='function'){
+  try{const direct=await window.EarthData.fetchLayers();if(direct&&Array.isArray(direct.items)&&direct.items.length){window.__earthDataResult=direct;return direct.items.filter(item=>Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude))&&Math.abs(Number(item.latitude))<=90&&Math.abs(Number(item.longitude))<=180)}}catch(error){console.warn('Direct read-only Supabase fallback unavailable:',error.message)}
+ }
  const fallback=await Promise.allSettled([
   fetch('/api/observatory/catalog?dataset=observatory_observations&map=1&limit=100&offset=0',{cache:'no-store',signal:AbortSignal.timeout(12000)}).then(r=>{if(!r.ok)throw new Error('Observation catalog HTTP '+r.status);return r.json()}),
   fetch('/api/observatory/catalog?dataset=earth_events&map=1&limit=100&offset=0',{cache:'no-store',signal:AbortSignal.timeout(12000)}).then(r=>{if(!r.ok)throw new Error('Event catalog HTTP '+r.status);return r.json()})
@@ -125,18 +128,19 @@ async function loadData(showRefresh=false){
  if(refreshing)return;refreshing=true;const btn=$('refresh-data');btn.disabled=true;btn.textContent='LOADING…';
  if(showRefresh)mapStatus('Refreshing database-backed map layers…');
  try{
-  const response=await fetch('/api/observatory/layers?limit=160',{cache:'no-store',signal:AbortSignal.timeout(18000)});
+  const response=await fetch('/api/observatory/layers?limit=160',{cache:'no-store',signal:AbortSignal.timeout(6000)});
   if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||body.message||('API returned HTTP '+response.status))}
   const data=await response.json();
+  window.__earthDataResult=null;
   items=Array.isArray(data.items)?data.items.filter(item=>Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude))&&Math.abs(Number(item.latitude))<=90&&Math.abs(Number(item.longitude))<=180):[];
   if(!items.length)items=await loadFallbackMapRecords();
-  renderCounts(data);renderRecordList();queueRender();
+  renderCounts(window.__earthDataResult||data);renderRecordList();queueRender();
   if(!items.length)throw new Error('The database endpoints returned no valid located records');
-  mapStatus(items.length+' geographic records loaded from Supabase · '+(data.partial?'some sources returned partial data':'database sources responded')+' · refreshed '+new Date(data.ts||Date.now()).toLocaleTimeString());
+  const activeData=window.__earthDataResult||data;mapStatus(items.length+' geographic records loaded from '+(window.__earthDataResult?'the direct read-only Supabase connection':'Supabase')+' · '+(activeData.partial?'some optional datasets are unavailable':'data sources connected')+' · refreshed '+new Date(activeData.ts||Date.now()).toLocaleTimeString());
  }catch(error){
   try{
    items=await loadFallbackMapRecords();
-   if(items.length){renderRecordList();queueRender();mapStatus(items.length+' located records loaded from the Supabase catalog fallback · aggregate layer endpoint unavailable ('+error.message+')');}
+   if(items.length){renderCounts(window.__earthDataResult||{layers:[]});renderRecordList();queueRender();mapStatus(items.length+' located records loaded from '+(window.__earthDataResult?'Supabase directly · server gateway unavailable; data layers remain active':'the Supabase catalog fallback')+' · refreshed '+new Date((window.__earthDataResult&&window.__earthDataResult.ts)||Date.now()).toLocaleTimeString());}
    else throw new Error(error.message+'; direct catalog fallback returned no located records');
   }catch(fallbackError){mapStatus('Map base is available, but database data could not be loaded ('+fallbackError.message+'). Use Refresh Data to retry.')}
  }

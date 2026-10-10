@@ -67,8 +67,8 @@ test('production asset policy prevents stale JS/CSS from hiding merged implement
   const jsCss = config.headers.find(rule => rule.source === '/(.*)\\.(js|css)');
   assert.ok(jsCss, 'JavaScript and CSS need an explicit cache policy');
   assert.equal(jsCss.headers.find(header => header.key === 'Cache-Control')?.value, 'no-cache, max-age=0, must-revalidate');
-  assert.match(read('dashboard.html'), /\/js\/globe\.js\?v=20261009d/);
-  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261009d/);
+  assert.match(read('dashboard.html'), /\/js\/globe\.js\?v=20261010a/);
+  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261010a/);
   assert.match(read('satellites.html'), /\/js\/satellites\.js\?v=20261009d/);
 });
 
@@ -102,4 +102,18 @@ test('database explorer loads only when opened, reducing initial API and databas
   assert.match(read('public/js/leaflet-map.js'), /function boot\(\)\{initMap\(\);wire\(\);loadData\(false\)\}/);
   assert.match(read('public/js/map.js'), /function boot\(\)\{wire\(\);render\(\);loadData\(false\)\}/);
   assert.match(read('public/js/leaflet-map.js'), /catalog-toggle.*loadCatalog\(true\)/);
+});
+
+test('map loader quickly falls back when external Leaflet CDNs are unavailable', () => {
+  const loader=read('public/js/map-loader.js');
+  assert.match(loader,/3500/);
+  assert.match(loader,/no Google Maps API key required/);
+  assert.match(loader,/fallback\(\)/);
+});
+test('map and globe share the public read-only database fallback', () => {
+  const map=read('public/js/map.js'),leaflet=read('public/js/leaflet-map.js'),globe=read('public/js/globe.js'),html=read('dashboard.html');
+  assert.match(map,/EarthData\.fetchLayers/);
+  assert.match(leaflet,/EarthData\.fetchLayers/);
+  assert.match(globe,/window\.EarthData\?\.fetchLayers/);
+  assert.match(html,/data-layer-refresh/);
 });

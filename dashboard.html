@@ -5,7 +5,7 @@
 <meta name="theme-color" content="#02060d"><meta name="description" content="Interactive 3D Earth planetary observatory with real-time solar lighting, satellite propagation and private device location.">
 <title>3D Earth by Perez — Planetary Observatory</title>
 <link rel="preload" as="image" href="/assets/earth/earth_atmos_2048.jpg" fetchpriority="high">
-<link rel="stylesheet" href="/css/globe-dashboard.css?v=20261009d"><link rel="stylesheet" href="/css/mobile-nav.css?v=20261009d">
+<link rel="stylesheet" href="/css/globe-dashboard.css?v=20261010a"><link rel="stylesheet" href="/css/mobile-nav.css?v=20261010a">
 </head>
 <body class="globe-dashboard">
 <main id="globe-app" aria-label="3D Earth planetary observatory">
@@ -39,6 +39,7 @@
 <section class="data-layer-drawer" id="data-layer-drawer" aria-hidden="true">
  <div class="drawer-head"><div><span class="panel-kicker">SUPABASE OBSERVATIONS</span><h2>Earth data layers</h2></div><button id="close-data-layers" aria-label="Close data layers">×</button></div>
  <p id="data-layer-status" class="source-note">Loading geographic observations from the database…</p>
+ <button type="button" id="data-layer-refresh" class="drawer-refresh">REFRESH EARTH DATA</button>
  <div class="data-layer-controls" aria-label="Toggle observation layers">
   <button type="button" data-sector="wildfires" class="active" aria-pressed="true">Wildfires <b id="count-wildfires">—</b></button>
   <button type="button" data-sector="volcanoes" class="active" aria-pressed="true">Volcanoes <b id="count-volcanoes">—</b></button>
@@ -68,5 +69,5 @@
 <footer class="global-info-footer"><span>3D Earth by Perez</span><nav><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></nav></footer>
 
 
-<script src="/vendor/three-r128.min.js"></script><script src="/vendor/GLTFLoader-r128.js"></script><script src="/vendor/OrbitControls-r128.js"></script><script src="https://cdn.jsdelivr.net/npm/satellite.js@4.1.4/dist/satellite.min.js"></script><script src="/js/astronomy.js?v=20261009d"></script><script src="/js/globe.js?v=20261009d"></script><script src="/js/navigation.js" defer></script>
+<script src="/vendor/three-r128.min.js"></script><script src="/vendor/GLTFLoader-r128.js"></script><script src="/vendor/OrbitControls-r128.js"></script><script src="/js/astronomy.js?v=20261010a"></script><script src="/js/supabase-public.js?v=20261010a"></script><script src="/js/globe.js?v=20261010a"></script><script src="/js/navigation.js?v=20261010a" defer></script>
 </body></html>

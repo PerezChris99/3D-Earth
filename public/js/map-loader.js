@@ -16,17 +16,17 @@ function loadApp(src,primary){
 }
 function fallback(){
  if(status)status.textContent='Leaflet could not load from the available CDNs. Starting the built-in fallback map…';
- loadApp('/js/map.js?v=20261009d',false);
+ loadApp('/js/map.js?v=20261010a',false);
 }
 function loadLeaflet(index){
- if(window.L&&window.L.map){const link=document.createElement('link');link.rel='stylesheet';link.href=scripts[index].css;link.onload=()=>loadApp('/js/leaflet-map.js?v=20261009d',true);link.onerror=()=>{if(index+1<scripts.length)loadLeaflet(index+1);else fallback()};document.head.appendChild(link);return}
+ if(window.L&&window.L.map){const link=document.createElement('link');link.rel='stylesheet';link.href=scripts[index].css;link.onload=()=>loadApp('/js/leaflet-map.js?v=20261010a',true);link.onerror=()=>{if(index+1<scripts.length)loadLeaflet(index+1);else fallback()};document.head.appendChild(link);return}
  if(index>=scripts.length){fallback();return}
  const script=document.createElement('script');script.src=scripts[index].js;script.async=true;let settled=false;
- const timer=setTimeout(()=>{if(settled)return;settled=true;script.remove();loadLeaflet(index+1)},8000);
+ const timer=setTimeout(()=>{if(settled)return;settled=true;script.remove();loadLeaflet(index+1)},3500);
  script.onload=()=>{if(settled)return;settled=true;clearTimeout(timer);if(window.L&&window.L.map)loadLeaflet(index);else loadLeaflet(index+1)};
  script.onerror=()=>{if(settled)return;settled=true;clearTimeout(timer);script.remove();loadLeaflet(index+1)};
  document.head.appendChild(script);
 }
-if(status)status.textContent='Loading interactive map engine…';
+if(status)status.textContent='Loading interactive map engine (no Google Maps API key required)…';
 loadLeaflet(0);
 })();
