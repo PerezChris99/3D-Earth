@@ -72,7 +72,7 @@ function selectObservation(id){
  const detail=$('data-observation-detail');detail.hidden=false;
  const fields=[['Observation',item.label],['Layer',item.sector],['Measurement',String(item.value??'Not reported')+' '+(item.unit||'')],['Metric',item.metric||'Not specified'],['Observed',item.observed_at?new Date(item.observed_at).toLocaleString():'Time not supplied'],['Quality',item.quality_status||'Unspecified'],['Source',item.source_name||item.provider||'Not listed']];
  detail.innerHTML='';fields.forEach(([label,value])=>{const line=document.createElement('p'),strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=label;span.textContent=String(value);line.append(strong,span);detail.appendChild(line)});
- const marker=item._marker;if(marker)controls.target.lerp(marker.position,.35);
+ const marker=item._marker;if(marker&&controls?.target)controls.target.lerp(marker.position,.35);
 }
 document.addEventListener('click',event=>{const row=event.target.closest('.data-layer-row');if(row)selectObservation(row.dataset.observationId)});
 function wire(){
@@ -233,7 +233,7 @@ function initCanvasGlobeFallback(reason){
   for(let lon=-180;lon<180;lon+=30){ctx.beginPath();let started=false;for(let lat=-88;lat<=88;lat+=3){const p=project(lat,lon,cx,cy,radius);if(p.z>0){if(!started){ctx.moveTo(p.x,p.y);started=true}else ctx.lineTo(p.x,p.y)}else started=false}ctx.stroke()}
   ctx.fillStyle='#3d8066';ctx.strokeStyle='rgba(154,214,174,.55)';ctx.lineWidth=.7;
   land.forEach(poly=>{ctx.beginPath();let started=false;poly.forEach(([lon,lat])=>{const p=project(lat,lon,cx,cy,radius);if(p.z>0){if(!started){ctx.moveTo(p.x,p.y);started=true}else ctx.lineTo(p.x,p.y)}else started=false});if(started){ctx.closePath();ctx.fill();ctx.stroke()}});
-  canvasItems.forEach(item=>{if(!activeDataSectors.has(item.sector))return;const p=project(Number(item.latitude),Number(item.longitude),cx,cy,radius);if(p.z<=0)return;const color=colors[item.sector]||colors.other_events;ctx.beginPath();ctx.arc(p.x,p.y,String(item.id)===String(selected?.id)?5:3.2,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(String(item.id)===String(selected?.id)){ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke()}});
+  canvasItems.slice(0,400).forEach(item=>{if(!activeDataSectors.has(item.sector))return;const p=project(Number(item.latitude),Number(item.longitude),cx,cy,radius);if(p.z<=0)return;const color=colors[item.sector]||colors.other_events;ctx.beginPath();ctx.arc(p.x,p.y,String(item.id)===String(selected?.id)?5:3.2,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(String(item.id)===String(selected?.id)){ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke()}});
   ctx.restore();ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.strokeStyle='rgba(111,199,245,.8)';ctx.lineWidth=1.5;ctx.stroke();
   ctx.fillStyle='rgba(230,244,255,.8)';ctx.font='11px system-ui';ctx.fillText('COMPATIBILITY GLOBE · DRAG TO ROTATE',Math.max(14,cx-radius),Math.min(h-16,cy+radius+22));
  }
