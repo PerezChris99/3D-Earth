@@ -1,5 +1,5 @@
 /* Public, read-only Supabase access for static pages.
- * This publishable key is intended for browser use. RLS remains the access boundary;
+ * This legacy anon key is public by design. RLS remains the access boundary;
  * never place a service-role or secret key in this file.
  */
 (() => {
@@ -8,6 +8,8 @@
   const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1bnh0c2RjenV2dWd0dG53ZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MDA1NTIsImV4cCI6MjEwNjk3NjU1Mn0.zfl_zuxFZDVbLN7Ig6fqR14dIHeReXojAQZiVRORMhI';
   const SECTORS = ['earthquakes','severe_weather','wildfires','volcanoes','volcano_alerts','oceans','weather','earth_observation_products','telemetry_samples','other_events'];
   if (!Promise.allSettled) Promise.allSettled = promises => Promise.all(Array.from(promises, promise => Promise.resolve(promise).then(value=>({status:'fulfilled',value}),reason=>({status:'rejected',reason}))));
+  if (typeof window.AbortSignal === 'undefined' && typeof AbortController === 'function') window.AbortSignal = { timeout: ms => { const controller=new AbortController(); setTimeout(()=>controller.abort(),ms); return controller.signal; } };
+  else if (window.AbortSignal && typeof window.AbortSignal.timeout !== 'function' && typeof AbortController === 'function') window.AbortSignal.timeout = ms => { const controller=new AbortController(); setTimeout(()=>controller.abort(),ms); return controller.signal; };
   const LABELS = {
     earthquakes:'Earthquakes',severe_weather:'Severe weather',wildfires:'Wildfires',volcanoes:'Volcanoes',
     volcano_alerts:'Volcano notices',oceans:'Ocean observations',weather:'Surface weather',
