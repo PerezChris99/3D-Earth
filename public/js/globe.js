@@ -44,7 +44,7 @@ async function init(){
 async function loadObservatorySummary(force=false){
  let data=null;
  if(force&&window.EarthData?.fetchLayers){try{data=await window.EarthData.fetchLayers(true)}catch(error){console.warn('Direct Supabase refresh failed:',error.message)}}
- const results=await Promise.allSettled([fetch('/api/observatory/summary',{cache:'no-store',signal:AbortSignal.timeout(8000)}),fetch('/api/observatory/layers?limit=160',{cache:'no-store',signal:AbortSignal.timeout(8000)})]);
+ const results=force&&data?await Promise.allSettled([fetch('/api/observatory/summary',{cache:'no-store',signal:AbortSignal.timeout(8000)})]):await Promise.allSettled([fetch('/api/observatory/summary',{cache:'no-store',signal:AbortSignal.timeout(8000)}),fetch('/api/observatory/layers?limit=160',{cache:'no-store',signal:AbortSignal.timeout(8000)})]);
  if(results[0].status==='fulfilled'&&results[0].value.ok){try{const summary=await results[0].value.json();databaseSatelliteCatalog=Array.isArray(summary.satellites)?summary.satellites:[];mergeDatabaseSatelliteCatalog();const sampleCount=Array.isArray(summary.samples)?summary.samples.length:0;$('system-state').title='Supabase connected · '+databaseSatelliteCatalog.length+' satellite catalog records · '+sampleCount+' telemetry samples in the current sample window'}catch(_){}}
  if(!data&&results[1].status==='fulfilled'&&results[1].value.ok){try{const serverData=await results[1].value.json();if(Array.isArray(serverData.items)&&serverData.items.length)data=serverData}catch(_){}}
  if((!data||!Array.isArray(data.items)||!data.items.length)&&window.EarthData?.fetchLayers){try{data=await window.EarthData.fetchLayers(force)}catch(error){console.warn('Direct Supabase layers unavailable:',error.message)}}
