@@ -94,7 +94,7 @@ async function loadData(showRefresh=false){
   const data=await response.json();
   window.__earthDataResult=null;
   items=Array.isArray(data.items)?data.items.filter(validPoint):[];
-  if(!items.length)items=await loadFallbackMapRecords();
+  if(!items.length||data.partial)items=await loadFallbackMapRecords();
   renderCounts(window.__earthDataResult||data);renderMapItems();
   if(!items.length)throw new Error('Database endpoints returned no valid located records');
   const activeData=window.__earthDataResult||data;mapStatus(items.length+' geographic records loaded from '+(window.__earthDataResult?'the direct read-only Supabase connection':'Supabase')+' · '+(activeData.partial?'some optional datasets are unavailable':'data sources connected')+' · refreshed '+new Date(activeData.ts||Date.now()).toLocaleTimeString());
