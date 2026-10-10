@@ -123,9 +123,9 @@ test('map page resolves on Vercel with both explicit HTML and clean routes', () 
   const server = read('server.js');
   const nav = read('public/js/navigation.js');
   assert.equal(config.cleanUrls, false, 'keep the physical map.html path valid on Vercel');
-  assert.match(server, /app\\.get\\(\\['\\/map', '\\/map\\/', '\\/map\\.html'\\]/);
-  assert.match(server, /res\\.sendFile\\(path\\.join\\(__dirname, 'map\\.html'\\)\\)/);
-  assert.match(nav, /\\['map','MAP','\\/map'\\]/);
+  assert.match(server, /app\.get\(\['\/map', '\/map\/', '\/map\.html'\]/);
+  assert.match(server, /res\.sendFile\(path\.join\(__dirname, 'map\.html'\)\)/);
+  assert.match(nav, /\['map','MAP','\/map'\]/);
   assert.match(read('map.html'), /id="leaflet-map"/);
   assert.match(read('map.html'), /id="world-map"/);
 });
