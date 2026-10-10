@@ -272,7 +272,7 @@ function initCanvasGlobeFallback(reason){
  document.addEventListener('click',event=>{const row=event.target.closest('.data-layer-row');if(row){const item=canvasItems.find(value=>String(value.id)===row.dataset.observationId);if(item){selected=item;rotation=-Number(item.longitude)*Math.PI/180;render()}}});
  window.addEventListener('resize',render);
  let previous=performance.now();function animateFallback(now){const dt=Math.min((now-previous)/1000,.05);previous=now;rotation+=dt*.035;render();requestAnimationFrame(animateFallback)}render();requestAnimationFrame(animateFallback);
- if(screen){screen.classList.remove('boot-failed');if(message)message.textContent='Starting lightweight compatibility globe…';const progress=$('boot-progress');if(progress)progress.style.width='100%';setTimeout(()=>{screen.style.opacity='0';setTimeout(()=>screen.remove(),400)},450)}
+ if(screen){screen.classList.remove('boot-failed');if(message)message.textContent='Starting lightweight compatibility globe; location permission is not required…';const progress=$('boot-progress');if(progress)progress.style.width='100%';setTimeout(()=>{screen.style.opacity='0';setTimeout(()=>screen.remove(),400)},450)}
  loadData(false);
 }
 
