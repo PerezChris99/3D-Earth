@@ -136,11 +136,11 @@ async function loadData(showRefresh=false){
   if(!items.length)items=await loadFallbackMapRecords();
   renderCounts(window.__earthDataResult||data);renderRecordList();queueRender();
   if(!items.length)throw new Error('The database endpoints returned no valid located records');
-  mapStatus(items.length+' geographic records loaded from Supabase · '+(data.partial?'some sources returned partial data':'database sources responded')+' · refreshed '+new Date(data.ts||Date.now()).toLocaleTimeString());
+  const activeData=window.__earthDataResult||data;mapStatus(items.length+' geographic records loaded from '+(window.__earthDataResult?'the direct read-only Supabase connection':'Supabase')+' · '+(activeData.partial?'some optional datasets are unavailable':'data sources connected')+' · refreshed '+new Date(activeData.ts||Date.now()).toLocaleTimeString());
  }catch(error){
   try{
    items=await loadFallbackMapRecords();
-   if(items.length){renderCounts(window.__earthDataResult||{layers:[]});renderRecordList();queueRender();mapStatus(items.length+' located records loaded from '+(window.__earthDataResult?'the direct read-only Supabase connection':'the Supabase catalog fallback')+' · aggregate layer endpoint unavailable ('+error.message+')');}
+   if(items.length){renderCounts(window.__earthDataResult||{layers:[]});renderRecordList();queueRender();mapStatus(items.length+' located records loaded from '+(window.__earthDataResult?'Supabase directly · server gateway unavailable; data layers remain active':'the Supabase catalog fallback')+' · refreshed '+new Date((window.__earthDataResult&&window.__earthDataResult.ts)||Date.now()).toLocaleTimeString());}
    else throw new Error(error.message+'; direct catalog fallback returned no located records');
   }catch(fallbackError){mapStatus('Map base is available, but database data could not be loaded ('+fallbackError.message+'). Use Refresh Data to retry.')}
  }
