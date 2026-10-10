@@ -19,15 +19,19 @@
   const point = row => ({...row, latitude:Number(row.latitude), longitude:Number(row.longitude)});
   async function read(table, params) {
     const url = URL + '/rest/v1/' + encodeURIComponent(table) + '?' + params;
-    const response = await fetch(url, {
-      method:'GET', mode:'cors', cache:'no-store',
-      headers:{ apikey:KEY, Authorization:'Bearer '+KEY, Accept:'application/json' },
-      signal:AbortSignal.timeout(12000)
-    });
-    if (!response.ok) throw new Error('Supabase '+table+' returned HTTP '+response.status);
-    const rows = await response.json();
-    if (!Array.isArray(rows)) throw new Error('Unexpected Supabase response for '+table);
-    return rows;
+    const controller = typeof AbortController==='function' ? new AbortController() : null;
+    const timer = controller ? setTimeout(()=>controller.abort(),12000) : null;
+    try {
+      const response = await fetch(url, {
+        method:'GET', mode:'cors', cache:'no-store',
+        headers:{ apikey:KEY, Authorization:'Bearer '+KEY, Accept:'application/json' },
+        signal:controller ? controller.signal : undefined
+      });
+      if (!response.ok) throw new Error('Supabase '+table+' returned HTTP '+response.status);
+      const rows = await response.json();
+      if (!Array.isArray(rows)) throw new Error('Unexpected Supabase response for '+table);
+      return rows;
+    } finally { if(timer)clearTimeout(timer); }
   }
   function center(geometry) {
     if (!geometry || !geometry.type || !geometry.coordinates) return null;
