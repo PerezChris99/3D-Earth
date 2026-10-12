@@ -79,7 +79,7 @@ test('Vercel serves the map as a public asset and rewrites clean map routes',()=
   assert.ok(config.rewrites.some(x=>x.source==='/map/'&&x.destination==='/map.html'));
   assert.match(read('server.js'),/app\.get\(\['\/map', '\/map\/', '\/map\.html'\], \(req, res\) => res\.sendFile\(path\.join\(publicDir, 'map\.html'\)\)\)/);
   assert.match(html,/js\/map-data\.js\?v=20261012c/);
-  assert.match(html,/js\/map-loader\.js\?v=20261012c/);
+  assert.match(html,/js\/map-loader\.js\?v=20261012d/);
 });
 
 test('Vercel serves API routes through the Express app handler',()=>{
@@ -162,6 +162,39 @@ test('map tiles never use CARTO raster endpoints that display API-key watermarks
   assert.ok(leaflet.indexOf('https://tile.openstreetmap.org/') < leaflet.indexOf('https://server.arcgisonline.com/'));
   assert.ok(canvas.indexOf('https://tile.openstreetmap.org/') < canvas.indexOf('https://server.arcgisonline.com/'));
   assert.ok(server.includes('https://server.arcgisonline.com'));
-  assert.ok(html.includes('js/map-loader.js?v=20261012c'));
+  assert.ok(html.includes('js/map-loader.js?v=20261012d'));
   assert.ok(!html.includes('carto.com/attributions'));
+});
+
+
+test('Locate Me zooms to city level and shows a persistent private teardrop location with device metadata',()=>{
+ const leaflet=read('public/js/leaflet-map.js');
+ const canvas=read('public/js/map.js');
+ for(const source of [leaflet,canvas]){
+  assert.match(source,/Math\.max\((?:map\.getZoom\(\)|zoom),12\)/);
+  assert.match(source,/showObserverDetails/);
+  assert.match(source,/accuracy_m/);
+  assert.match(source,/altitude_m/);
+  assert.match(source,/speed_m_s/);
+  assert.match(source,/heading_deg/);
+  assert.match(source,/navigator\.connection/);
+  assert.match(source,/not sent to the server/);
+ }
+ assert.match(leaflet,/L\.divIcon/);
+ assert.match(canvas,/bezierCurveTo/);
+ assert.match(canvas,/observer\?observer\.longitude:15/);
+});
+
+
+test('African map covers all 54 countries and hydrates markers from stored World Bank indicators',()=>{
+ const countries=read('public/js/map-africa-countries.js');
+ const api=read('src/routes/api.js');
+ const leaflet=read('public/js/leaflet-map.js');
+ const canvas=read('public/js/map.js');
+ for(const code of ['DZA','AGO','BEN','BWA','BFA','BDI','CPV','CMR','CAF','TCD','COM','COG','COD','CIV','DJI','EGY','GNQ','ERI','SWZ','ETH','GAB','GMB','GHA','GIN','GNB','KEN','LSO','LBR','LBY','MDG','MWI','MLI','MRT','MUS','MAR','MOZ','NAM','NER','NGA','RWA','STP','SEN','SYC','SLE','SOM','ZAF','SSD','SDN','TZA','TGO','TUN','UGA','ZMB','ZWE']) assert.match(countries,new RegExp("\\['"+code+"'"));
+ assert.match(api,/router\.get\('\/observatory\/country-indicators'/);
+ for(const code of ['SP.POP.TOTL','NY.GDP.PCAP.CD','SP.DYN.LE00.IN','EG.ELC.ACCS.ZS','IT.NET.USER.ZS']) assert.ok(api.includes(code));
+ for(const source of [leaflet,canvas]){assert.match(source,/EarthMapCountryData\.load/);assert.match(source,/item\.metrics/)}
+ assert.match(read('map.html'),/map-africa-countries\.js\?v=20261012d/);
+ assert.equal(read('map.html'),read('public/map.html'));
 });

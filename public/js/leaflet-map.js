@@ -10,7 +10,7 @@ const sectors={
  global_features:{label:'Major geographic features',color:'#f5cc80'},satellite_positions:{label:'Current satellite positions',color:'#78bfff'},other_events:{label:'Other Earth events',color:'#e6a6ff'}
 };
 const active=new Set(Object.keys(sectors)),layerGroups=new Map(),markers=new Map();
-let items=[],selected=null,observer=null,catalogOffset=0,catalogHasMore=false,refreshing=false,map=null,baseLayer=null,baseIndex=0,tileErrors=0,tileFallbackTimer=null;
+let items=[],selected=null,observer=null,observerMarker=null,catalogOffset=0,catalogHasMore=false,refreshing=false,map=null,baseLayer=null,baseIndex=0,tileErrors=0,tileFallbackTimer=null;
 const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
 const mapStatus=message=>{$('map-status').textContent=message};
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
@@ -47,7 +47,7 @@ function validPoint(item){return window.EarthMapData.isValidPoint(item)}
 let liveOverlayGeneration=0,loadStatusPrefix='Loading verified data feeds…';
 function mergeMapItems(...collections){
  const clean=collections.map(rows=>Array.isArray(rows)?rows.filter(row=>row&&row.sector!=='telemetry_samples') : []);
- return window.EarthMapData.mergeItems(...clean,Array.isArray(window.EarthMapReferenceFeatures)?window.EarthMapReferenceFeatures:[]);
+ return window.EarthMapData.mergeItems(...clean,Array.isArray(window.EarthMapReferenceFeatures)?window.EarthMapReferenceFeatures:[],Array.isArray(window.EarthMapCountryData?.features)?window.EarthMapCountryData.features:[]);
 }
 function updateStatusSummary(){
  const referenceCount=items.filter(item=>item.sector==='global_features').length;
@@ -100,6 +100,7 @@ function detailFor(item){
   ['Region / feature type',item.continent?(item.continent+' · '+(item.feature_type||'Geographic feature')):(item.feature_type||item.location_kind||'Not specified')],
   ['Coordinates',validPoint(item)?Number(item.latitude).toFixed(5)+'°, '+Number(item.longitude).toFixed(5)+'°':'No point coordinates in source'],
   ['Measurement',item.value==null?'Not reported':String(item.value)+' '+(item.unit||'')],
+  ...(item.metrics?Object.entries(item.metrics).map(([code,metric])=>[metric.name+' ('+code+')',String(metric.value)+(metric.unit?' '+metric.unit:'')+' · '+metric.period]):[]),
   ['Altitude',Number.isFinite(Number(item.altitude_km))?Number(item.altitude_km).toFixed(1)+' km':'Not reported'],
   ['Speed',Number.isFinite(Number(item.speed_km_s))?Number(item.speed_km_s).toFixed(3)+' km/s':'Not reported'],
   [observed,item.computed_at?new Date(item.computed_at).toLocaleString():(item.observed_at?new Date(item.observed_at).toLocaleString():'Time not supplied')],
@@ -163,6 +164,7 @@ async function loadData(showRefresh=false){
   let fallbackItems=[];
   if(!serverItems.length||data.partial)fallbackItems=await loadFallbackMapRecords(showRefresh);
   items=mergeMapItems(serverItems,fallbackItems);
+  if(window.EarthMapCountryData){const countryItems=await window.EarthMapCountryData.load();items=mergeMapItems(items,countryItems);}
   renderCounts({layers:window.EarthMapData.layersFromItems(items,sectors)});
   renderMapItems();;
   loadStatusPrefix=(data.partial?'Database feed partially available':'Database feed checked')+' · refreshed '+new Date(data.ts||Date.now()).toLocaleTimeString();
@@ -198,7 +200,28 @@ function wire(){
  document.querySelectorAll('[data-sector]').forEach(button=>button.addEventListener('click',()=>{const sector=button.dataset.sector;if(active.has(sector))active.delete(sector);else active.add(sector);button.classList.toggle('active',active.has(sector));button.setAttribute('aria-pressed',String(active.has(sector)));const group=layerGroups.get(sector);if(group){if(active.has(sector))group.addTo(map);else map.removeLayer(group)}renderRecordList()}));
  $('refresh-data').addEventListener('click',()=>loadData(true));$('zoom-in').addEventListener('click',()=>map.zoomIn());$('zoom-out').addEventListener('click',()=>map.zoomOut());$('zoom-world').addEventListener('click',()=>map.setView([12,15],2));
  $('collapse-panel').addEventListener('click',()=>{const panel=$('map-panel'),collapsed=panel.classList.toggle('collapsed');$('collapse-panel').textContent=collapsed?'+':'−';$('collapse-panel').setAttribute('aria-label',collapsed?'Expand Earth data panel':'Collapse Earth data panel');$('collapse-panel').setAttribute('aria-expanded',String(!collapsed))});
- $('locate-me').addEventListener('click',()=>{if(!navigator.geolocation){$('location-status').textContent='This browser does not support device location.';return}$('location-status').textContent='Waiting for browser location permission…';navigator.geolocation.getCurrentPosition(pos=>{observer={latitude:pos.coords.latitude,longitude:pos.coords.longitude};map.setView([observer.latitude,observer.longitude],Math.max(map.getZoom(),5),{animate:true});L.circleMarker([observer.latitude,observer.longitude],{radius:7,color:'#fff',weight:2,fillColor:'#75c9ff',fillOpacity:1}).addTo(map).bindTooltip('This device · browser-reported accuracy '+Math.round(pos.coords.accuracy)+' m');$('location-status').textContent='Device location shown locally · reported accuracy '+(Number.isFinite(pos.coords.accuracy)?Math.round(pos.coords.accuracy)+' m':'unavailable')+'. Not uploaded.'},error=>{$('location-status').textContent=(error.code===1?'Location permission denied.':error.code===2?'Device location unavailable.':'Location request timed out.')+' The map remains available.'},{enableHighAccuracy:true,maximumAge:30000,timeout:15000})});
+ $('locate-me').addEventListener('click',()=>{
+  if(!navigator.geolocation){$('location-status').textContent='This browser does not support device location.';return}
+  $('location-status').textContent='Waiting for browser location permission…';
+  navigator.geolocation.getCurrentPosition(pos=>{
+   const c=pos.coords,connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection,ua=navigator.userAgent||'';
+   const device=/tablet|ipad/i.test(ua)?'Tablet':/mobile|android|iphone|ipod/i.test(ua)?'Mobile device':'Desktop / laptop';
+   const network=navigator.onLine===false?'Offline':connection?[connection.effectiveType||connection.type||'Connected',Number.isFinite(connection.downlink)?connection.downlink+' Mbps downlink':null,Number.isFinite(connection.rtt)?connection.rtt+' ms RTT':null].filter(Boolean).join(' · '):'Connected; browser network details unavailable';
+   observer={latitude:c.latitude,longitude:c.longitude,accuracy_m:c.accuracy,altitude_m:Number.isFinite(c.altitude)?c.altitude:null,speed_m_s:Number.isFinite(c.speed)?c.speed:null,heading_deg:Number.isFinite(c.heading)?c.heading:null,captured_at:new Date(pos.timestamp||Date.now()).toISOString(),device,network,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Not reported'};
+   if(observerMarker)map.removeLayer(observerMarker);
+   const pin=L.divIcon({className:'user-location-pin-wrap',html:'<span class="user-location-pin" aria-label="Your device location"><span></span></span>',iconSize:[30,40],iconAnchor:[15,39],popupAnchor:[0,-36]});
+   observerMarker=L.marker([observer.latitude,observer.longitude],{icon:pin,zIndexOffset:10000,keyboard:true,title:'Your device location'}).addTo(map);
+   observerMarker.on('click',showObserverDetails);
+   observerMarker.bindTooltip('Your location · accuracy '+(Number.isFinite(c.accuracy)?Math.round(c.accuracy)+' m':'not reported'));
+   map.setView([observer.latitude,observer.longitude],Math.max(map.getZoom(),12),{animate:true});showObserverDetails();
+   $('location-status').textContent='Your location is pinned at city-level zoom. It remains on the map when you zoom out. Location details stay in this browser and are not uploaded.';
+  },error=>{$('location-status').textContent=(error.code===1?'Location permission denied.':error.code===2?'Device location unavailable.':'Location request timed out.')+' The map remains available.'},{enableHighAccuracy:true,maximumAge:15000,timeout:20000})
+ });
+ function showObserverDetails(){
+  if(!observer)return;const box=$('feature-detail');box.hidden=false;box.replaceChildren();
+  const rows=[['Record','Your device location'],['Layer','Private, browser-local location pin'],['Coordinates',observer.latitude.toFixed(6)+'°, '+observer.longitude.toFixed(6)+'°'],['Reported accuracy',Number.isFinite(observer.accuracy_m)?Math.round(observer.accuracy_m)+' m':'Not reported by device'],['Altitude',observer.altitude_m===null?'Not provided by device':observer.altitude_m.toFixed(1)+' m above sea level (device estimate)'],['Speed',observer.speed_m_s===null?'Not provided by device':(observer.speed_m_s*3.6).toFixed(1)+' km/h'],['Heading',observer.heading_deg===null?'Not provided by device':observer.heading_deg.toFixed(0)+'°'],['Device class',observer.device],['Network',observer.network],['Time zone',observer.timezone],['Captured at',new Date(observer.captured_at).toLocaleString()],['Privacy','Stored in this page only; not sent to the server']];
+  rows.forEach(([label,value])=>{const row=document.createElement('p'),strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=label;span.textContent=String(value);row.append(strong,span);box.append(row)});
+ }
  $('catalog-toggle').addEventListener('click',()=>{$('catalog-panel').hidden=false;loadCatalog(true);setTimeout(()=>map.invalidateSize({pan:false}),80)});$('close-catalog').addEventListener('click',()=>$('catalog-panel').hidden=true);
  $('catalog-dataset').addEventListener('change',()=>loadCatalog(true));$('catalog-search-button').addEventListener('click',()=>loadCatalog(true));$('catalog-search').addEventListener('keydown',e=>{if(e.key==='Enter')loadCatalog(true)});$('catalog-more').addEventListener('click',()=>loadCatalog(false));
 }

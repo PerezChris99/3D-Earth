@@ -216,6 +216,32 @@ function geometryCenter(geometry) {
     return Number.isFinite(center.longitude) && Number.isFinite(center.latitude) && Math.abs(center.longitude) <= 180 && Math.abs(center.latitude) <= 90 ? { longitude: center.longitude, latitude: center.latitude } : null;
 }
 
+router.get('/observatory/country-indicators', async (req, res) => {
+    try {
+        if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });
+        const codes = ['SP.POP.TOTL','NY.GDP.PCAP.CD','SP.DYN.LE00.IN','EG.ELC.ACCS.ZS','IT.NET.USER.ZS'];
+        const query = 'select=country_code,country_name,indicator_code,indicator_name,period,value,unit,observation_status&indicator_code=in.(' + codes.join(',') + ')&order=period.desc&limit=5000';
+        const rows = await supabaseQuery('world_development_observations', query);
+        const latest = new Map();
+        for (const row of rows) {
+            if (!row.country_code || !codes.includes(row.indicator_code) || row.value == null) continue;
+            const key = row.country_code + ':' + row.indicator_code;
+            if (!latest.has(key)) latest.set(key, row);
+        }
+        const items = [...latest.values()].map(row => ({
+            country_code: row.country_code, country_name: row.country_name,
+            indicator_code: row.indicator_code, indicator_name: row.indicator_name,
+            period: row.period, value: row.value, unit: row.unit,
+            observation_status: row.observation_status
+        }));
+        res.set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');
+        res.json({ ts: Date.now(), source: 'World Bank indicators stored in Supabase', count: items.length, items });
+    } catch (err) {
+        logger.error('API', '/observatory/country-indicators error', { message: err.message });
+        res.status(502).json({ error: 'Country indicators could not be loaded' });
+    }
+});
+
 router.get('/observatory/layers', async (req, res) => {
     try {
         if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });
