@@ -147,8 +147,8 @@ test('desktop shared navigation occupies its own layout row and page content cle
   const nav=read('public/js/navigation.js');
   assert.match(nav,/document\.body\.prepend\(cluster\)/);
   for(const file of ['map.html','public/map.html','dashboard.html','satellites.html','index.html','about.html','data-policy.html','privacy.html','terms.html']){
-    assert.match(read(file),/mobile-nav\.css\?v=20261012d/,file);
-    assert.match(read(file),/navigation\.js\?v=20261012d/,file);
+    assert.match(read(file),/mobile-nav\\.css\\?v=20261012c/,file);
+    assert.match(read(file),/navigation\\.js\\?v=20261012c/,file);
   }
   assert.equal(read('map.html'),read('public/map.html'));
 });
