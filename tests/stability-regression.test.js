@@ -45,7 +45,7 @@ test('observatory API exposes a safe database health probe and map preserves ser
   assert.match(api, /database: connected \? 'connected' : 'unavailable'/);
   assert.match(api, /database: 'not-configured'/);
   assert.match(map, /body\.error\|\|body\.message/);
-  assert.match(map, /direct catalog fallback returned no located records/);
+  assert.match(map, /all database paths returned no located records/);
 });
 
 test('Leaflet map supports database overlays while retaining the offline canvas fallback', () => {
@@ -55,7 +55,7 @@ test('Leaflet map supports database overlays while retaining the offline canvas 
   const fallback = read('public/js/map.js');
   assert.match(html, /id="leaflet-map"/);
   assert.match(loader, /loadLeaflet\(0\)/);
-  assert.match(loader, /fallback\(\)/);
+  assert.match(loader, /function fallback\(reason\)/);
   assert.match(leaflet, /\/api\/observatory\/layers\?limit=160/);
   assert.match(leaflet, /\/api\/observatory\/catalog\?/);
   assert.match(fallback, /function drawBase/);
@@ -68,7 +68,7 @@ test('production asset policy prevents stale JS/CSS from hiding merged implement
   assert.ok(jsCss, 'JavaScript and CSS need an explicit cache policy');
   assert.equal(jsCss.headers.find(header => header.key === 'Cache-Control')?.value, 'no-cache, max-age=0, must-revalidate');
   assert.match(read('dashboard.html'), /\/js\/globe\.js\?v=20261010a/);
-  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261010a/);
+  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261012a/);
   assert.match(read('satellites.html'), /\/js\/satellites\.js\?v=20261009d/);
 });
 
@@ -99,8 +99,8 @@ test('database health diagnoses each required dataset without exposing credentia
 });
 
 test('database explorer loads only when opened, reducing initial API and database load', () => {
-  assert.match(read('public/js/leaflet-map.js'), /function boot\(\)\{initMap\(\);wire\(\);loadData\(false\)\}/);
-  assert.match(read('public/js/map.js'), /function boot\(\)\{wire\(\);render\(\);loadData\(false\)\}/);
+  assert.match(read('public/js/leaflet-map.js'), /function boot\(\)\{initMap\(\);wire\(\);window\.__earthMapRenderer='leaflet';window\.__earthMapRendererReady=true;loadData\(false\)\}/);
+  assert.match(read('public/js/map.js'), /function boot\(\)\{wire\(\);render\(\);window\.__earthMapRenderer='canvas';window\.__earthMapRendererReady=true;loadData\(false\)\}/);
   assert.match(read('public/js/leaflet-map.js'), /catalog-toggle.*loadCatalog\(true\)/);
 });
 
@@ -108,7 +108,7 @@ test('map loader quickly falls back when external Leaflet CDNs are unavailable',
   const loader=read('public/js/map-loader.js');
   assert.match(loader,/3500/);
   assert.match(loader,/no Google Maps API key required/);
-  assert.match(loader,/fallback\(\)/);
+  assert.match(loader, /function fallback\(reason\)/);
 });
 test('map and globe share the public read-only database fallback', () => {
   const map=read('public/js/map.js'),leaflet=read('public/js/leaflet-map.js'),globe=read('public/js/globe.js'),html=read('dashboard.html');
@@ -124,7 +124,7 @@ test('map page resolves on Vercel with both explicit HTML and clean routes', () 
   const nav = read('public/js/navigation.js');
   assert.equal(config.cleanUrls, false, 'keep the physical map.html path valid on Vercel');
   assert.match(server, /app\.get\(\['\/map', '\/map\/', '\/map\.html'\]/);
-  assert.match(server, /res\.sendFile\(path\.join\(__dirname, 'map\.html'\)\)/);
+  assert.match(server, /res\.sendFile\(path\.join\(publicDir, 'map\.html'\)\)/);
   assert.match(nav, /\['map','MAP','\/map'\]/);
   assert.match(read('map.html'), /id="leaflet-map"/);
   assert.match(read('map.html'), /id="world-map"/);

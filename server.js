@@ -79,7 +79,7 @@ app.use(helmet({
             "img-src":       ["'self'", "data:", "blob:", "https://threejs.org", "https://cdn.jsdelivr.net", "https://raw.githubusercontent.com", "https://unpkg.com", "https://tile.openstreetmap.org", "https://assets.science.nasa.gov", "https://www3.nasa.gov", "https://esrs.jsc.nasa.gov", "https://basemaps.cartocdn.com", "https://images.unsplash.com", "https://commons.wikimedia.org", "https://upload.wikimedia.org"],
             "connect-src":   ["'self'", "ws:", "wss:", "https://celestrak.org", "https://celestrak.com",
                               "https://opensky-network.org", "https://earthquake.usgs.gov",
-                              "https://unpkg.com", "https://cdn.jsdelivr.net", "https://tile.openstreetmap.org", "https://basemaps.cartocdn.com", "https://api.open-meteo.com", "https://nominatim.openstreetmap.org", "https://unpkg.com"],
+                              "https://unpkg.com", "https://cdn.jsdelivr.net", "https://tile.openstreetmap.org", "https://basemaps.cartocdn.com", "https://api.open-meteo.com", "https://iunxtsdczuvugttnwdky.supabase.co", "https://nominatim.openstreetmap.org", "https://unpkg.com"],
             "worker-src":    ["'self'", "blob:"],
             "frame-src":     ["'none'"],
             "object-src":    ["'none'"],
@@ -184,7 +184,7 @@ app.use('/api',       apiRoutes);
 // Clean public routes
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
 app.get('/satellites', (req, res) => res.sendFile(path.join(__dirname, 'satellites.html')));
-app.get(['/map', '/map/', '/map.html'], (req, res) => res.sendFile(path.join(__dirname, 'map.html')));
+app.get(['/map', '/map/', '/map.html'], (req, res) => res.sendFile(path.join(publicDir, 'map.html')));
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'about.html')));
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'privacy.html')));
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'terms.html')));
