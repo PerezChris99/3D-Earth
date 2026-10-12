@@ -2,6 +2,21 @@
 
 Updated: 2026-10-12
 
+## Global map data integrity and navigation — 2026-10-12
+
+Implementation:
+- The production seed telemetry batch was verified to contain 1,000 `synthetic-development` rows following a sinusoidal latitude sweep; a targeted database migration deleted only those rows. Verification: zero rows remain in `public.seed_telemetry_samples`.
+- The map API no longer attaches seed telemetry to operational layers. Both Leaflet and canvas renderers filter the telemetry-sample sector as defense in depth.
+- Added 56 curated reference coordinates (eight each for Africa, Asia, Europe, North America, South America, Oceania and Antarctica) for prominent named geographic features. The reference layer is expressly labelled as geography, not a live observation or alert.
+- Added a real USGS earthquake feed and satellite ground positions propagated at refresh time from CelesTrak GP elements using SGP4 via `satellite.js`. These are explicitly distinguished from direct onboard telemetry. NASA FIRMS detections appear when the server-side provider key is configured; detections are described as thermal anomalies unless independently confirmed.
+- The desktop site navigation now occupies its own full-width layout row. Map actions and panels, globe HUD panels, landing-page header, and the satellite workspace are offset below it; mobile navigation remains a separate bottom bar. Navigation CSS/JS asset versions are cache-busted across the site.
+
+Verification:
+- Source-level regression tests cover all seven continents, coordinate validity, seed exclusion, SGP4 propagation and page/navbar spacing.
+- Production database cleanup verified: `remaining_samples=0`, `synthetic_development_samples=0`.
+- A successful CI run and Vercel deployment are required before this phase is marked complete; a rendered browser smoke test must be recorded separately where deployment access allows it.
+
+
 ## Execution rule
 
 **autopilot** means execute the current phase end-to-end on the working branch, validate it, open the normal pull request into main, merge it, and synchronize perez with main.

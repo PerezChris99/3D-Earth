@@ -47,7 +47,7 @@ test('observatory API exposes a safe database health probe and map preserves ser
   assert.match(api, /database: connected \? 'connected' : 'unavailable'/);
   assert.match(api, /database: 'not-configured'/);
   assert.match(map, /body\.error\|\|body\.message/);
-  assert.match(map, /all database paths returned no located records/);
+  assert.match(map, /Database feeds unavailable; retained trusted reference locations/);
 });
 
 test('Leaflet map supports database overlays while retaining the offline canvas fallback', () => {
@@ -70,7 +70,7 @@ test('production asset policy prevents stale JS/CSS from hiding merged implement
   assert.ok(jsCss, 'JavaScript and CSS need an explicit cache policy');
   assert.equal(jsCss.headers.find(header => header.key === 'Cache-Control')?.value, 'no-cache, max-age=0, must-revalidate');
   assert.match(read('dashboard.html'), /\/js\/globe\.js\?v=20261010a/);
-  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261012b/);
+  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261012c/);
   assert.match(read('satellites.html'), /\/js\/satellites\.js\?v=20261009d/);
 });
 

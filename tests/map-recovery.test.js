@@ -45,7 +45,7 @@ test('map layer counts come from the merged, renderable records',()=>{
 test('both map renderers merge partial API results with fallbacks',()=>{
   for(const file of ['public/js/leaflet-map.js','public/js/map.js']){
     const script=read(file);
-    assert.match(script,/EarthMapData\.mergeItems\(serverItems,\s*fallbackItems\)/);
+    assert.match(script,/mergeMapItems\(serverItems,\s*fallbackItems\)/);
     assert.match(script,/layersFromItems\(items,sectors\)/);
     assert.match(script,/AbortSignal\.timeout\(15000\)/);
     assert.match(script,/function validPoint\(item\)\{return window\.EarthMapData\.isValidPoint\(item\)\}/);
@@ -78,8 +78,8 @@ test('Vercel serves the map as a public asset and rewrites clean map routes',()=
   assert.ok(config.rewrites.some(x=>x.source==='/map'&&x.destination==='/map.html'));
   assert.ok(config.rewrites.some(x=>x.source==='/map/'&&x.destination==='/map.html'));
   assert.match(read('server.js'),/app\.get\(\['\/map', '\/map\/', '\/map\.html'\], \(req, res\) => res\.sendFile\(path\.join\(publicDir, 'map\.html'\)\)\)/);
-  assert.match(html,/js\/map-data\.js\?v=20261012b/);
-  assert.match(html,/js\/map-loader\.js\?v=20261012b/);
+  assert.match(html,/js\/map-data\.js\?v=20261012c/);
+  assert.match(html,/js\/map-loader\.js\?v=20261012c/);
 });
 
 test('Vercel serves API routes through the Express app handler',()=>{
@@ -91,6 +91,68 @@ test('Vercel serves API routes through the Express app handler',()=>{
   assert.match(api,/router\.get\('\/observatory\/layers'/);
 });
 
+
+test('global reference catalogue contains accurate, named features on all seven continents',()=>{
+  const features=require('../public/js/map-global-features.js');
+  const continents=['Africa','Asia','Europe','North America','South America','Oceania','Antarctica'];
+  assert.equal(features.length,56);
+  assert.deepEqual([...new Set(features.map(item=>item.continent))].sort(),continents.slice().sort());
+  for(const continent of continents){
+    const rows=features.filter(item=>item.continent===continent);
+    assert.equal(rows.length,8,continent);
+  }
+  assert.equal(new Set(features.map(item=>item.id)).size,features.length);
+  for(const item of features){
+    assert.equal(item.sector,'global_features');
+    assert.equal(typeof item.label,'string');
+    assert.ok(item.label.length>2);
+    assert.ok(item.feature_type);
+    assert.equal(data.isValidPoint(item),true,item.label);
+    assert.match(item.quality_status,/not a live event/i);
+  }
+});
+
+test('synthetic seed telemetry is excluded from map rendering and real orbital positions use SGP4',()=>{
+  for(const file of ['public/js/leaflet-map.js','public/js/map.js']){
+    const renderer=read(file);
+    assert.match(renderer,/row\.sector!=='telemetry_samples'/);
+    assert.match(renderer,/global_features/);
+    assert.match(renderer,/satellite_positions/);
+    assert.match(renderer,/refreshLiveOverlayData/);
+  }
+  const live=read('public/js/map-live-data.js');
+  assert.match(live,/\/api\/earthquakes/);
+  assert.match(live,/twoline2satrec/);
+  assert.match(live,/eciToGeodetic/);
+  assert.match(live,/CelesTrak GP orbital elements/);
+  assert.doesNotMatch(live,/Math\.sin|Math\.cos/);
+});
+
+test('map API excludes synthetic seed telemetry from operational layers',()=>{
+  const api=read('src/routes/api.js');
+  const route=api.slice(api.indexOf("router.get('/observatory/layers'"),api.indexOf('const OBSERVATORY_DATASETS'));
+  assert.doesNotMatch(route,/supabaseQuery\('seed_telemetry_samples'/);
+  assert.doesNotMatch(route,/telemetry_samples:\s*'Seed telemetry samples'/);
+  assert.match(route,/layers:v5/);
+});
+
+test('desktop shared navigation occupies its own layout row and page content clears it',()=>{
+  const css=read('public/css/mobile-nav.css');
+  assert.match(css,/\.site-nav-cluster\{position:relative/);
+  assert.match(css,/height:50px/);
+  assert.match(css,/\.map-header\{top:62px!important\}/);
+  assert.match(css,/\.map-panel,\.catalog-panel\{top:112px!important\}/);
+  assert.match(css,/\.hud-header\{top:64px!important\}/);
+  assert.match(css,/sat-workspace\{height:calc\(100dvh - 116px\)!important\}/);
+  const nav=read('public/js/navigation.js');
+  assert.match(nav,/document\.body\.prepend\(cluster\)/);
+  for(const file of ['map.html','public/map.html','dashboard.html','satellites.html','index.html','about.html','data-policy.html','privacy.html','terms.html']){
+    assert.match(read(file),/mobile-nav\.css\?v=20261012c/,file);
+    assert.match(read(file),/navigation\.js\?v=20261012c/,file);
+  }
+  assert.equal(read('map.html'),read('public/map.html'));
+});
+
 test('map tiles never use CARTO raster endpoints that display API-key watermarks',()=>{
   const leaflet=read('public/js/leaflet-map.js');
   const canvas=read('public/js/map.js');
@@ -100,6 +162,6 @@ test('map tiles never use CARTO raster endpoints that display API-key watermarks
   assert.ok(leaflet.indexOf('https://tile.openstreetmap.org/') < leaflet.indexOf('https://server.arcgisonline.com/'));
   assert.ok(canvas.indexOf('https://tile.openstreetmap.org/') < canvas.indexOf('https://server.arcgisonline.com/'));
   assert.ok(server.includes('https://server.arcgisonline.com'));
-  assert.ok(html.includes('js/map-loader.js?v=20261012b'));
+  assert.ok(html.includes('js/map-loader.js?v=20261012c'));
   assert.ok(!html.includes('carto.com/attributions'));
 });
