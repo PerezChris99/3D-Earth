@@ -16,6 +16,7 @@ test('world map starts at a single world view and prevents duplicate wrapped til
 test('Locate Me uses an eased bounded flight and map zoom stays within supported world bounds',()=>{
  const source=read('public/js/map.js');
  assert.match(source,/function smoothFlyTo\(/);
+ assert.match(source,/zoom=Math\.round\(start\.zoom/);
  assert.match(source,/smoothFlyTo\(observer\.longitude,observer\.latitude,6\)/);
  assert.match(source,/zoom=clamp\(zoom\+\(e\.deltaY<0\?1:-1\),2,7\)/);
  assert.match(read('public/css/map.css'),/overscroll-behavior:none/);
