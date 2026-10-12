@@ -195,6 +195,6 @@ test('African map covers all 54 countries and hydrates markers from stored World
  assert.match(api,/router\.get\('\/observatory\/country-indicators'/);
  for(const code of ['SP.POP.TOTL','NY.GDP.PCAP.CD','SP.DYN.LE00.IN','EG.ELC.ACCS.ZS','IT.NET.USER.ZS']) assert.ok(api.includes(code));
  for(const source of [leaflet,canvas]){assert.match(source,/EarthMapCountryData\.load/);assert.match(source,/item\.metrics/)}
- assert.match(read('map.html'),/map-africa-countries\.js\?v=20261012e/);
+ assert.match(read('map.html'),/map-africa-countries\.js\?v=20261012d/);
  assert.equal(read('map.html'),read('public/map.html'));
 });
