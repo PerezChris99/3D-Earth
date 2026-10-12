@@ -78,8 +78,8 @@ test('Vercel serves the map as a public asset and rewrites clean map routes',()=
   assert.ok(config.rewrites.some(x=>x.source==='/map'&&x.destination==='/map.html'));
   assert.ok(config.rewrites.some(x=>x.source==='/map/'&&x.destination==='/map.html'));
   assert.match(read('server.js'),/app\.get\(\['\/map', '\/map\/', '\/map\.html'\], \(req, res\) => res\.sendFile\(path\.join\(publicDir, 'map\.html'\)\)\)/);
-  assert.match(html,/js\/map-data\.js\?v=20261012a/);
-  assert.match(html,/js\/map-loader\.js\?v=20261012a/);
+  assert.match(html,/js\/map-data\.js\?v=20261012b/);
+  assert.match(html,/js\/map-loader\.js\?v=20261012b/);
 });
 
 test('Vercel serves API routes through the Express app handler',()=>{
