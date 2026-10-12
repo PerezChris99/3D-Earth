@@ -165,3 +165,22 @@ test('map tiles never use CARTO raster endpoints that display API-key watermarks
   assert.ok(html.includes('js/map-loader.js?v=20261012c'));
   assert.ok(!html.includes('carto.com/attributions'));
 });
+
+
+test('Locate Me zooms to city level and shows a persistent private teardrop location with device metadata',()=>{
+ const leaflet=read('public/js/leaflet-map.js');
+ const canvas=read('public/js/map.js');
+ for(const source of [leaflet,canvas]){
+  assert.match(source,/Math\.max\((?:map\.getZoom\(\)|zoom),12\)/);
+  assert.match(source,/showObserverDetails/);
+  assert.match(source,/accuracy_m/);
+  assert.match(source,/altitude_m/);
+  assert.match(source,/speed_m_s/);
+  assert.match(source,/heading_deg/);
+  assert.match(source,/navigator\.connection/);
+  assert.match(source,/not sent to the server/);
+ }
+ assert.match(leaflet,/L\.divIcon/);
+ assert.match(canvas,/bezierCurveTo/);
+ assert.match(canvas,/observer\?observer\.longitude:15/);
+});
