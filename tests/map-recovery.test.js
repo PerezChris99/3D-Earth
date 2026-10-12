@@ -81,3 +81,12 @@ test('Vercel serves the map as a public asset and rewrites clean map routes',()=
   assert.match(html,/js\/map-data\.js\?v=20261012a/);
   assert.match(html,/js\/map-loader\.js\?v=20261012a/);
 });
+
+test('Vercel serves API routes through the Express app handler',()=>{
+  const server=read('server.js');
+  const api=read('src/routes/api.js');
+  assert.match(server,/if\s*\(!process\.env\.VERCEL\)\s*\{\s*server\.listen/);
+  assert.match(server,/module\.exports\s*=\s*process\.env\.VERCEL\s*\?\s*app\s*:\s*server/);
+  assert.match(server,/app\.use\('\/api',\s*apiRoutes\)/);
+  assert.match(api,/router\.get\('\/observatory\/layers'/);
+});
