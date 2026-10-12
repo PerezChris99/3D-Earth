@@ -18,7 +18,7 @@ test('Locate Me uses an eased bounded flight and map zoom stays within supported
  assert.match(source,/function smoothFlyTo\(/);
  assert.match(source,/smoothFlyTo\(observer\.longitude,observer\.latitude,6\)/);
  assert.match(source,/zoom=clamp\(zoom\+\(e\.deltaY<0\?1:-1\),2,7\)/);
- assert.match(source,/overscroll-behavior:none/);
+ assert.match(read('public/css/map.css'),/overscroll-behavior:none/);
 });
 
 test('satellite preview follows its container size and selected satellite can be toggled off from the list',()=>{
