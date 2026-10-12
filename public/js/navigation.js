@@ -12,7 +12,7 @@ const path=location.pathname.replace(/\/$/,'')||'/',hash=location.hash;
 function active(id,href){const p=new URL(href,location.origin).pathname.replace(/\/$/,'')||'/';return id==='satellites'?(path==='/satellites'||path==='/satellites.html'||(path==='/dashboard.html'&&hash==='#satellites')):p===path}
 function renderDesktop(){
  document.querySelectorAll('.landing-nav > nav,.sat-site-nav > nav,.info-header > nav,.hud-header > nav,.map-header > nav,nav.global-site-nav').forEach(n=>n.remove());
- let cluster=document.querySelector('.site-nav-cluster');if(!cluster){cluster=document.createElement('div');cluster.className='site-nav-cluster';cluster.setAttribute('aria-label','Site navigation');document.body.appendChild(cluster)}
+ let cluster=document.querySelector('.site-nav-cluster');if(!cluster){cluster=document.createElement('div');cluster.className='site-nav-cluster';cluster.setAttribute('aria-label','Site navigation');document.body.prepend(cluster)}else if(cluster.parentElement===document.body&&cluster!==document.body.firstElementChild){document.body.prepend(cluster)}
  let nav=cluster.querySelector('.global-site-nav');if(!nav){nav=document.createElement('nav');nav.className='global-site-nav';nav.setAttribute('aria-label','Primary navigation');cluster.appendChild(nav)}
  nav.innerHTML=PAGES.map(([id,label,href])=>'<a href="'+href+'"'+(active(id,href)?' aria-current="page"':'')+'>'+label+'</a>').join('');
  

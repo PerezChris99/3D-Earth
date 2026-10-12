@@ -220,7 +220,7 @@ router.get('/observatory/layers', async (req, res) => {
     try {
         if (!supabaseConfigured()) return res.status(503).json({ error: 'Supabase server integration is not configured' });
         const limit = Math.min(Math.max(Number(req.query.limit) || 160, 30), 220);
-        const payload = await cache.getOrSet('api:observatory:layers:v4:' + limit, async () => {
+        const payload = await cache.getOrSet('api:observatory:layers:v5:' + limit, async () => {
             const sectors = ['wildfires', 'volcanoes', 'oceans', 'weather'];
             const settled = await Promise.allSettled([
                 supabaseQuery('observatory_sources', 'select=id,slug,sector,name,provider,expected_refresh_seconds,active&active=is.true'),
@@ -228,7 +228,6 @@ router.get('/observatory/layers', async (req, res) => {
                     'select=id,sector,external_id,observed_at,published_at,latitude,longitude,metric,value,unit,quality_status,source_id&sector=eq.' +
                     encodeURIComponent(sector) + '&latitude=not.is.null&longitude=not.is.null&order=observed_at.desc,id.desc&limit=' + limit)),
                 supabaseQuery('earth_events', 'select=id,event_type,occurred_at,latitude,longitude,magnitude,depth_km,title,description,source_id,metadata&latitude=not.is.null&longitude=not.is.null&order=occurred_at.desc,id.desc&limit=350'),
-                supabaseQuery('seed_telemetry_samples', 'select=sample_id,sampled_at,latitude,longitude,altitude_km,speed_km_s,source&order=sampled_at.desc,sample_id.desc&limit=180'),
                 supabaseQuery('earth_observation_products', 'select=id,external_id,collection,acquired_at,published_at,cloud_cover,geometry,metadata,asset_links&order=acquired_at.desc,id.desc&limit=80'),
                 supabaseQuery('volcano_observations', 'select=id,volcano_id,volcano_name,observed_at,latitude,longitude,alert_level,color_code,threat_level,synopsis,notice_id,notice_url,metadata&latitude=not.is.null&longitude=not.is.null&order=observed_at.desc,id.desc&limit=120')
             ]);
@@ -260,15 +259,6 @@ router.get('/observatory/layers', async (req, res) => {
                     metadata: row.metadata });
             });
             results[1 + sectors.length + 1].forEach(row => {
-                const lat = Number(row.latitude), lon = Number(row.longitude);
-                if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
-                items.push({ id: 'telemetry-' + row.sample_id, record_id: row.sample_id, sector: 'telemetry_samples',
-                    observed_at: row.sampled_at, latitude: lat, longitude: lon, altitude_km: row.altitude_km, speed_km_s: row.speed_km_s,
-                    metric: 'seed telemetry sample', value: row.speed_km_s, unit: 'km/s', quality_status: 'seed/sample data',
-                    label: 'Telemetry sample #' + row.sample_id, source_name: row.source || 'Supabase seed telemetry',
-                    provider: 'Supabase seed_telemetry_samples', location_kind: 'stored sample coordinates' });
-            });
-            results[1 + sectors.length + 2].forEach(row => {
                 const center = geometryCenter(row.geometry);
                 if (!center) return;
                 items.push({ id: 'earth-product-' + row.id, record_id: row.id, sector: 'earth_observation_products',
@@ -279,7 +269,7 @@ router.get('/observatory/layers', async (req, res) => {
                     source_name: 'Earth observation product catalog', provider: row.collection || 'Supabase earth_observation_products',
                     location_kind: 'polygon footprint; globe marker uses footprint center', asset_links: row.asset_links, metadata: row.metadata });
             });
-            results[1 + sectors.length + 3].forEach(row => {
+            results[1 + sectors.length + 2].forEach(row => {
                 const lat = Number(row.latitude), lon = Number(row.longitude);
                 if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
                 items.push({ id: 'volcano-alert-' + row.id, record_id: row.id, sector: 'volcano_alerts',
@@ -292,15 +282,14 @@ router.get('/observatory/layers', async (req, res) => {
             const sectorLabels = {
                 wildfires: 'Wildfires', volcanoes: 'Volcano observations', oceans: 'Ocean observations', weather: 'Surface weather',
                 earthquakes: 'Earthquakes', severe_weather: 'Severe weather events', other_events: 'Other Earth events',
-                telemetry_samples: 'Seed telemetry samples', earth_observation_products: 'Earth-observation footprints', volcano_alerts: 'Volcano notices'
+                earth_observation_products: 'Earth-observation footprints', volcano_alerts: 'Volcano notices'
             };
             const layers = Object.keys(sectorLabels).map(sector => {
                 const layerItems = items.filter(item => item.sector === sector);
                 return { sector, label: sectorLabels[sector], loaded_count: layerItems.length,
                     latest_observed_at: layerItems.reduce((latest, item) => !latest || new Date(item.observed_at || 0) > new Date(latest) ? item.observed_at : latest, null),
                     source_name: layerItems[0]?.source_name || 'No located records returned in this window',
-                    note: sector === 'telemetry_samples' ? 'Seed/development samples; not verified live satellite telemetry.' :
-                        sector === 'earth_observation_products' ? 'Polygon footprint is exact; globe marker is the footprint center.' : 'Only stored coordinates are plotted.' };
+                    note: sector === 'earth_observation_products' ? 'Polygon footprint is exact; globe marker is the footprint center.' : 'Only stored coordinates are plotted.' };
             });
             items.sort((a, b) => new Date(b.observed_at || 0) - new Date(a.observed_at || 0));
             return { ts: Date.now(), source: 'Supabase database records', count: items.length, loaded_window_per_layer: limit, partial: failures.length > 0, failed_queries: failures.length,

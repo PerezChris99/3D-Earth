@@ -7,7 +7,7 @@ const sectors={
  wildfires:{label:'Wildfires',color:'#ff754f'},volcanoes:{label:'Volcano observations',color:'#ffc45e'},
  volcano_alerts:{label:'Volcano notices',color:'#ffc45e'},oceans:{label:'Ocean observations',color:'#57c9ff'},
  weather:{label:'Surface weather',color:'#8de2b4'},earth_observation_products:{label:'Satellite image footprints',color:'#ffdf7b'},
- telemetry_samples:{label:'Seed telemetry samples',color:'#b9c4d3'},other_events:{label:'Other Earth events',color:'#e6a6ff'}
+ global_features:{label:'Major geographic features',color:'#f5cc80'},satellite_positions:{label:'Current satellite positions',color:'#78bfff'},other_events:{label:'Other Earth events',color:'#e6a6ff'}
 };
 const active=new Set(Object.keys(sectors)),layerGroups=new Map(),markers=new Map();
 let items=[],selected=null,observer=null,catalogOffset=0,catalogHasMore=false,refreshing=false,map=null,baseLayer=null,baseIndex=0,tileErrors=0,tileFallbackTimer=null;
@@ -44,6 +44,40 @@ function initMap(){
 }
 function clearMapItems(){layerGroups.forEach(group=>group.clearLayers());markers.clear()}
 function validPoint(item){return window.EarthMapData.isValidPoint(item)}
+let liveOverlayGeneration=0,loadStatusPrefix='Loading verified data feeds…';
+function mergeMapItems(...collections){
+ const clean=collections.map(rows=>Array.isArray(rows)?rows.filter(row=>row&&row.sector!=='telemetry_samples') : []);
+ return window.EarthMapData.mergeItems(...clean,Array.isArray(window.EarthMapReferenceFeatures)?window.EarthMapReferenceFeatures:[]);
+}
+function updateStatusSummary(){
+ const referenceCount=items.filter(item=>item.sector==='global_features').length;
+ const satelliteCount=items.filter(item=>item.sector==='satellite_positions').length;
+ const sourcedCount=items.filter(item=>!['global_features','satellite_positions','telemetry_samples'].includes(item.sector)).length;
+ mapStatus(sourcedCount+' source-backed observation/event records · '+referenceCount+' named global reference locations · '+satelliteCount+' satellite positions computed from current orbital elements'+(loadStatusPrefix?' · '+loadStatusPrefix:''));
+}
+async function refreshLiveOverlayData(){
+ if(!window.EarthMapLiveData)return;
+ const generation=++liveOverlayGeneration;
+ const outcomes=await Promise.allSettled([window.EarthMapLiveData.loadEarthEvents(),window.EarthMapLiveData.loadSatellitePositions()]);
+ if(generation!==liveOverlayGeneration)return;
+ const liveEvents=outcomes[0].status==='fulfilled'?outcomes[0].value:[];
+ const satellites=outcomes[1].status==='fulfilled'?outcomes[1].value:[];
+ const stable=items.filter(item=>!['global_features','satellite_positions','telemetry_samples'].includes(item.sector));
+ const uniqueEvents=liveEvents.filter(candidate=>{
+  if(candidate.sector!=='earthquakes')return true;
+  const candidateTime=Date.parse(candidate.observed_at||'');
+  return !stable.some(existing=>existing.sector==='earthquakes'&&
+   Math.abs(Number(existing.latitude)-Number(candidate.latitude))<0.001&&
+   Math.abs(Number(existing.longitude)-Number(candidate.longitude))<0.001&&
+   Number.isFinite(candidateTime)&&Number.isFinite(Date.parse(existing.observed_at||''))&&
+   Math.abs(Date.parse(existing.observed_at)-candidateTime)<=1000);
+ });
+ items=mergeMapItems(stable,uniqueEvents,satellites);
+ renderCounts({layers:window.EarthMapData.layersFromItems(items,sectors)});
+ renderMapItems();
+ updateStatusSummary();
+}
+
 function addItemToMap(item){
  const sector=sectors[item.sector]?item.sector:'other_events';
  if(item.geometry&&['Polygon','MultiPolygon'].includes(item.geometry.type)){
@@ -59,8 +93,22 @@ function renderMapItems(){clearMapItems();items.forEach(addItemToMap);renderReco
 function detailFor(item){
  selected=item;
  const box=$('feature-detail');box.hidden=false;box.replaceChildren();
- const values=[['Record',item.label||item.event_type||item.sector||'Observation'],['Layer',sectors[item.sector]?.label||item.sector],['Coordinates',validPoint(item)?Number(item.latitude).toFixed(5)+'°, '+Number(item.longitude).toFixed(5)+'°':'No point coordinates in source'],['Measurement',item.value==null?'Not reported':String(item.value)+' '+(item.unit||'')],['Observed',item.observed_at?new Date(item.observed_at).toLocaleString():'Time not supplied'],['Quality',item.quality_status||'Not supplied'],['Source',item.source_name||item.provider||'Not listed']];
+ const observed=item.computed_at?'Computed at':'Observed';
+ const values=[
+  ['Record',item.label||item.event_type||item.sector||'Observation'],
+  ['Layer',sectors[item.sector]?.label||item.sector],
+  ['Region / feature type',item.continent?(item.continent+' · '+(item.feature_type||'Geographic feature')):(item.feature_type||item.location_kind||'Not specified')],
+  ['Coordinates',validPoint(item)?Number(item.latitude).toFixed(5)+'°, '+Number(item.longitude).toFixed(5)+'°':'No point coordinates in source'],
+  ['Measurement',item.value==null?'Not reported':String(item.value)+' '+(item.unit||'')],
+  ['Altitude',Number.isFinite(Number(item.altitude_km))?Number(item.altitude_km).toFixed(1)+' km':'Not reported'],
+  ['Speed',Number.isFinite(Number(item.speed_km_s))?Number(item.speed_km_s).toFixed(3)+' km/s':'Not reported'],
+  [observed,item.computed_at?new Date(item.computed_at).toLocaleString():(item.observed_at?new Date(item.observed_at).toLocaleString():'Time not supplied')],
+  ['Quality',item.quality_status||'Not supplied'],
+  ['Source',item.source_name||item.provider||'Not listed']
+ ];
  values.forEach(([label,value])=>{const row=document.createElement('p'),strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=label;span.textContent=String(value);row.append(strong,span);box.append(row)});
+ let safeSourceUrl=null;try{if(typeof item.source_url==='string'&&item.source_url.trim()){const parsedSourceUrl=new URL(item.source_url,location.origin);if(parsedSourceUrl.protocol==='http:'||parsedSourceUrl.protocol==='https:')safeSourceUrl=parsedSourceUrl.href}}catch(_){}
+ if(safeSourceUrl){const row=document.createElement('p'),strong=document.createElement('strong'),link=document.createElement('a');strong.textContent='Source link';link.href=safeSourceUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Open data provider';row.append(strong,link);box.append(row)}
 }
 function renderRecordList(){
  const list=$('map-record-list');list.replaceChildren();const visible=items.filter(item=>active.has(item.sector)).slice(0,45);
@@ -105,7 +153,7 @@ async function loadFallbackMapRecords(force=false){
 }
 async function loadData(showRefresh=false){
  if(refreshing)return;refreshing=true;const btn=$('refresh-data');btn.disabled=true;btn.textContent='LOADING…';
- if(showRefresh)mapStatus('Refreshing database-backed map layers…');
+ if(showRefresh)mapStatus('Refreshing source-backed map layers…');
  try{
   const response=await fetch('/api/observatory/layers?limit=160',{cache:'no-store',signal:AbortSignal.timeout(15000)});
   if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.error||body.message||('API returned HTTP '+response.status))}
@@ -114,19 +162,25 @@ async function loadData(showRefresh=false){
   const serverItems=Array.isArray(data.items)?data.items.filter(validPoint):[];
   let fallbackItems=[];
   if(!serverItems.length||data.partial)fallbackItems=await loadFallbackMapRecords(showRefresh);
-  items=window.EarthMapData.mergeItems(serverItems,fallbackItems);
-  renderCounts({layers:window.EarthMapData.layersFromItems(items,sectors)});renderMapItems();
-  if(!items.length)throw new Error('Database endpoints returned no valid located records');
-  const activeData=window.__earthDataResult||data;mapStatus(items.length+' geographic records loaded from '+(window.__earthDataResult?'the direct read-only Supabase connection':'Supabase')+' · '+(activeData.partial?'some optional datasets are unavailable':'data sources connected')+' · refreshed '+new Date(activeData.ts||Date.now()).toLocaleTimeString());
+  items=mergeMapItems(serverItems,fallbackItems);
+  renderCounts({layers:window.EarthMapData.layersFromItems(items,sectors)});
+  renderMapItems();;
+  loadStatusPrefix=(data.partial?'Database feed partially available':'Database feed checked')+' · refreshed '+new Date(data.ts||Date.now()).toLocaleTimeString();
  }catch(error){
   try{
    const fallbackItems=await loadFallbackMapRecords(showRefresh);
-   items=window.EarthMapData.mergeItems(items,fallbackItems);
-   if(items.length){renderCounts({layers:window.EarthMapData.layersFromItems(items,sectors)});renderMapItems();mapStatus(items.length+' located records loaded from the available database paths'+(error.message?' · gateway issue: '+error.message:'')+' · refreshed '+new Date((window.__earthDataResult&&window.__earthDataResult.ts)||Date.now()).toLocaleTimeString());}
-   else throw new Error(error.message+'; all database paths returned no located records');
-  }catch(fallbackError){mapStatus('Map is interactive, but database records could not be loaded ('+fallbackError.message+'). Use Refresh Data to retry.')}
+   items=mergeMapItems(items.filter(item=>!['global_features','satellite_positions'].includes(item.sector)),fallbackItems);
+   renderCounts({layers:window.EarthMapData.layersFromItems(items,sectors)});
+   renderMapItems();;
+   loadStatusPrefix='Primary database request failed; used available fallbacks';
+  }catch(fallbackError){
+   items=mergeMapItems(items.filter(item=>!['global_features','satellite_positions'].includes(item.sector)),[]);
+   renderCounts({layers:window.EarthMapData.layersFromItems(items,sectors)});
+   renderMapItems();;
+   loadStatusPrefix='Database feeds unavailable; retained trusted reference locations';
+  }
  }
- finally{refreshing=false;btn.disabled=false;btn.textContent='REFRESH DATA'}
+ finally{refreshing=false;btn.disabled=false;btn.textContent='REFRESH DATA';updateStatusSummary();void refreshLiveOverlayData()}
 }
 const datasetsWithTextSearch=new Set(['observatory_observations','world_development_observations','earth_events','earth_observation_products','satellites','seed_telemetry_samples','volcano_observations','environment_observations','space_weather_observations','celestial_bodies','observatory_sources','data_sources','data_layer_configs','ingestion_runs','observatory_ingestion_runs']);
 function valueText(value){if(value===null||value===undefined||value==='')return '—';if(typeof value==='object')return JSON.stringify(value);if(typeof value==='string'&&value.length>180)return value.slice(0,177)+'…';return String(value)}
