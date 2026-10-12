@@ -79,7 +79,7 @@ test('Vercel serves the map as a public asset and rewrites clean map routes',()=
   assert.ok(config.rewrites.some(x=>x.source==='/map/'&&x.destination==='/map.html'));
   assert.match(read('server.js'),/app\.get\(\['\/map', '\/map\/', '\/map\.html'\], \(req, res\) => res\.sendFile\(path\.join\(publicDir, 'map\.html'\)\)\)/);
   assert.match(html,/js\/map-data\.js\?v=20261012c/);
-  assert.match(html,/js\/map-loader\.js\?v=20261012d/);
+  assert.match(html,/js\/map-loader\.js\?v=20261012e/);
 });
 
 test('Vercel serves API routes through the Express app handler',()=>{
@@ -182,7 +182,7 @@ test('Locate Me zooms to city level and shows a persistent private teardrop loca
  }
  assert.match(leaflet,/L\.divIcon/);
  assert.match(canvas,/bezierCurveTo/);
- assert.match(canvas,/observer\?observer\.longitude:15/);
+ assert.match(canvas,/centerLon=0,centerLat=0/);
 });
 
 
@@ -195,6 +195,6 @@ test('African map covers all 54 countries and hydrates markers from stored World
  assert.match(api,/router\.get\('\/observatory\/country-indicators'/);
  for(const code of ['SP.POP.TOTL','NY.GDP.PCAP.CD','SP.DYN.LE00.IN','EG.ELC.ACCS.ZS','IT.NET.USER.ZS']) assert.ok(api.includes(code));
  for(const source of [leaflet,canvas]){assert.match(source,/EarthMapCountryData\.load/);assert.match(source,/item\.metrics/)}
- assert.match(read('map.html'),/map-africa-countries\.js\?v=20261012d/);
+ assert.match(read('map.html'),/map-africa-countries\.js\?v=20261012e/);
  assert.equal(read('map.html'),read('public/map.html'));
 });
