@@ -79,7 +79,7 @@ test('Vercel serves the map as a public asset and rewrites clean map routes',()=
   assert.ok(config.rewrites.some(x=>x.source==='/map/'&&x.destination==='/map.html'));
   assert.match(read('server.js'),/app\.get\(\['\/map', '\/map\/', '\/map\.html'\], \(req, res\) => res\.sendFile\(path\.join\(publicDir, 'map\.html'\)\)\)/);
   assert.match(html,/js\/map-data\.js\?v=20261012c/);
-  assert.match(html,/js\/map-loader\.js\?v=20261012d/);
+  assert.match(html,/js\/map-loader\.js\?v=20261012e/);
 });
 
 test('Vercel serves API routes through the Express app handler',()=>{
@@ -162,7 +162,7 @@ test('map tiles never use CARTO raster endpoints that display API-key watermarks
   assert.ok(leaflet.indexOf('https://tile.openstreetmap.org/') < leaflet.indexOf('https://server.arcgisonline.com/'));
   assert.ok(canvas.indexOf('https://tile.openstreetmap.org/') < canvas.indexOf('https://server.arcgisonline.com/'));
   assert.ok(server.includes('https://server.arcgisonline.com'));
-  assert.ok(html.includes('js/map-loader.js?v=20261012d'));
+  assert.ok(html.includes('js/map-loader.js?v=20261012e'));
   assert.ok(!html.includes('carto.com/attributions'));
 });
 
@@ -171,7 +171,7 @@ test('Locate Me zooms to city level and shows a persistent private teardrop loca
  const leaflet=read('public/js/leaflet-map.js');
  const canvas=read('public/js/map.js');
  for(const source of [leaflet,canvas]){
-  assert.match(source,/Math\.max\((?:map\.getZoom\(\)|zoom),12\)/);
+  assert.ok(source.includes('map.flyTo([observer.latitude,observer.longitude],clamp(Math.max(map.getZoom(),6),2,7),{animate:true,duration:1.1,easeLinearity:.2})') || source.includes('smoothFlyTo(observer.longitude,observer.latitude,6)'), 'Locate Me must animate to a city-level zoom within the world-view zoom cap');
   assert.match(source,/showObserverDetails/);
   assert.match(source,/accuracy_m/);
   assert.match(source,/altitude_m/);
@@ -182,7 +182,7 @@ test('Locate Me zooms to city level and shows a persistent private teardrop loca
  }
  assert.match(leaflet,/L\.divIcon/);
  assert.match(canvas,/bezierCurveTo/);
- assert.match(canvas,/observer\?observer\.longitude:15/);
+ assert.match(canvas,/centerLon=0,centerLat=0/);
 });
 
 
