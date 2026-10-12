@@ -1,6 +1,6 @@
 # Implementation Status
 
-Updated: 2026-10-09
+Updated: 2026-10-12
 
 ## Execution rule
 
@@ -59,3 +59,16 @@ Still requires deployment/environment verification:
 ## Engineering principle
 
 > **Keep the Earth visible. Make the data explain the place.**
+
+
+## Maps page recovery — 2026-10-12
+
+The map recovery branch includes:
+- A public static copy of the map page for Vercel asset delivery, explicit /map and /map/ rewrites, and an Express route serving the same public file.
+- Bounded Leaflet stylesheet and renderer startup, renderer-readiness checks, and recovery to the built-in canvas renderer when Leaflet startup fails.
+- Shared, unit-tested coordinate validation that rejects null/blank values instead of accidentally plotting them at (0, 0).
+- Shared stable-ID merging for server, read-only Supabase, and catalog fallback results. Partial query success no longer replaces records already returned by the gateway.
+- Concurrent direct/database catalog fallback reads, counts based on records actually loaded for rendering, and a gateway timeout aligned with the backend's bounded Supabase query timeout.
+- An Express CSP source entry for the project's public read-only Supabase Data API requests.
+
+**Verification boundary:** the branch's test suite and GitHub Actions must pass. Production remains unverified until the deployed domain serves the updated map and both map API paths pass a real browser smoke test.
