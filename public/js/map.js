@@ -46,20 +46,20 @@ function getTile(z,x,y){
  if(tilePending.has(key)||tilePending.size>=48)return null;
  tilePending.add(key);
  const img=new Image();img.decoding='async';
+ const [tileZ,tileX,tileY]=key.split('/');
  const providers=[
-  'https://basemaps.cartocdn.com/dark_all/'+key+'.png',
-  'https://basemaps.cartocdn.com/rastertiles/voyager/'+key+'.png',
-  'https://tile.openstreetmap.org/'+key+'.png'
+  {url:'https://tile.openstreetmap.org/'+key+'.png',name:'OpenStreetMap'},
+  {url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/'+tileZ+'/'+tileY+'/'+tileX,name:'Esri World Street Map'}
  ];
  let providerIndex=0;
  const failOrFallback=()=>{
   providerIndex++;
-  if(providerIndex<providers.length){img.src=providers[providerIndex];return}
+  if(providerIndex<providers.length){img.src=providers[providerIndex].url;return}
   tilePending.delete(key);tileCache.set(key,{img:null,failed:true,failedAt:Date.now()});queueRender();
  };
- img.onload=()=>{tilePending.delete(key);tileCache.set(key,{img,failed:false,provider:providerIndex===0?'CARTO Dark':'OpenStreetMap'});queueRender()};
+ img.onload=()=>{tilePending.delete(key);tileCache.set(key,{img,failed:false,provider:providers[providerIndex].name});queueRender()};
  img.onerror=failOrFallback;
- img.src=providers[providerIndex];return null;
+ img.src=providers[providerIndex].url;return null;
 }
 function drawTiles(w,h){
  const z=zoom,size=worldSize(z),center=worldPixel(centerLon,centerLat),originX=center.x-w/2,originY=center.y-h/2;
