@@ -121,7 +121,7 @@ function drawRecords(w,h){
   ctx.strokeStyle=isSelected?'#fff':'rgba(3,12,20,.88)';ctx.lineWidth=isSelected?2:1;ctx.stroke();
   if(isSelected){ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.stroke()}
  });
- if(observer){const p=screenPoint(observer.longitude,observer.latitude);ctx.beginPath();ctx.arc(p.x,p.y,7,0,Math.PI*2);ctx.fillStyle='#75c9ff';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke()}
+ if(observer){const p=screenPoint(observer.longitude,observer.latitude);ctx.save();ctx.translate(p.x,p.y-13);ctx.beginPath();ctx.moveTo(0,15);ctx.bezierCurveTo(-3,10,-12,2,-12,-5);ctx.arc(0,-5,12,Math.PI,0,true);ctx.bezierCurveTo(12,2,3,10,0,15);ctx.closePath();ctx.fillStyle='#ff4f70';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();ctx.beginPath();ctx.arc(0,-5,4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.restore()}
 }
 function render(){
  if(!canvas.clientWidth||!canvas.clientHeight)return;
@@ -258,13 +258,25 @@ function wire(){
  $('refresh-data').addEventListener('click',()=>loadData(true));
  $('zoom-in').addEventListener('click',()=>{zoom=clamp(zoom+1,2,7);queueRender()});
  $('zoom-out').addEventListener('click',()=>{zoom=clamp(zoom-1,2,7);queueRender()});
- $('zoom-world').addEventListener('click',()=>{zoom=2;centerLon=15;centerLat=12;queueRender()});
+ $('zoom-world').addEventListener('click',()=>{zoom=2;centerLon=observer?observer.longitude:15;centerLat=observer?observer.latitude:12;queueRender()});
  $('collapse-panel').addEventListener('click',()=>{const panel=$('map-panel'),collapsed=panel.classList.toggle('collapsed');$('collapse-panel').textContent=collapsed?'+':'−';$('collapse-panel').setAttribute('aria-label',collapsed?'Expand Earth data panel':'Collapse Earth data panel');$('collapse-panel').setAttribute('aria-expanded',String(!collapsed))});
  $('locate-me').addEventListener('click',()=>{
   if(!navigator.geolocation){$('location-status').textContent='This browser does not support device location.';return}
   $('location-status').textContent='Waiting for browser location permission…';
-  navigator.geolocation.getCurrentPosition(pos=>{observer={latitude:pos.coords.latitude,longitude:pos.coords.longitude};centerLon=observer.longitude;centerLat=observer.latitude;zoom=clamp(Math.max(zoom,5),2,7);queueRender();$('location-status').textContent='Device location shown locally · reported accuracy '+(Number.isFinite(pos.coords.accuracy)?Math.round(pos.coords.accuracy)+' m':'unavailable')+'. Not uploaded.'},error=>{$('location-status').textContent=(error.code===1?'Location permission denied.':error.code===2?'Device location unavailable.':'Location request timed out.')+' The map remains available.'},{enableHighAccuracy:true,maximumAge:30000,timeout:15000});
+  navigator.geolocation.getCurrentPosition(pos=>{
+   const c=pos.coords,connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection,ua=navigator.userAgent||'';
+   const device=/tablet|ipad/i.test(ua)?'Tablet':/mobile|android|iphone|ipod/i.test(ua)?'Mobile device':'Desktop / laptop';
+   const network=navigator.onLine===false?'Offline':connection?[connection.effectiveType||connection.type||'Connected',Number.isFinite(connection.downlink)?connection.downlink+' Mbps downlink':null,Number.isFinite(connection.rtt)?connection.rtt+' ms RTT':null].filter(Boolean).join(' · '):'Connected; browser network details unavailable';
+   observer={latitude:c.latitude,longitude:c.longitude,accuracy_m:c.accuracy,altitude_m:Number.isFinite(c.altitude)?c.altitude:null,speed_m_s:Number.isFinite(c.speed)?c.speed:null,heading_deg:Number.isFinite(c.heading)?c.heading:null,captured_at:new Date(pos.timestamp||Date.now()).toISOString(),device,network,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Not reported'};
+   centerLon=observer.longitude;centerLat=observer.latitude;zoom=Math.max(zoom,12);queueRender();showObserverDetails();
+   $('location-status').textContent='Your location is pinned at city-level zoom. It remains on the map when you zoom out. Location details stay in this browser and are not uploaded.';
+  },error=>{$('location-status').textContent=(error.code===1?'Location permission denied.':error.code===2?'Device location unavailable.':'Location request timed out.')+' The map remains available.'},{enableHighAccuracy:true,maximumAge:15000,timeout:20000})
  });
+ function showObserverDetails(){
+  if(!observer)return;const box=$('feature-detail');box.hidden=false;box.replaceChildren();
+  const rows=[['Record','Your device location'],['Layer','Private, browser-local location pin'],['Coordinates',observer.latitude.toFixed(6)+'°, '+observer.longitude.toFixed(6)+'°'],['Reported accuracy',Number.isFinite(observer.accuracy_m)?Math.round(observer.accuracy_m)+' m':'Not reported by device'],['Altitude',observer.altitude_m===null?'Not provided by device':observer.altitude_m.toFixed(1)+' m above sea level (device estimate)'],['Speed',observer.speed_m_s===null?'Not provided by device':(observer.speed_m_s*3.6).toFixed(1)+' km/h'],['Heading',observer.heading_deg===null?'Not provided by device':observer.heading_deg.toFixed(0)+'°'],['Device class',observer.device],['Network',observer.network],['Time zone',observer.timezone],['Captured at',new Date(observer.captured_at).toLocaleString()],['Privacy','Stored in this page only; not sent to the server']];
+  rows.forEach(([label,value])=>{const row=document.createElement('p'),strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=label;span.textContent=String(value);row.append(strong,span);box.append(row)});
+ }
  $('catalog-toggle').addEventListener('click',()=>{$('catalog-panel').hidden=false;loadCatalog(true)});
  $('close-catalog').addEventListener('click',()=>{$('catalog-panel').hidden=true});
  $('catalog-dataset').addEventListener('change',()=>loadCatalog(true));
