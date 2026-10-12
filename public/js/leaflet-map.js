@@ -14,6 +14,7 @@ let items=[],selected=null,observer=null,observerMarker=null,catalogOffset=0,cat
 const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
 const mapStatus=message=>{$('map-status').textContent=message};
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+const worldBounds=()=>L.latLngBounds(L.latLng(-85.05112878,-180),L.latLng(85.05112878,180));
 const baseProviders=[
  {url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',name:'OpenStreetMap'},
  {url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',name:'Esri World Street Map'}
@@ -26,7 +27,7 @@ function installBase(index){
  const attribution=provider.name==='OpenStreetMap'
   ?'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
   :'Sources: Esri, Garmin, FAO, NOAA, USGS, <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>, and the GIS User Community';
- baseLayer=L.tileLayer(provider.url,{maxZoom:19,attribution,updateWhenIdle:true,keepBuffer:2});
+ baseLayer=L.tileLayer(provider.url,{minZoom:2,maxZoom:7,noWrap:true,bounds:worldBounds(),attribution,updateWhenIdle:true,keepBuffer:2});
  baseLayer.on('tileerror',()=>{
   tileErrors++;
   if(tileErrors>=3&&baseIndex===index&&!tileFallbackTimer&&index<baseProviders.length-1){
@@ -36,7 +37,7 @@ function installBase(index){
  baseLayer.addTo(map);
 }
 function initMap(){
- map=L.map('leaflet-map',{zoomControl:false,worldCopyJump:true,preferCanvas:true,scrollWheelZoom:true}).setView([12,15],2);
+ map=L.map('leaflet-map',{zoomControl:false,worldCopyJump:false,preferCanvas:true,scrollWheelZoom:true,minZoom:2,maxZoom:7,zoomSnap:1,zoomDelta:1,wheelPxPerZoomLevel:120,bounceAtZoomLimits:false,maxBounds:worldBounds(),maxBoundsViscosity:1}).setView([0,0],2);
  installBase(0);
  Object.keys(sectors).forEach(sector=>layerGroups.set(sector,L.layerGroup().addTo(map)));
  map.whenReady(()=>setTimeout(()=>map.invalidateSize({pan:false}),50));
@@ -198,7 +199,7 @@ async function loadCatalog(reset=true){
 }
 function wire(){
  document.querySelectorAll('[data-sector]').forEach(button=>button.addEventListener('click',()=>{const sector=button.dataset.sector;if(active.has(sector))active.delete(sector);else active.add(sector);button.classList.toggle('active',active.has(sector));button.setAttribute('aria-pressed',String(active.has(sector)));const group=layerGroups.get(sector);if(group){if(active.has(sector))group.addTo(map);else map.removeLayer(group)}renderRecordList()}));
- $('refresh-data').addEventListener('click',()=>loadData(true));$('zoom-in').addEventListener('click',()=>map.zoomIn());$('zoom-out').addEventListener('click',()=>map.zoomOut());$('zoom-world').addEventListener('click',()=>map.setView([12,15],2));
+ $('refresh-data').addEventListener('click',()=>loadData(true));$('zoom-in').addEventListener('click',()=>map.zoomIn());$('zoom-out').addEventListener('click',()=>map.zoomOut());$('zoom-world').addEventListener('click',()=>map.flyTo([0,0],2,{animate:true,duration:.7}));
  $('collapse-panel').addEventListener('click',()=>{const panel=$('map-panel'),collapsed=panel.classList.toggle('collapsed');$('collapse-panel').textContent=collapsed?'+':'−';$('collapse-panel').setAttribute('aria-label',collapsed?'Expand Earth data panel':'Collapse Earth data panel');$('collapse-panel').setAttribute('aria-expanded',String(!collapsed))});
  $('locate-me').addEventListener('click',()=>{
   if(!navigator.geolocation){$('location-status').textContent='This browser does not support device location.';return}
@@ -213,7 +214,7 @@ function wire(){
    observerMarker=L.marker([observer.latitude,observer.longitude],{icon:pin,zIndexOffset:10000,keyboard:true,title:'Your device location'}).addTo(map);
    observerMarker.on('click',showObserverDetails);
    observerMarker.bindTooltip('Your location · accuracy '+(Number.isFinite(c.accuracy)?Math.round(c.accuracy)+' m':'not reported'));
-   map.setView([observer.latitude,observer.longitude],Math.max(map.getZoom(),12),{animate:true});showObserverDetails();
+   map.flyTo([observer.latitude,observer.longitude],clamp(Math.max(map.getZoom(),6),2,7),{animate:true,duration:1.1,easeLinearity:.2});showObserverDetails();
    $('location-status').textContent='Your location is pinned at city-level zoom. It remains on the map when you zoom out. Location details stay in this browser and are not uploaded.';
   },error=>{$('location-status').textContent=(error.code===1?'Location permission denied.':error.code===2?'Device location unavailable.':'Location request timed out.')+' The map remains available.'},{enableHighAccuracy:true,maximumAge:15000,timeout:20000})
  });
