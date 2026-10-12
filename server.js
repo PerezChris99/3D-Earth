@@ -396,9 +396,9 @@ server.listen(PORT, () => {
 });
 }
 
-// Vercel captures the HTTP server (including the WebSocket server) as a Node.js function.
-// Local development retains the traditional listener above.
-module.exports = server;
+// Vercel's Express runtime expects the application request handler itself.
+// Keep the HTTP server and WebSocket listener for local Node.js deployments only.
+module.exports = process.env.VERCEL ? app : server;
 
 // ==========================================
 // GRACEFUL SHUTDOWN
