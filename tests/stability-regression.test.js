@@ -19,7 +19,7 @@ test('satellite focus offsets the camera from the satellite radial line without 
   assert.match(source, /const tangent=new THREE\.Vector3\(0,1,0\)\.cross\(radial\)/);
   assert.match(source, /multiplyScalar\(focusDistance\*\.32\)/);
   assert.match(source, /controls\.target\.set\(0,0,0\)/);
-  assert.match(source, /earthGroup\.rotation\.y\+=dt\*7\.2921159e-5/);
+  assert.match(source, /earthGroup\.rotation\.y=PlanetAstronomy\.gmstRadians\(date\)\+earthRotationOffset/);
 });
 
 test('map tile provider failures are recoverable and not cached permanently', () => {
@@ -69,15 +69,15 @@ test('production asset policy prevents stale JS/CSS from hiding merged implement
   const jsCss = config.headers.find(rule => rule.source === '/(.*)\\.(js|css)');
   assert.ok(jsCss, 'JavaScript and CSS need an explicit cache policy');
   assert.equal(jsCss.headers.find(header => header.key === 'Cache-Control')?.value, 'no-cache, max-age=0, must-revalidate');
-  assert.match(read('dashboard.html'), /\/js\/globe\.js\?v=20261010a/);
+  assert.match(read('dashboard.html'), /\/js\/globe\.js\?v=20261012a/);
   assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261012d/);
   assert.match(read('satellites.html'), /\/js\/satellites\.js\?v=20261009d/);
 });
 
-test('Earth rotation is visibly continuous rather than imperceptible real-time sidereal rotation', () => {
+test('Earth rotation uses sidereal orientation shared by satellite and geographic layers', () => {
   const source = read('public/js/globe.js');
-  assert.match(source, /earthGroup\.rotation\.y\+=dt\*7\.2921159e-5\*100/);
-  assert.match(source, /accelerated visualization/);
+  assert.match(source, /earthGroup\.rotation\.y=PlanetAstronomy\.gmstRadians\(date\)\+earthRotationOffset/);
+  assert.doesNotMatch(source, /accelerated visualization/);
 });
 
 test('observatory summary tolerates a failing optional table and reports partial data', () => {
