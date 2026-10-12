@@ -30,3 +30,12 @@ test('satellite preview follows its container size and selected satellite can be
  assert.match(css,/max-height:34vh/);
  assert.match(globe,/if\(String\(row\.dataset\.norad\)===selectedNorad\)\{deselectSatellite\(\);return\}/);
 });
+
+test('Leaflet primary renderer constrains world wrapping and uses smooth bounded Locate Me animation',()=>{
+ const source=read('public/js/leaflet-map.js');
+ assert.match(source,/worldCopyJump:false/);
+ assert.match(source,/minZoom:2,maxZoom:7/);
+ assert.match(source,/noWrap:true,bounds:worldBounds\(\)/);
+ assert.match(source,/map\.flyTo\(\[observer\.latitude,observer\.longitude\],clamp\(Math\.max\(map\.getZoom\(\),6\),2,7\),\{animate:true,duration:1\.1/);
+ assert.match(source,/map\.flyTo\(\[0,0\],2/);
+});

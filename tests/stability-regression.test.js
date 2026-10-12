@@ -70,7 +70,7 @@ test('production asset policy prevents stale JS/CSS from hiding merged implement
   assert.ok(jsCss, 'JavaScript and CSS need an explicit cache policy');
   assert.equal(jsCss.headers.find(header => header.key === 'Cache-Control')?.value, 'no-cache, max-age=0, must-revalidate');
   assert.match(read('dashboard.html'), /\/js\/globe\.js\?v=20261012b/);
-  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261012d/);
+  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261012e/);
   assert.match(read('satellites.html'), /\/js\/satellites\.js\?v=20261012a/);
 });
 
