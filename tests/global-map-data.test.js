@@ -63,8 +63,8 @@ test('all pages load matching navigation styles and the map deploys matching HTM
  const files=['map.html','public/map.html','dashboard.html','satellites.html','index.html','about.html','data-policy.html','privacy.html','terms.html'];
  for(const file of files){
   const html=read(file);
-  assert.match(html,/mobile-nav\.css\?v=20261012c/,file);
-  assert.match(html,/navigation\.js\?v=20261012c/,file);
+  assert.match(html,/mobile-nav\.css\?v=20261012d/,file);
+  assert.match(html,/navigation\.js\?v=20261012d/,file);
  }
  assert.equal(read('map.html'),read('public/map.html'));
 });
