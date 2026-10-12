@@ -64,5 +64,15 @@
     "deploymentEnabled": {
       "main": true
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/map",
+      "destination": "/map.html"
+    },
+    {
+      "source": "/map/",
+      "destination": "/map.html"
+    }
+  ]
 }
