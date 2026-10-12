@@ -47,7 +47,7 @@ function validPoint(item){return window.EarthMapData.isValidPoint(item)}
 let liveOverlayGeneration=0,loadStatusPrefix='Loading verified data feeds…';
 function mergeMapItems(...collections){
  const clean=collections.map(rows=>Array.isArray(rows)?rows.filter(row=>row&&row.sector!=='telemetry_samples') : []);
- return window.EarthMapData.mergeItems(...clean,Array.isArray(window.EarthMapReferenceFeatures)?window.EarthMapReferenceFeatures:[]);
+ return window.EarthMapData.mergeItems(...clean,Array.isArray(window.EarthMapReferenceFeatures)?window.EarthMapReferenceFeatures:[],Array.isArray(window.EarthMapCountryData?.features)?window.EarthMapCountryData.features:[]);
 }
 function updateStatusSummary(){
  const referenceCount=items.filter(item=>item.sector==='global_features').length;
@@ -100,6 +100,7 @@ function detailFor(item){
   ['Region / feature type',item.continent?(item.continent+' · '+(item.feature_type||'Geographic feature')):(item.feature_type||item.location_kind||'Not specified')],
   ['Coordinates',validPoint(item)?Number(item.latitude).toFixed(5)+'°, '+Number(item.longitude).toFixed(5)+'°':'No point coordinates in source'],
   ['Measurement',item.value==null?'Not reported':String(item.value)+' '+(item.unit||'')],
+  ...(item.metrics?Object.entries(item.metrics).map(([code,metric])=>[metric.name+' ('+code+')',String(metric.value)+(metric.unit?' '+metric.unit:'')+' · '+metric.period]):[]),
   ['Altitude',Number.isFinite(Number(item.altitude_km))?Number(item.altitude_km).toFixed(1)+' km':'Not reported'],
   ['Speed',Number.isFinite(Number(item.speed_km_s))?Number(item.speed_km_s).toFixed(3)+' km/s':'Not reported'],
   [observed,item.computed_at?new Date(item.computed_at).toLocaleString():(item.observed_at?new Date(item.observed_at).toLocaleString():'Time not supplied')],
@@ -163,6 +164,7 @@ async function loadData(showRefresh=false){
   let fallbackItems=[];
   if(!serverItems.length||data.partial)fallbackItems=await loadFallbackMapRecords(showRefresh);
   items=mergeMapItems(serverItems,fallbackItems);
+  if(window.EarthMapCountryData){const countryItems=await window.EarthMapCountryData.load();items=mergeMapItems(items,countryItems);}
   renderCounts({layers:window.EarthMapData.layersFromItems(items,sectors)});
   renderMapItems();;
   loadStatusPrefix=(data.partial?'Database feed partially available':'Database feed checked')+' · refreshed '+new Date(data.ts||Date.now()).toLocaleTimeString();
