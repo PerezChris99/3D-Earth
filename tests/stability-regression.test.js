@@ -55,7 +55,7 @@ test('Leaflet map supports database overlays while retaining the offline canvas 
   const fallback = read('public/js/map.js');
   assert.match(html, /id="leaflet-map"/);
   assert.match(loader, /loadLeaflet\(0\)/);
-  assert.match(loader, /fallback\(\)/);
+  assert.match(loader, /function fallback\\?\(reason\)/);
   assert.match(leaflet, /\/api\/observatory\/layers\?limit=160/);
   assert.match(leaflet, /\/api\/observatory\/catalog\?/);
   assert.match(fallback, /function drawBase/);
@@ -108,7 +108,7 @@ test('map loader quickly falls back when external Leaflet CDNs are unavailable',
   const loader=read('public/js/map-loader.js');
   assert.match(loader,/3500/);
   assert.match(loader,/no Google Maps API key required/);
-  assert.match(loader,/fallback\(\)/);
+  assert.match(loader, /function fallback\\?\(reason\)/);
 });
 test('map and globe share the public read-only database fallback', () => {
   const map=read('public/js/map.js'),leaflet=read('public/js/leaflet-map.js'),globe=read('public/js/globe.js'),html=read('dashboard.html');
