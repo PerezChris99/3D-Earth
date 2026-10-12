@@ -24,9 +24,11 @@ test('satellite focus offsets the camera from the satellite radial line without 
 
 test('map tile provider failures are recoverable and not cached permanently', () => {
   const source = read('public/js/map.js');
-  assert.match(source, /basemaps\.cartocdn\.com\/dark_all/);
-  assert.match(source, /basemaps\.cartocdn\.com\/rastertiles\/voyager/);
   assert.match(source, /tile\.openstreetmap\.org/);
+  assert.match(source, /server\.arcgisonline\.com\/ArcGIS\/rest\/services\/World_Street_Map\/MapServer\/tile/);
+  assert.ok(source.indexOf('https://tile.openstreetmap.org/') < source.indexOf('https://server.arcgisonline.com/'));
+  assert.doesNotMatch(source, /basemaps\.cartocdn\.com/);
+  assert.doesNotMatch(read('public/js/leaflet-map.js'), /basemaps\.cartocdn\.com/);
   assert.match(source, /Date\.now\(\)-\(cached\.failedAt\|\|0\)<30000/);
 });
 
@@ -68,7 +70,7 @@ test('production asset policy prevents stale JS/CSS from hiding merged implement
   assert.ok(jsCss, 'JavaScript and CSS need an explicit cache policy');
   assert.equal(jsCss.headers.find(header => header.key === 'Cache-Control')?.value, 'no-cache, max-age=0, must-revalidate');
   assert.match(read('dashboard.html'), /\/js\/globe\.js\?v=20261010a/);
-  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261012a/);
+  assert.match(read('map.html'), /\/js\/map-loader\.js\?v=20261012b/);
   assert.match(read('satellites.html'), /\/js\/satellites\.js\?v=20261009d/);
 });
 
