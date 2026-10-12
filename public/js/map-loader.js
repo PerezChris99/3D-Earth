@@ -66,6 +66,6 @@ function loadLeaflet(index){
  script.onerror=()=>{if(settled)return;settled=true;clearTimeout(timer);if(script.parentNode)script.remove();loadLeaflet(index+1)};
  document.head.appendChild(script);
 }
-setStatus('Loading interactive map engine; no Google Maps API key is required…');
+setStatus('Loading interactive map engine (no Google Maps API key required)…');
 loadLeaflet(0);
 })();
