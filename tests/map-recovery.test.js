@@ -78,8 +78,8 @@ test('Vercel serves the map as a public asset and rewrites clean map routes',()=
   assert.ok(config.rewrites.some(x=>x.source==='/map'&&x.destination==='/map.html'));
   assert.ok(config.rewrites.some(x=>x.source==='/map/'&&x.destination==='/map.html'));
   assert.match(read('server.js'),/app\.get\(\['\/map', '\/map\/', '\/map\.html'\], \(req, res\) => res\.sendFile\(path\.join\(publicDir, 'map\.html'\)\)\)/);
-  assert.match(html,/js\/map-data\.js\?v=20261012a/);
-  assert.match(html,/js\/map-loader\.js\?v=20261012a/);
+  assert.match(html,/js\/map-data\.js\?v=20261012b/);
+  assert.match(html,/js\/map-loader\.js\?v=20261012b/);
 });
 
 test('Vercel serves API routes through the Express app handler',()=>{
@@ -89,4 +89,17 @@ test('Vercel serves API routes through the Express app handler',()=>{
   assert.match(server,/module\.exports\s*=\s*process\.env\.VERCEL\s*\?\s*app\s*:\s*server/);
   assert.match(server,/app\.use\('\/api',\s*apiRoutes\)/);
   assert.match(api,/router\.get\('\/observatory\/layers'/);
+});
+
+test('map tiles never use CARTO raster endpoints that display API-key watermarks',()=>{
+  const leaflet=read('public/js/leaflet-map.js');
+  const canvas=read('public/js/map.js');
+  const html=read('map.html');
+  const server=read('server.js');
+  for(const source of [leaflet,canvas]) assert.ok(!source.includes('basemaps.cartocdn.com'));
+  assert.ok(leaflet.indexOf('https://tile.openstreetmap.org/') < leaflet.indexOf('https://server.arcgisonline.com/'));
+  assert.ok(canvas.indexOf('https://tile.openstreetmap.org/') < canvas.indexOf('https://server.arcgisonline.com/'));
+  assert.ok(server.includes('https://server.arcgisonline.com'));
+  assert.ok(html.includes('js/map-loader.js?v=20261012b'));
+  assert.ok(!html.includes('carto.com/attributions'));
 });

@@ -3,7 +3,7 @@
 const status=document.getElementById('map-status');
 const shell=document.querySelector('.map-shell');
 const canvas=document.getElementById('world-map');
-const version='20261012a';
+const version='20261012b';
 const scripts=[
  {js:'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',css:'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css'},
  {js:'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',css:'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'}

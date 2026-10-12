@@ -44,7 +44,7 @@ Deliberately not enabled in the runtime yet: PostgreSQL driver installation, aut
 ## Stability audit — 2026-10-09
 
 Verified in source:
-- The map now prefers Leaflet with CARTO Dark → CARTO Voyager → OpenStreetMap tile fallback. If both Leaflet CDNs fail, the self-contained canvas renderer remains available. A 403 is treated as a tile-provider failure, not assumed to be solved by the map library alone; the Leaflet renderer switches providers after repeated tile errors.
+- The map uses OpenStreetMap tiles first, with Esri World Street Map as a keyless fallback. If both Leaflet CDNs fail, the self-contained canvas renderer remains available. Tile-provider failures trigger fallback after repeated tile errors.
 - Supabase REST requests now have a bounded 12-second timeout and report safe table/status context to server logs. This prevents stalled upstream requests from leaving API handlers pending indefinitely.
 - Satellite focus keeps the Earth target at the origin while offsetting the camera from the satellite's radial line, preventing the selected satellite from sitting directly over the Earth disk.
 - Axial rotation uses Earth's sidereal angular rate rather than the previous accelerated visual rate.
@@ -80,3 +80,11 @@ The map recovery branch includes:
 - Regression tests and syntax checks pass for commit `4ad2ccf0f98b816fa18d222f304ea56bba612fa6`.
 - The preview deployment for that code is READY.
 - The first automatic production deployment ended with Vercel `git_info_fail` before a live API smoke test could be run. This change records the deployment retry and does not mark the production API as verified.
+
+
+## Basemap key-overlay fix — 2026-10-12
+
+- Removed CARTO raster tiles from both map renderers. CARTO currently returns an “API key required” watermark on raster requests without a key, which looks like a successful tile load and therefore does not fire the tile-error fallback.
+- OpenStreetMap is the primary tile source; Esri World Street Map is the fallback source. The database marker rendering path is unchanged.
+- Bumped map assets to `20261012b` to bypass stale client scripts.
+- OSMF tile service has best-effort availability and policy limits; use a licensed/self-hosted tile provider if traffic exceeds the public tile service's intended interactive usage.

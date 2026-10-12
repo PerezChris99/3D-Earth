@@ -15,16 +15,17 @@ const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','
 const mapStatus=message=>{$('map-status').textContent=message};
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 const baseProviders=[
- {url:'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',name:'CARTO Dark'},
- {url:'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',name:'CARTO Voyager'},
- {url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',name:'OpenStreetMap'}
+ {url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',name:'OpenStreetMap'},
+ {url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',name:'Esri World Street Map'}
 ];
 function installBase(index){
  if(index>=baseProviders.length){mapStatus('Basemap providers are returning errors. Geographic database overlays remain available.');return}
  baseIndex=index;tileErrors=0;
  if(baseLayer)map.removeLayer(baseLayer);
  const provider=baseProviders[index];
- const attribution=provider.name.startsWith('CARTO')?'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · © <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>':'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
+ const attribution=provider.name==='OpenStreetMap'
+  ?'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
+  :'Sources: Esri, Garmin, FAO, NOAA, USGS, <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>, and the GIS User Community';
  baseLayer=L.tileLayer(provider.url,{maxZoom:19,attribution,updateWhenIdle:true,keepBuffer:2});
  baseLayer.on('tileerror',()=>{
   tileErrors++;
