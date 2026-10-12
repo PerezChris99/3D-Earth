@@ -90,3 +90,16 @@ test('Vercel serves API routes through the Express app handler',()=>{
   assert.match(server,/app\.use\('\/api',\s*apiRoutes\)/);
   assert.match(api,/router\.get\('\/observatory\/layers'/);
 });
+
+test('map tiles never use CARTO raster endpoints that display API-key watermarks',()=>{
+  const leaflet=read('public/js/leaflet-map.js');
+  const canvas=read('public/js/map.js');
+  const html=read('map.html');
+  const server=read('server.js');
+  for(const source of [leaflet,canvas]) assert.doesNotMatch(source,/basemaps\\.cartocdn\\.com/);
+  assert.ok(leaflet.indexOf('https://tile.openstreetmap.org/') < leaflet.indexOf('https://server.arcgisonline.com/'));
+  assert.ok(canvas.indexOf('https://tile.openstreetmap.org/') < canvas.indexOf('https://server.arcgisonline.com/'));
+  assert.match(server,/https:\\/\\/server\\.arcgisonline\\.com/);
+  assert.match(html,/js\\/map-loader\\.js\\?v=20261012b/);
+  assert.doesNotMatch(html,/carto\\.com\\/attributions/);
+});
