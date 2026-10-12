@@ -28,8 +28,8 @@ button,input,select{font:inherit}
 .sat-row .sat-live{display:block;margin-top:6px;color:#7de5b4;font-size:11px;font-weight:750}
 .empty-state{margin:0;color:#b6c7d8;font-size:13px;line-height:1.6}
 .column-footnote{flex:0 0 auto;margin:0;padding-top:9px;border-top:1px solid rgba(202,225,245,.1);color:#a1b2c5;font-size:11px;line-height:1.5}
-.sat-preview-column{gap:12px}
-.sat-visual{position:relative;flex:1 1 260px;min-height:180px;width:100%;overflow:hidden;border:1px solid rgba(121,208,255,.17);border-radius:13px;background:radial-gradient(circle at 50% 48%,rgba(31,87,126,.32),rgba(3,10,18,.25) 70%)}
+.sat-preview-column{gap:12px;min-height:0}
+.sat-visual{position:relative;flex:1 1 0;height:clamp(180px,28vh,300px);min-height:150px;max-height:34vh;width:100%;overflow:hidden;border:1px solid rgba(121,208,255,.17);border-radius:13px;background:radial-gradient(circle at 50% 48%,rgba(31,87,126,.32),rgba(3,10,18,.25) 70%)}
 #sat-visual canvas{display:block;width:100%;height:100%;max-width:100%}.sat-preview-fallback{min-height:180px}
 .preview-object{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto}.preview-object strong{display:block;font-size:15px;line-height:1.3;overflow-wrap:anywhere}
 .norad-chip{flex:0 0 auto;padding:7px 9px;border:1px solid var(--line);border-radius:7px;color:#c7d8e8;font-size:11px;font-weight:800}
