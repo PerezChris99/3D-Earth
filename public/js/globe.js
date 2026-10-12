@@ -91,6 +91,7 @@ function wire(){
  $('cancel-location').onclick=()=> $('location-dialog')?.close();
  $('confirm-location').onclick=()=>{ $('location-dialog')?.close();requestLocation() };
  $('close-satellites').onclick=()=>{location.hash='';$('satellite-drawer').classList.remove('open');$('satellite-drawer').setAttribute('aria-hidden','true');resetView()};
+ $('sat-list').addEventListener('click',event=>{const row=event.target.closest('.sat-row');if(!row)return;if(String(row.dataset.norad)===selectedNorad){deselectSatellite();return}selectSatellite(row.dataset.norad)});
  $('reload-satellites').onclick=()=>loadSatellites($('sat-group').value);
  $('sat-group').onchange=e=>loadSatellites(e.target.value);
  $('data-layers-toggle').onclick=()=>{const drawer=$('data-layer-drawer'),opening=!drawer.classList.contains('open');drawer.classList.toggle('open',opening);drawer.setAttribute('aria-hidden',String(!opening));$('data-layers-toggle').setAttribute('aria-expanded',String(opening));$('satellite-drawer').classList.remove('open')};

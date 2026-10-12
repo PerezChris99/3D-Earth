@@ -10,7 +10,7 @@ const sectors={
  global_features:{label:'Major geographic features',color:'#f5cc80'},satellite_positions:{label:'Current satellite positions',color:'#78bfff'},other_events:{label:'Other Earth events',color:'#e6a6ff'}
 };
 const active=new Set(Object.keys(sectors)),tileCache=new Map(),tilePending=new Set();
-let zoom=2,centerLon=15,centerLat=12,items=[],selected=null,observer=null,drag=null,catalogOffset=0,catalogHasMore=false,refreshing=false,renderQueued=false;
+let zoom=2,centerLon=0,centerLat=0,items=[],selected=null,observer=null,drag=null,catalogOffset=0,catalogHasMore=false,refreshing=false,renderQueued=false;
 const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
 const mapStatus=message=>{$('map-status').textContent=message};
 function validPoint(item){return window.EarthMapData.isValidPoint(item)}
@@ -51,8 +51,20 @@ async function refreshLiveOverlayData(){
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 function worldSize(z=zoom){return 256*Math.pow(2,z)}
 function worldPixel(lon,lat,z=zoom){const size=worldSize(z),phi=clamp(lat,-85.0511,85.0511)*Math.PI/180;return{x:(lon+180)/360*size,y:(1-Math.asinh(Math.tan(phi))/Math.PI)/2*size}}
-function screenPoint(lon,lat){const p=worldPixel(lon,lat),c=worldPixel(centerLon,centerLat);let dx=p.x-c.x,size=worldSize();if(dx>size/2)dx-=size;if(dx< -size/2)dx+=size;return{x:canvas.clientWidth/2+dx,y:canvas.clientHeight/2+p.y-c.y}}
+function screenPoint(lon,lat){const p=worldPixel(lon,lat),c=worldPixel(centerLon,centerLat);return{x:canvas.clientWidth/2+p.x-c.x,y:canvas.clientHeight/2+p.y-c.y}}
 function queueRender(){if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;render()})}
+function smoothFlyTo(lon,lat,targetZoom=6){
+ const start={lon:centerLon,lat:centerLat,zoom},finish={lon:clamp(lon,-180,180),lat:clamp(lat,-85.0511,85.0511),zoom:clamp(targetZoom,2,7)},began=performance.now(),duration=720;
+ const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+ const step=now=>{const t=clamp((now-began)/duration,0,1),e=ease(t);centerLon=start.lon+(finish.lon-start.lon)*e;centerLat=start.lat+(finish.lat-start.lat)*e;zoom=Math.round(start.zoom+(finish.zoom-start.zoom)*e);queueRender();if(t<1)requestAnimationFrame(step)};
+ requestAnimationFrame(step);
+}
+function clampMapCenter(x,y){
+ const w=canvas.clientWidth||window.innerWidth,h=canvas.clientHeight||window.innerHeight,size=worldSize();
+ const minX=w>=size?size/2:w/2,maxX=w>=size?size/2:size-w/2;
+ const minY=h>=size?size/2:h/2,maxY=h>=size?size/2:size-h/2;
+ return {x:clamp(x,minX,maxX),y:clamp(y,minY,maxY)};
+}
 const land=[
 [[-168,70],[-145,72],[-125,55],[-105,50],[-82,25],[-97,8],[-113,25],[-130,45],[-153,58]],
 [[-82,12],[-68,8],[-50,-5],[-35,-20],[-50,-55],[-72,-40],[-80,-8]],
@@ -96,8 +108,8 @@ function getTile(z,x,y){
  img.src=providers[providerIndex].url;return null;
 }
 function drawTiles(w,h){
- const z=zoom,size=worldSize(z),center=worldPixel(centerLon,centerLat),originX=center.x-w/2,originY=center.y-h/2;
- const firstX=Math.floor(originX/256),lastX=Math.floor((originX+w)/256),firstY=Math.floor(originY/256),lastY=Math.floor((originY+h)/256);
+ const z=zoom,size=worldSize(z),center=worldPixel(centerLon,centerLat),originX=center.x-w/2,originY=center.y-h/2,maxTile=Math.pow(2,z)-1;
+ const firstX=Math.max(0,Math.floor(originX/256)),lastX=Math.min(maxTile,Math.floor((originX+w)/256)),firstY=Math.max(0,Math.floor(originY/256)),lastY=Math.min(maxTile,Math.floor((originY+h)/256));
  let drawn=0;
  for(let ty=firstY;ty<=lastY;ty++)for(let tx=firstX;tx<=lastX;tx++){
   const tile=getTile(z,tx,ty),x=tx*256-originX,y=ty*256-originY;
@@ -260,7 +272,7 @@ function wire(){
  $('refresh-data').addEventListener('click',()=>loadData(true));
  $('zoom-in').addEventListener('click',()=>{zoom=clamp(zoom+1,2,7);queueRender()});
  $('zoom-out').addEventListener('click',()=>{zoom=clamp(zoom-1,2,7);queueRender()});
- $('zoom-world').addEventListener('click',()=>{zoom=2;centerLon=observer?observer.longitude:15;centerLat=observer?observer.latitude:12;queueRender()});
+ $('zoom-world').addEventListener('click',()=>{zoom=2;centerLon=0;centerLat=0;queueRender()});
  $('collapse-panel').addEventListener('click',()=>{const panel=$('map-panel'),collapsed=panel.classList.toggle('collapsed');$('collapse-panel').textContent=collapsed?'+':'−';$('collapse-panel').setAttribute('aria-label',collapsed?'Expand Earth data panel':'Collapse Earth data panel');$('collapse-panel').setAttribute('aria-expanded',String(!collapsed))});
  $('locate-me').addEventListener('click',()=>{
   if(!navigator.geolocation){$('location-status').textContent='This browser does not support device location.';return}
@@ -270,7 +282,7 @@ function wire(){
    const device=/tablet|ipad/i.test(ua)?'Tablet':/mobile|android|iphone|ipod/i.test(ua)?'Mobile device':'Desktop / laptop';
    const network=navigator.onLine===false?'Offline':connection?[connection.effectiveType||connection.type||'Connected',Number.isFinite(connection.downlink)?connection.downlink+' Mbps downlink':null,Number.isFinite(connection.rtt)?connection.rtt+' ms RTT':null].filter(Boolean).join(' · '):'Connected; browser network details unavailable';
    observer={latitude:c.latitude,longitude:c.longitude,accuracy_m:c.accuracy,altitude_m:Number.isFinite(c.altitude)?c.altitude:null,speed_m_s:Number.isFinite(c.speed)?c.speed:null,heading_deg:Number.isFinite(c.heading)?c.heading:null,captured_at:new Date(pos.timestamp||Date.now()).toISOString(),device,network,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Not reported'};
-   centerLon=observer.longitude;centerLat=observer.latitude;zoom=Math.max(zoom,12);queueRender();showObserverDetails();
+   showObserverDetails();smoothFlyTo(observer.longitude,observer.latitude,6);
    $('location-status').textContent='Your location is pinned at city-level zoom. It remains on the map when you zoom out. Location details stay in this browser and are not uploaded.';
   },error=>{$('location-status').textContent=(error.code===1?'Location permission denied.':error.code===2?'Device location unavailable.':'Location request timed out.')+' The map remains available.'},{enableHighAccuracy:true,maximumAge:15000,timeout:20000})
  });
@@ -286,11 +298,11 @@ function wire(){
  $('catalog-search').addEventListener('keydown',e=>{if(e.key==='Enter')loadCatalog(true)});
  $('catalog-more').addEventListener('click',()=>loadCatalog(false));
  canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};canvas.setPointerCapture(e.pointerId)});
- canvas.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.lastX,dy=e.clientY-drag.lastY;if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)>4)drag.moved=true;if(drag.moved){const size=worldSize();const c=worldPixel(centerLon,centerLat);centerLon=((c.x-dx+size)%size)/size*360-180;const newY=clamp(c.y-dy,0,size);centerLat=Math.atan(Math.sinh(Math.PI*(1-2*newY/size)))*180/Math.PI;drag.lastX=e.clientX;drag.lastY=e.clientY;queueRender()}});
+ canvas.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.lastX,dy=e.clientY-drag.lastY;if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)>4)drag.moved=true;if(drag.moved){const c=worldPixel(centerLon,centerLat),next=clampMapCenter(c.x-dx,c.y-dy),size=worldSize();centerLon=next.x/size*360-180;centerLat=Math.atan(Math.sinh(Math.PI*(1-2*next.y/size)))*180/Math.PI;drag.lastX=e.clientX;drag.lastY=e.clientY;queueRender()}});
  const finish=e=>{if(!drag)return;const was=drag;drag=null;if(!was.moved&&e.type==='pointerup'){const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;let best=null,bestD=13;for(const item of items){if(!active.has(item.sector))continue;const p=screenPoint(Number(item.longitude),Number(item.latitude)),d=Math.hypot(p.x-x,p.y-y);if(d<bestD){bestD=d;best=item}}if(best)detailFor(best)}};
  canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',()=>drag=null);
- canvas.addEventListener('wheel',e=>{e.preventDefault();const old=zoom;zoom=clamp(zoom+(e.deltaY<0?1:-1),2,7);if(old!==zoom)queueRender()},{passive:false});
- canvas.addEventListener('dblclick',e=>{e.preventDefault();zoom=clamp(zoom+1,2,7);queueRender()});
+ canvas.addEventListener('wheel',e=>{e.preventDefault();const old=zoom;zoom=clamp(zoom+(e.deltaY<0?1:-1),2,7);if(old!==zoom){const c=worldPixel(centerLon,centerLat),next=clampMapCenter(c.x,c.y),size=worldSize();centerLon=next.x/size*360-180;centerLat=Math.atan(Math.sinh(Math.PI*(1-2*next.y/size)))*180/Math.PI;queueRender()}},{passive:false});
+ canvas.addEventListener('dblclick',e=>{e.preventDefault();zoom=clamp(zoom+1,2,7);const c=worldPixel(centerLon,centerLat),next=clampMapCenter(c.x,c.y),size=worldSize();centerLon=next.x/size*360-180;centerLat=Math.atan(Math.sinh(Math.PI*(1-2*next.y/size)))*180/Math.PI;queueRender()});
  window.addEventListener('resize',queueRender);
 }
 function boot(){wire();render();window.__earthMapRenderer='canvas';window.__earthMapRendererReady=true;loadData(false)}
