@@ -72,3 +72,11 @@ The map recovery branch includes:
 - An Express CSP source entry for the project's public read-only Supabase Data API requests.
 
 **Verification boundary:** the branch's test suite and GitHub Actions must pass. Production remains unverified until the deployed domain serves the updated map and both map API paths pass a real browser smoke test.
+
+
+## API deployment retry — 2026-10-12
+
+- The Vercel runtime now exports the Express application handler; local Node execution continues to export the HTTP server.
+- Regression tests and syntax checks pass for commit `4ad2ccf0f98b816fa18d222f304ea56bba612fa6`.
+- The preview deployment for that code is READY.
+- The first automatic production deployment ended with Vercel `git_info_fail` before a live API smoke test could be run. This change records the deployment retry and does not mark the production API as verified.
