@@ -78,7 +78,7 @@ test('Vercel serves the map as a public asset and rewrites clean map routes',()=
   assert.ok(config.rewrites.some(x=>x.source==='/map'&&x.destination==='/map.html'));
   assert.ok(config.rewrites.some(x=>x.source==='/map/'&&x.destination==='/map.html'));
   assert.match(read('server.js'),/app\.get\(\['\/map', '\/map\/', '\/map\.html'\], \(req, res\) => res\.sendFile\(path\.join\(publicDir, 'map\.html'\)\)\)/);
-  assert.match(html,/js\/map-data\\.js\\?v=20261012c/);
+  assert.match(html,/js\/map-data\.js\?v=20261012c/);
   assert.match(html,/js\/map-loader\.js\?v=20261012d/);
 });
 
@@ -147,8 +147,8 @@ test('desktop shared navigation occupies its own layout row and page content cle
   const nav=read('public/js/navigation.js');
   assert.match(nav,/document\.body\.prepend\(cluster\)/);
   for(const file of ['map.html','public/map.html','dashboard.html','satellites.html','index.html','about.html','data-policy.html','privacy.html','terms.html']){
-    assert.match(read(file),/mobile-nav\\.css\\?v=20261012c/,file);
-    assert.match(read(file),/navigation\\.js\\?v=20261012c/,file);
+    assert.match(read(file),/mobile-nav\.css\?v=20261012c/,file);
+    assert.match(read(file),/navigation\.js\?v=20261012c/,file);
   }
   assert.equal(read('map.html'),read('public/map.html'));
 });
