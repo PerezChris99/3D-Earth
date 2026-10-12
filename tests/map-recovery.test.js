@@ -96,10 +96,10 @@ test('map tiles never use CARTO raster endpoints that display API-key watermarks
   const canvas=read('public/js/map.js');
   const html=read('map.html');
   const server=read('server.js');
-  for(const source of [leaflet,canvas]) assert.doesNotMatch(source,/basemaps\\.cartocdn\\.com/);
+  for(const source of [leaflet,canvas]) assert.ok(!source.includes('basemaps.cartocdn.com'));
   assert.ok(leaflet.indexOf('https://tile.openstreetmap.org/') < leaflet.indexOf('https://server.arcgisonline.com/'));
   assert.ok(canvas.indexOf('https://tile.openstreetmap.org/') < canvas.indexOf('https://server.arcgisonline.com/'));
-  assert.match(server,/https:\\/\\/server\\.arcgisonline\\.com/);
-  assert.match(html,/js\\/map-loader\\.js\\?v=20261012b/);
-  assert.doesNotMatch(html,/carto\\.com\\/attributions/);
+  assert.ok(server.includes('https://server.arcgisonline.com'));
+  assert.ok(html.includes('js/map-loader.js?v=20261012b'));
+  assert.ok(!html.includes('carto.com/attributions'));
 });
