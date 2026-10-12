@@ -56,7 +56,7 @@ function queueRender(){if(renderQueued)return;renderQueued=true;requestAnimation
 function smoothFlyTo(lon,lat,targetZoom=6){
  const start={lon:centerLon,lat:centerLat,zoom},finish={lon:clamp(lon,-180,180),lat:clamp(lat,-85.0511,85.0511),zoom:clamp(targetZoom,2,7)},began=performance.now(),duration=720;
  const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
- const step=now=>{const t=clamp((now-began)/duration,0,1),e=ease(t);centerLon=start.lon+(finish.lon-start.lon)*e;centerLat=start.lat+(finish.lat-start.lat)*e;zoom=start.zoom+(finish.zoom-start.zoom)*e;queueRender();if(t<1)requestAnimationFrame(step)};
+ const step=now=>{const t=clamp((now-began)/duration,0,1),e=ease(t);centerLon=start.lon+(finish.lon-start.lon)*e;centerLat=start.lat+(finish.lat-start.lat)*e;zoom=Math.round(start.zoom+(finish.zoom-start.zoom)*e);queueRender();if(t<1)requestAnimationFrame(step)};
  requestAnimationFrame(step);
 }
 function clampMapCenter(x,y){
