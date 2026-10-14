@@ -198,3 +198,12 @@ test('African map covers all 54 countries and hydrates markers from stored World
  assert.match(read('map.html'),/map-africa-countries\.js\?v=20261012d/);
  assert.equal(read('map.html'),read('public/map.html'));
 });
+
+test('Vercel serves API routes through the Express app handler',()=>{
+  const server=read('server.js');
+  const api=read('src/routes/api.js');
+  assert.match(server,/if\s*\(!process\.env\.VERCEL\)\s*\{\s*server\.listen/);
+  assert.match(server,/module\.exports\s*=\s*process\.env\.VERCEL\s*\?\s*app\s*:\s*server/);
+  assert.match(server,/app\.use\('\/api',\s*apiRoutes\)/);
+  assert.match(api,/router\.get\('\/observatory\/layers'/);
+});
